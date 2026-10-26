@@ -1,0 +1,6 @@
+shapely==2.2.0
+mapbox-vector-tile==2.2.0
+pmtiles==3.8.1
+numpy==2.5.4
+protobuf==6.33.6
+pyclipper==1.4.0

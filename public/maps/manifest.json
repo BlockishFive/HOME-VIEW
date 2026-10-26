@@ -1,0 +1,69 @@
+{
+  "file": "home-view.pmtiles",
+  "bytes": 304117,
+  "sha256": "853dd038a072c1d7bafc501084ad6fcc9325e3a541de5f75920209179d311e3d",
+  "tile_count": 478,
+  "profile_tiles": {
+    "mexico": 85,
+    "guanajuato": 82,
+    "leon": 311
+  },
+  "profile_features": {
+    "mexico": {
+      "land": 1,
+      "boundary": 32,
+      "road": 897,
+      "urban": 114
+    },
+    "guanajuato": {
+      "land": 1,
+      "boundary": 9,
+      "road": 94,
+      "urban": 10
+    },
+    "leon": {
+      "land": 1,
+      "boundary": 2,
+      "road": 5,
+      "urban": 1
+    }
+  },
+  "input_geojson_bytes": 1536902,
+  "license": "Natural Earth public domain",
+  "coverage": "Mexico/Guanajuato context; generalized major roads in Leon. No complete neighborhood street coverage.",
+  "profiles": [
+    {
+      "scope": "mexico",
+      "minzoom": 3,
+      "maxzoom": 7,
+      "bounds": [
+        -118.5,
+        14.3,
+        -86.5,
+        32.8
+      ]
+    },
+    {
+      "scope": "guanajuato",
+      "minzoom": 8,
+      "maxzoom": 10,
+      "bounds": [
+        -102.2,
+        19.8,
+        -99.6,
+        21.9
+      ]
+    },
+    {
+      "scope": "leon",
+      "minzoom": 11,
+      "maxzoom": 14,
+      "bounds": [
+        -101.84,
+        20.98,
+        -101.52,
+        21.26
+      ]
+    }
+  ]
+}

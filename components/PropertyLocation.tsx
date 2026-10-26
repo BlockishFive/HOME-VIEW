@@ -15,9 +15,9 @@ export function PropertyLocation({ property }: { property: Property }) {
         <p>{property.address}</p>
         <strong>{property.location}</strong>
         <p className="demo-note">
-          Cartografía real de OpenStreetMap. El marcador de esta ficha es una
-          ubicación aproximada ficticia en León, Guanajuato; no identifica una
-          propiedad real ni sus límites.
+          Cartografía vectorial de referencia de Natural Earth. El marcador de
+          esta ficha es una ubicación aproximada ficticia en León, Guanajuato;
+          no identifica una propiedad real ni sus límites.
         </p>
       </div>
       <PropertyMap

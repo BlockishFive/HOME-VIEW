@@ -89,9 +89,9 @@ test("map selection, zoom and catalog filters stay synchronized", async ({
   await expect(page.locator(".selected-property")).toContainText("Loft Arena");
   await expect(page.locator(".selected-property")).toContainText("$4,200");
   await page.getByRole("button", { name: "Acercar mapa", exact: true }).click();
-  await expect(page.locator(".geo-map")).toHaveAttribute("data-zoom", "14");
-  await page.getByRole("button", { name: "Restablecer mapa" }).click();
   await expect(page.locator(".geo-map")).toHaveAttribute("data-zoom", "13");
+  await page.getByRole("button", { name: "Restablecer mapa" }).click();
+  await expect(page.locator(".geo-map")).toHaveAttribute("data-zoom", "12");
   await page.getByLabel("TIPO DE INMUEBLE").selectOption("Departamento");
   await expect(page.locator(".property-card")).toHaveCount(1);
   await expect(page.locator(".geo-marker")).toHaveCount(1);

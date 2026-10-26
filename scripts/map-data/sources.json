@@ -1,0 +1,100 @@
+{
+  "provider": "Natural Earth",
+  "repository": "https://github.com/nvkelso/natural-earth-vector",
+  "license": "Public domain",
+  "license_url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/LICENSE.md",
+  "sources": [
+    {
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson",
+      "bytes": 3083490,
+      "sha256": "3e458fc036ad0a66411f2c1e6cac49c5d7bfb81cb1123bc513b22511a2b7fdeb",
+      "note": "Countries at1:50m; Mexico polygon available"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_roads.geojson",
+      "bytes": 50474096,
+      "sha256": "66a0c7b438e92fd124822cc5921cfa11042f48c294ade5e0f03f2c6640fd0248",
+      "note": "Major roads at1:10m, not complete urban street coverage"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_urban_areas.geojson",
+      "bytes": 27943663,
+      "sha256": "5136ffd816a9b28c0f295e6797b4c03eaa421be80d78b90f542db4a932dd4497",
+      "note": "Urban footprints at1:10m"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/10m_cultural/ne_10m_admin_1_states_provinces.shp",
+      "bytes": 20998780,
+      "sha256": "c6f5c8b4b1320d9417033762419c6df1eb423989cd880fba78ea0b1e3522cbe4",
+      "note": "State boundaries; DBF/SHX companions required"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/10m_cultural/ne_10m_admin_1_states_provinces.dbf",
+      "bytes": 15161514,
+      "sha256": "7b3244333680d6aec58cc49bde9484177a0baa44c974ec9d371a8f7f1cdb5359",
+      "note": "State attributes; includes Guanajuato index4204"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/10m_cultural/ne_10m_admin_1_states_provinces.shx",
+      "bytes": 36868,
+      "sha256": "37a9e2bc79ed31d3bdea3cb62d928f77281a1c88d645cd33430231c75dbcf350",
+      "note": "State geometry index"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/10m_cultural/ne_10m_admin_1_states_provinces.prj",
+      "bytes": 145,
+      "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4",
+      "note": "Coordinate reference system"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/LICENSE.md",
+      "bytes": 4636,
+      "sha256": "2631b5b39b6d1acc56de75235109b5af2dbb4b0ac5a127b6f06185977247fd4b",
+      "note": "Public domain license for all Natural Earth vectors"
+    }
+  ],
+  "limitations": [
+    "Natural Earth major roads are small-scale generalized data, not all city streets.",
+    "State boundaries are cartographic references, not cadastral/legal geometry.",
+    "Do not use 50m admin1 for Mexico: that scale omits Mexico."
+  ],
+  "extraction": {
+    "coordinate_system": "WGS84 EPSG:4326",
+    "leon_bbox": [
+      -101.95,
+      20.95,
+      -101.35,
+      21.4
+    ],
+    "state_filter": "adm0_a3=MEX and recognized MX-AAA state code; extra unnamed island record omitted from state layer",
+    "road_filter": "sov_a3=MEX",
+    "urban_filter": "intersects Natural Earth Mexico country geometry; León further clipped to bbox",
+    "properties": "Only display name/class/kind/source/min_zoom retained; see output data"
+  },
+  "snapshots": [
+    {
+      "file": "mexico-country.geojson.gz",
+      "sha256": "a64ddf18732c90bf591f489705a91e764814fc349df708410643c9daf0e7b113",
+      "uncompressed_bytes": 24010,
+      "bytes": 9205
+    },
+    {
+      "file": "mexico-states.geojson.gz",
+      "sha256": "d544fa806a7232b6621773bc8ed46a31c86b65eecfc39d810dbac86561547c33",
+      "uncompressed_bytes": 860982,
+      "bytes": 314147
+    },
+    {
+      "file": "mexico-roads.geojson.gz",
+      "sha256": "72ec7d6c91c969531803dd6ee6f2b6d2b24d5da541acb14c9e167c4fb87d6d11",
+      "uncompressed_bytes": 385837,
+      "bytes": 84938
+    },
+    {
+      "file": "mexico-urban.geojson.gz",
+      "sha256": "6f4cd1502ab121eeea6c8daa1ced7463cb6a6b96ba67a53386c17e4f14ce0540",
+      "uncompressed_bytes": 266073,
+      "bytes": 58857
+    }
+  ]
+}

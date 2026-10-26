@@ -19,7 +19,7 @@ El resultado de auditorías o pruebas se informa por separado; esta lista no es 
 
 ## Ubicaciones y predial
 
-El mapa utiliza geografía real de OpenStreetMap con marcadores ficticios. Antes de publicar domicilios reales: revisar licencia y atribución de teselas, términos de geocodificación, límites y facturación, restricciones de claves públicas, exposición de IP/ubicación a proveedores y precisión con que se divulgan domicilios. No solicitar ubicación del usuario sin necesidad y consentimiento. Validar coordenadas y datos de marcadores en servidor.
+El mapa utiliza datos vectoriales locales de Natural Earth con marcadores ficticios. Antes de publicar domicilios reales: revisar licencia y atribución de teselas, términos de geocodificación, límites y facturación, restricciones de claves públicas, exposición de IP/ubicación a proveedores y precisión con que se divulgan domicilios. No solicitar ubicación del usuario sin necesidad y consentimiento. Validar coordenadas y datos de marcadores en servidor.
 
 El predial anual y las cuotas actuales son datos sintéticos. Para cifras reales documentar municipio, ejercicio fiscal, fecha y fuente de actualización; distinguir montos oficiales, estimaciones y adeudos. Confirmar con autoridades y administración. No presentar un cálculo ilustrativo como avalúo, obligación fiscal o asesoría legal.
 
@@ -36,3 +36,7 @@ El formulario de borradores no es un panel de administración con autenticación
 La validación de fotos ocurre en cliente: no basta para permitir cargas públicas a un futuro servidor. Implementar validación independiente de tipo y contenido, límites de recursos, escaneo/moderación, cuotas, almacenamiento fuera de rutas ejecutables y autorización antes de crear un endpoint. El canvas retira los metadatos originales al reencodar; no oculta información visible, rostros, reflejos o documentos. Revisar fotos antes de publicarlas.
 
 No mostrar la posición exacta de una vivienda sin permiso. Los rangos numéricos del formulario solo son una validación aproximada de latitud/longitud; no certifican que un punto esté dentro de un municipio o polígono legal. Para terrenos comprobar uso de suelo, servicios, medidas y documentación con fuentes oficiales.
+
+## Archivo vectorial local
+
+Mantener PMTiles y snapshots como datos estáticos verificados. La generación valida SHA256 de sus entradas. Si se aceptan archivos PMTiles/GeoJSON externos en el futuro, limitar tamaño, geometrías y recursos antes de procesarlos. No crear un proxy abierto a URLs arbitrarias. Los límites generalizados no acreditan superficies ni situación jurídica de inmuebles.

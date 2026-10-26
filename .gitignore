@@ -6,3 +6,7 @@ out/
 !.env.example
 playwright-report/
 test-results/
+
+# Generated from the exact installed MapLibre package by predev/prebuild/prestart
+public/maps/maplibre-gl-worker.mjs
+public/maps/MapLibre-LICENSE.txt

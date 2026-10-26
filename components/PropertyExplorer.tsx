@@ -203,7 +203,7 @@ export function PropertyExplorer({
         </div>
       )}
       <p className="demo-note">
-        Cartografía real de OpenStreetMap · Anuncios, precios y posiciones de
+        Mapa vectorial propio de referencia · Anuncios, precios y posiciones de
         demostración ficticios. La renta se expresa por mes. Las galerías
         comparten ilustraciones; no representan domicilios reales.
       </p>

@@ -2,13 +2,13 @@
 
 > HOME-VIEW · Project Design for Real Estate Services
 
-Prototipo en español para venta y renta de casas, departamentos y terrenos. Incluye cinco fichas ficticias, mapa geográfico Leaflet/OpenStreetMap con vistas de México, Guanajuato y León, galería ampliable, datos de predial y costos, compartir e imprimir. Las tres viviendas originales tienen recorridos 360 con Marzipano. La casa en renta de demostración utiliza una galería convencional; los terrenos no ofrecen 360.
+Prototipo en español para venta y renta de casas, departamentos y terrenos. Incluye cinco fichas ficticias, mapa vectorial propio MapLibre/PMTiles con vistas de referencia de México, Guanajuato y León, galería ampliable, datos de predial y costos, compartir e imprimir. Las tres viviendas originales tienen recorridos 360 con Marzipano. La casa en renta de demostración utiliza una galería convencional; los terrenos no ofrecen 360.
 
 `/alta` permite preparar una ficha con tus propias fotos autorizadas y guardarla como borrador solo en este navegador. No hay cuentas, pagos, envío de contactos ni publicación de los borradores en un catálogo compartido.
 
 ## Ejecutar localmente
 
-Requisitos: Node.js 24 LTS y npm 11 (versiones utilizadas en desarrollo). No se necesitan claves ni variables de entorno. El mapa solicita imágenes al servidor público de OpenStreetMap desde el navegador; el catálogo y los borradores pueden usarse aunque esa conexión falle.
+Requisitos: Node.js 24 LTS y npm 11 (versiones utilizadas en desarrollo). No se necesitan claves ni variables de entorno. El mapa incluido se sirve desde este mismo sitio; no necesita conexión a un proveedor cartográfico ni claves de API.
 
 ```sh
 npm ci
@@ -37,7 +37,7 @@ En Linux, Playwright puede requerir sus dependencias del sistema (`npx playwrigh
 
 ## Uso
 
-1. Filtra por ubicación, tipo o presupuesto. Selecciona un marcador para ver su resumen o abre una tarjeta del catálogo. El mapa se puede arrastrar, acercar y restablecer; usa cartografía real y posiciones ficticias aproximadas en León. Los botones León, Guanajuato y México cambian su alcance. No calcula rutas ni pide tu ubicación GPS.
+1. Filtra por ubicación, tipo o presupuesto. Selecciona un marcador para ver su resumen o abre una tarjeta del catálogo. El mapa se puede arrastrar, acercar y restablecer; usa cartografía de referencia real y posiciones ficticias aproximadas en León. Los botones León, Guanajuato y México cambian su alcance. No calcula rutas ni pide tu ubicación GPS.
 2. Abre una imagen de la galería para ampliarla; navega con las flechas y cierra con Escape. Los accesos Resumen, Recorrido 360°, Ubicación y Costos permiten recorrer la ficha. Compartir usa las capacidades del navegador o muestra un enlace para copiar manualmente; Imprimir abre la impresión del navegador.
 3. Cuando el inmueble ofrece un recorrido 360, arrastra el panorama con ratón o pantalla táctil. También puedes usar los botones de dirección y zoom, alcanzables con Tab y activables con Enter.
 4. Cambia de habitación mediante los hotspots, el plano o la lista inferior. El plano y la lista permiten navegar aunque WebGL no esté disponible.
@@ -47,7 +47,7 @@ Los navegadores necesitan WebGL para el visor. Si falla, se muestra un mensaje y
 
 ## Datos e imágenes
 
-En el catálogo incluido, los anuncios, precios, direcciones, posiciones de marcadores, prediales, cuotas y características son ficticios. La cartografía de OpenStreetMap representa geografía real. Los datos y las fotos que añadas a un borrador local son los que tú proporciones. Los importes fiscales carecen de validez oficial. Las viviendas originales con 360 reutilizan una distribución genérica de tres habitaciones para mostrar la funcionalidad: las imágenes y el plano no corresponden a superficies o características reales.
+En el catálogo incluido, los anuncios, precios, direcciones, posiciones de marcadores, prediales, cuotas y características son ficticios. La cartografía Natural Earth representa geografía real generalizada, no un callejero completo. Los datos y las fotos que añadas a un borrador local son los que tú proporciones. Los importes fiscales carecen de validez oficial. Las viviendas originales con 360 reutilizan una distribución genérica de tres habitaciones para mostrar la funcionalidad: las imágenes y el plano no corresponden a superficies o características reales.
 
 Los JPEG locales son ilustraciones originales generadas mediante trazado de rayos procedural; no se usan fotografías ajenas, APIs de imágenes ni fuentes remotas. Véase [procedencia de medios](docs/MEDIA.md). No son representaciones fotorrealistas de inmuebles reales.
 
@@ -63,25 +63,26 @@ Los borradores se almacenan en IndexedDB, no se suben al servidor y no aparecen 
 
 ## Servicios y costos
 
-No se integraron servicios con claves de pago. Las bibliotecas son de código abierto; el mapa usa las teselas comunitarias de OpenStreetMap, sujetas a política de uso y sin garantía de disponibilidad o capacidad ilimitada. Hosting, dominios y Codespaces tienen límites y pueden generar costos. Consulta [servicios y costos](docs/SERVICES.md).
+No se integraron servicios con claves de pago. Las bibliotecas son de código abierto; el mapa utiliza un archivo PMTiles local de 304 KB, sin proveedor externo de teselas. El visor se descarga por separado y se conserva en caché. Hosting, dominios y Codespaces tienen límites y pueden generar costos. Consulta [servicios y costos](docs/SERVICES.md).
 
-Las pruebas de navegador interceptan el transporte de teselas para probar controles y errores de forma repetible sin cargar los servidores públicos. Esto no valida la conectividad real con OpenStreetMap, que se comprueba por separado.
+Las pruebas de navegador usan el archivo PMTiles real, comprueban HTTP206/Range y verifican que el mapa no hace solicitudes HTTP a servicios externos.
 
 ## Documentación
 
 - [Arquitectura y decisiones](docs/ARCHITECTURE.md)
 - [Servicios, costos y límites](docs/SERVICES.md)
+- [Datos del mapa y regeneración](docs/MAP_DATA.md)
 - [Pendientes de seguridad y producción](docs/SECURITY.md)
 - [Medios y regeneración](docs/MEDIA.md)
 
 Los comandos de instalación y arranque no publican código ni despliegan la aplicación. Para actualizar un Codespace desde GitHub, guarda primero tus cambios locales y luego ejecuta `git pull origin main`, `npm ci` y `npm run dev`.
 
-## Si el mapa no carga en Codespaces
+## Mapa propio y cobertura
 
-Actualiza el repositorio y reinicia `npm run dev`. La configuración detecta el nombre del Codespace y autoriza únicamente su hostname de vista previa para el puerto de desarrollo; no habilita todos los Codespaces. Si usas otro puerto, defínelo con `PORT` antes de arrancar.
+El archivo publicado `public/maps/home-view.pmtiles` pesa304,117 bytes (aproximadamente 297 KiB), con 478 fragmentos y compresión gzip. Es el tamaño de los datos geográficos, no de toda la aplicación. MapLibre y PMTiles se cargan al iniciar el visor.
 
-Si se ven los botones y marcadores pero las imágenes dicen **403 / Access blocked**, el visor sí inició: el rechazo viene del proveedor cartográfico. Las teselas llevan `referrerPolicy: strict-origin-when-cross-origin` para que OpenStreetMap reciba el origen real del sitio, incluso cuando la página tenga una política de referencia restrictiva. No se envían la ruta ni los parámetros de la página. Tras actualizar, recarga la pestaña del prototipo con Ctrl+Shift+R para evitar conservar imágenes antiguas de error.
+La cobertura es progresiva: México en niveles 3–7, Guanajuato en 8–10 y la zona de León en 11–14. Los niveles de contexto se conservan al acercar. Son límites, huellas urbanas y vías principales de Natural Earth (dominio público). **No están todas las calles, colonias, edificios o números de domicilio de León**; no sirve para calcular rutas ni acreditar límites de terrenos. Hace falta un extracto detallado autorizado de OSM/INEGI para ampliar ese nivel de cobertura.
 
-El botón **Actualizar cartografía** solicita otra vez las imágenes visibles. En fallos de conexión se ofrece también **Volver a cargar mapa** y un enlace para consultar la zona en OpenStreetMap. No hay reintentos automáticos continuos, proxies ni cambio a servidores alternativos para evitar restricciones. Si persiste un rechazo del proveedor, comprobar su respuesta y los encabezados desde el navegador real antes de atribuirlo al código o elegir otro servicio.
+Para regenerar o ampliar el paquete consulta [datos y generación](docs/MAP_DATA.md). El archivo ya viene incluido: no necesitas Python para ejecutar Home View. El alojamiento debe respetar solicitudes HTTP Range y responder 206 para descargar fragmentos. Next.js lo hace en la configuración probada.
 
-La autorización de red de este entorno de desarrollo es independiente de las políticas de OpenStreetMap y de la conexión del navegador que abre tu Codespace.
+Si el mapa no carga, usa **Actualizar cartografía**. Ante un fallo del archivo o de WebGL se muestra un aviso y la lista continúa disponible. En Codespaces reinicia el servidor después de cambiar la configuración y recarga la pestaña. Ya no se solicitan imágenes al servidor público de OpenStreetMap.
