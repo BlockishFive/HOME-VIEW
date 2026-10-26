@@ -75,3 +75,13 @@ Las pruebas de navegador interceptan el transporte de teselas para probar contro
 - [Medios y regeneración](docs/MEDIA.md)
 
 Los comandos de instalación y arranque no publican código ni despliegan la aplicación. Para actualizar un Codespace desde GitHub, guarda primero tus cambios locales y luego ejecuta `git pull origin main`, `npm ci` y `npm run dev`.
+
+## Si el mapa no carga en Codespaces
+
+Actualiza el repositorio y reinicia `npm run dev`. La configuración detecta el nombre del Codespace y autoriza únicamente su hostname de vista previa para el puerto de desarrollo; no habilita todos los Codespaces. Si usas otro puerto, defínelo con `PORT` antes de arrancar.
+
+Si se ven los botones y marcadores pero las imágenes dicen **403 / Access blocked**, el visor sí inició: el rechazo viene del proveedor cartográfico. Las teselas llevan `referrerPolicy: strict-origin-when-cross-origin` para que OpenStreetMap reciba el origen real del sitio, incluso cuando la página tenga una política de referencia restrictiva. No se envían la ruta ni los parámetros de la página. Tras actualizar, recarga la pestaña del prototipo con Ctrl+Shift+R para evitar conservar imágenes antiguas de error.
+
+El botón **Actualizar cartografía** solicita otra vez las imágenes visibles. En fallos de conexión se ofrece también **Volver a cargar mapa** y un enlace para consultar la zona en OpenStreetMap. No hay reintentos automáticos continuos, proxies ni cambio a servidores alternativos para evitar restricciones. Si persiste un rechazo del proveedor, comprobar su respuesta y los encabezados desde el navegador real antes de atribuirlo al código o elegir otro servicio.
+
+La autorización de red de este entorno de desarrollo es independiente de las políticas de OpenStreetMap y de la conexión del navegador que abre tu Codespace.

@@ -36,6 +36,7 @@ export function PropertyMap({
   const map = useRef<Leaflet.Map | null>(null);
   const library = useRef<typeof Leaflet | null>(null);
   const markers = useRef<Leaflet.LayerGroup | null>(null);
+  const retry = useRef<(() => void) | null>(null);
   const select = useRef(onSelect);
   select.current = onSelect;
   const [region, setRegion] = useState<Region>("León");
@@ -48,6 +49,7 @@ export function PropertyMap({
     let cancelled = false;
     let instance: Leaflet.Map | undefined;
     let observer: ResizeObserver | undefined;
+    let loadingTimeout: ReturnType<typeof setTimeout> | undefined;
     async function initialize() {
       try {
         const module = await import("leaflet");
@@ -73,6 +75,9 @@ export function PropertyMap({
           {
             minZoom: 4,
             maxZoom: 19,
+            // Codespaces can set a restrictive document policy. Send the real
+            // site origin to OSM, without sharing paths or query parameters.
+            referrerPolicy: "strict-origin-when-cross-origin",
             // Normal interactive use only: no background prefetch or offline downloads.
             updateWhenIdle: true,
             keepBuffer: 1,
@@ -81,16 +86,21 @@ export function PropertyMap({
         const tileKey = (coords: Leaflet.Coords) =>
           `${coords.z}/${coords.x}/${coords.y}`;
         function updateTileState() {
-          if (!cancelled) {
-            setTileState(
-              failedTiles.size
-                ? "error"
-                : tiles.isLoading()
-                  ? "loading"
-                  : "ready",
-            );
-          }
+          if (cancelled) return;
+          clearTimeout(loadingTimeout);
+          if (failedTiles.size) setTileState("error");
+          else if (tiles.isLoading()) {
+            setTileState("loading");
+            loadingTimeout = setTimeout(() => {
+              if (!cancelled) setTileState("error");
+            }, 15000);
+          } else setTileState("ready");
         }
+        retry.current = () => {
+          failedTiles.clear();
+          setTileState("loading");
+          tiles.redraw();
+        };
         tiles.on("loading", updateTileState);
         tiles.on("tileerror", (event: Leaflet.TileErrorEvent) => {
           failedTiles.add(tileKey(event.coords));
@@ -129,6 +139,8 @@ export function PropertyMap({
     void initialize();
     return () => {
       cancelled = true;
+      clearTimeout(loadingTimeout);
+      retry.current = null;
       observer?.disconnect();
       instance?.remove();
       map.current = null;
@@ -239,6 +251,15 @@ export function PropertyMap({
         </button>
         <button
           type="button"
+          aria-label="Actualizar cartografía"
+          title="Actualizar cartografía"
+          disabled={!initialized}
+          onClick={() => retry.current?.()}
+        >
+          ↻
+        </button>
+        <button
+          type="button"
           aria-label="Restablecer mapa"
           disabled={!initialized}
           onClick={() => chooseRegion("León")}
@@ -247,16 +268,39 @@ export function PropertyMap({
         </button>
       </div>
       {tileState !== "ready" && (
-        <p
+        <div
           className={`geo-map-notice${tileState === "error" ? " geo-map-error" : ""}`}
           aria-live="polite"
         >
-          {initializationError
-            ? "No se pudo iniciar el mapa. Puedes explorar las propiedades desde la lista."
-            : tileState === "error"
-              ? "La cartografía no está disponible por un problema de conexión. La lista y los marcadores siguen disponibles."
-              : "Cargando cartografía de OpenStreetMap…"}
-        </p>
+          <p>
+            {initializationError
+              ? "No se pudo iniciar el mapa. Recarga el visor para volver a intentarlo."
+              : tileState === "error"
+                ? "La cartografía no está disponible o tardó demasiado en cargar. Puedes reintentar; la lista y los marcadores siguen disponibles."
+                : "Cargando cartografía de OpenStreetMap…"}
+          </p>
+          {tileState === "error" && (
+            <div className="geo-map-recovery">
+              <button
+                type="button"
+                onClick={() =>
+                  initializationError
+                    ? window.location.reload()
+                    : retry.current?.()
+                }
+              >
+                Volver a cargar mapa
+              </button>
+              <a
+                href={`https://www.openstreetmap.org/#map=${regions[region].zoom}/${regions[region].center[0]}/${regions[region].center[1]}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Ver {region} en OpenStreetMap ↗
+              </a>
+            </div>
+          )}
+        </div>
       )}
       <div className="geo-map-footer">
         <span>

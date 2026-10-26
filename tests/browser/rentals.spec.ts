@@ -56,6 +56,13 @@ test("geographic scope controls and visible attribution work; tile errors are ex
     "no está disponible",
   );
   await expect(page.locator(".property-card")).toHaveCount(5);
+  await expect(
+    page.getByRole("link", { name: "Ver León en OpenStreetMap" }),
+  ).toHaveAttribute("href", /^https:\/\/www\.openstreetmap\.org\/#map=/);
+  await page.unroute("https://tile.openstreetmap.org/**");
+  await page.getByRole("button", { name: "Volver a cargar mapa" }).click();
+  await expect(map).toHaveAttribute("data-tile-state", "ready");
+  await expect(page.locator(".geo-map-notice")).toHaveCount(0);
 });
 
 test("a rental draft keeps photos locally, survives reload, exports and deletes", async ({
@@ -148,4 +155,58 @@ test("invalid draft announces its errors and focuses the first invalid field", a
     page.locator(".listing-workspace").getByRole("alert"),
   ).toContainText("título");
   await expect(page.locator(".draft-card")).toHaveCount(0);
+});
+
+test("map requests identify the real site origin even with a restrictive page policy", async ({
+  page,
+}) => {
+  const referers: string[] = [];
+  await page.route("https://tile.openstreetmap.org/**", (route) => {
+    referers.push(route.request().headers()["referer"] ?? "");
+    return route.fulfill({
+      contentType: "image/svg+xml",
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="#6d8060"/></svg>',
+    });
+  });
+  await page.goto("/renta");
+  await expect(page.locator(".geo-map")).toHaveAttribute(
+    "data-tile-state",
+    "ready",
+  );
+  referers.length = 0;
+  await page.evaluate(() => {
+    const policy = document.createElement("meta");
+    policy.name = "referrer";
+    policy.content = "no-referrer";
+    document.head.append(policy);
+  });
+  await page.getByRole("button", { name: "Guanajuato", exact: true }).click();
+  await expect(page.locator(".geo-map")).toHaveAttribute(
+    "data-tile-state",
+    "ready",
+  );
+  expect(referers.length).toBeGreaterThan(0);
+  expect(referers.every((value) => value === "http://127.0.0.1:3000/")).toBe(
+    true,
+  );
+});
+
+test("slow map images offer recovery instead of loading indefinitely", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await page.route("https://tile.openstreetmap.org/**", () => {});
+  await page.goto("/renta", { waitUntil: "domcontentloaded" });
+  await expect(
+    page.getByRole("button", { name: "León", exact: true }),
+  ).toBeEnabled();
+  await page.clock.fastForward(16000);
+  await expect(page.locator(".geo-map")).toHaveAttribute(
+    "data-tile-state",
+    "error",
+  );
+  await expect(
+    page.getByRole("button", { name: "Volver a cargar mapa" }),
+  ).toBeVisible();
+  await page.unrouteAll({ behavior: "ignoreErrors" });
 });

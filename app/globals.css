@@ -3096,3 +3096,30 @@ small {
     display: none !important;
   }
 }
+.geo-map-notice {
+  pointer-events: auto;
+}
+.geo-map-recovery {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.geo-map-recovery button {
+  padding: 10px 13px;
+  min-height: 40px;
+  border: 1px solid #9baa69;
+  border-radius: 22px;
+  background: #d4eab0;
+  color: #233318;
+  font-size: 10px;
+  font-weight: 600;
+}
+.geo-map-recovery a {
+  font-size: 10px;
+  color: #e0ecb9;
+  text-decoration: underline;
+  padding: 8px 0;
+  line-height: 1.6;
+}

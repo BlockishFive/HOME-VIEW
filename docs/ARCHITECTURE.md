@@ -55,3 +55,11 @@ Los datos de titularidad y referencia son ficticios; no son certificados ni comp
 `ListingForm` y `lib/listing-drafts.ts` no dependen del catálogo estático ni de un backend. Validan datos, permisos sobre imágenes, cantidad, tipo y tamaño; las fotos se decodifican y reencodan con canvas antes de guardar blobs en IndexedDB. Las transacciones se confirman antes de anunciar éxito. Se revocan las ObjectURL de previsualización y se maneja almacenamiento denegado/cuota. El respaldo JSON incluye las fotos; no hay todavía importación ni sincronización.
 
 Los datos del formulario no se insertan en `lib/properties.ts` ni se publican en rutas del servidor. Para un catálogo compartido se necesita una capa persistente con autorización, validación en servidor y moderación. Las pruebas de navegador cubren persistencia, exportación y eliminación de borradores y mockean las teselas: no equivalen a verificar acceso al proveedor externo.
+
+## Desarrollo en Codespaces y solicitudes del mapa
+
+`lib/dev-origins.ts` construye `allowedDevOrigins` a partir de las variables de plataforma `CODESPACE_NAME`, `GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN` y `PORT` (3000 por defecto). Valida etiquetas DNS y puerto y añade solo el hostname exacto; mantiene 127.0.0.1 y no usa un wildcard sobre todos los Codespaces.
+
+Cada imagen de Leaflet declara `strict-origin-when-cross-origin`: el navegador identifica el sitio real ante OpenStreetMap aunque el documento tenga una política de referencia restrictiva, sin enviar rutas ni queries. No se falsifican encabezados ni se introduce un proxy. Una espera de teselas superior a 15 segundos muestra recuperación; el usuario puede redibujar las imágenes visibles, sin bucles automáticos. Las imágenes de bloqueo que entregue el propio proveedor no equivalen a cartografía válida aunque el navegador las decodifique.
+
+Las pruebas verifican el `Referer` real de las peticiones interceptadas tras aplicar una política `no-referrer` al documento, y la recuperación tras errores de red. El transporte sigue simulado; aceptar el encabezado y levantar un bloqueo es una decisión del proveedor, que debe comprobarse desde la vista real del usuario.

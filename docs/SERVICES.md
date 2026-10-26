@@ -27,3 +27,7 @@ Consultar las condiciones vigentes antes de publicar o aumentar tráfico:
 ## Para publicar inmuebles reales de forma compartida
 
 Hace falta un backend con control de acceso, almacenamiento persistente de imágenes y datos, validación en servidor, backups y una política de privacidad. Una opción sin licencias de pago es servidor propio con SQLite y archivos; requiere operar y mantener esa infraestructura. No añadir un proveedor de pago sin una decisión explícita del propietario. El formulario local es el primer paso para preparar una casa en renta y revisar sus fotos, no un sistema público de anuncios multiusuario.
+
+### Identificación de las solicitudes
+
+Las imágenes del mapa usan una política explícita de referencia que comparte con OpenStreetMap solo el origen de Home View (esquema, hostname y puerto), sin ruta ni parámetros. Esta identificación permite respetar los requisitos del servidor comunitario desde vistas de desarrollo con políticas restrictivas. El botón de actualización reintenta las teselas visibles; no añade parámetros para eludir caché ni cambia de endpoint para sortear bloqueos. Un 403 del proveedor debe diagnosticarse en el navegador real; no se resuelve contratando una clave de API para este servidor público.
