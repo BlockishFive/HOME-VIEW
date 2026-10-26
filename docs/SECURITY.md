@@ -19,7 +19,7 @@ El resultado de auditorías o pruebas se informa por separado; esta lista no es 
 
 ## Ubicaciones y predial
 
-El mapa actual es enteramente ficticio. Antes de integrar cartografía real: revisar licencia y atribución de teselas, términos de geocodificación, límites y facturación, restricciones de claves públicas, exposición de IP/ubicación a proveedores y precisión con que se divulgan domicilios. No solicitar ubicación del usuario sin necesidad y consentimiento. Validar coordenadas y datos de marcadores en servidor.
+El mapa utiliza geografía real de OpenStreetMap con marcadores ficticios. Antes de publicar domicilios reales: revisar licencia y atribución de teselas, términos de geocodificación, límites y facturación, restricciones de claves públicas, exposición de IP/ubicación a proveedores y precisión con que se divulgan domicilios. No solicitar ubicación del usuario sin necesidad y consentimiento. Validar coordenadas y datos de marcadores en servidor.
 
 El predial anual y las cuotas actuales son datos sintéticos. Para cifras reales documentar municipio, ejercicio fiscal, fecha y fuente de actualización; distinguir montos oficiales, estimaciones y adeudos. Confirmar con autoridades y administración. No presentar un cálculo ilustrativo como avalúo, obligación fiscal o asesoría legal.
 
@@ -28,3 +28,11 @@ El predial anual y las cuotas actuales son datos sintéticos. Para cifras reales
 El diálogo de galería usa imágenes locales y texto alternativo definido en datos; validar esos campos si se introducen cargas de usuarios. No incorporar fotos o descripciones de un portal de terceros sin licencia. El régimen de propiedad de la demo no acredita titularidad ni ausencia de gravámenes: exigir verificación documental antes de publicar información jurídica real.
 
 Compartir y copiar dependen de permisos del navegador y de un contexto seguro. La aplicación ofrece una copia manual y no confirma una copia fallida ni publica automáticamente en redes. Evitar datos personales o secretos en URLs compartidas; el prototipo solo comparte la ruta de una propiedad ficticia. Revisar accesibilidad del diálogo con lectores de pantalla y navegadores reales, además de las pruebas automatizadas.
+
+## Alta local y fotografías del propietario
+
+El formulario de borradores no es un panel de administración con autenticación. IndexedDB está disponible a quien use ese navegador y no sustituye un almacén cifrado ni backups. Al cambiar de origen o borrar datos se pierden los borradores locales. Los JSON descargados contienen información y fotos aportadas por el propietario: tratarlos como archivos privados. La importación de respaldos y su validación todavía no están implementadas.
+
+La validación de fotos ocurre en cliente: no basta para permitir cargas públicas a un futuro servidor. Implementar validación independiente de tipo y contenido, límites de recursos, escaneo/moderación, cuotas, almacenamiento fuera de rutas ejecutables y autorización antes de crear un endpoint. El canvas retira los metadatos originales al reencodar; no oculta información visible, rostros, reflejos o documentos. Revisar fotos antes de publicarlas.
+
+No mostrar la posición exacta de una vivienda sin permiso. Los rangos numéricos del formulario solo son una validación aproximada de latitud/longitud; no certifican que un punto esté dentro de un municipio o polígono legal. Para terrenos comprobar uso de suelo, servicios, medidas y documentación con fuentes oficiales.

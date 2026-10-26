@@ -15,6 +15,8 @@ export function PropertyCosts({ property }: { property: Property }) {
           de dar el siguiente paso.
         </p>
         <p className="demo-note">
+          {property.operation === "Renta" &&
+            "En una renta, confirma en el contrato quién cubre predial y mantenimiento; no se suman automáticamente a la mensualidad. "}
           Todos los montos están expresados en pesos mexicanos. Este prototipo
           no calcula créditos ni recibe pagos.
         </p>

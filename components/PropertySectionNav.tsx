@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-const sections = [
+const allSections = [
   {
     id: "resumen",
     label: "Resumen",
@@ -22,7 +22,14 @@ const sections = [
     path: "M5 3h14v18H5ZM8 7h8M8 11h1m3 0h1m3 0h.1M8 15h1m3 0h1m3 0h.1",
   },
 ];
-export function PropertySectionNav() {
+export function PropertySectionNav({
+  withTour = true,
+}: {
+  withTour?: boolean;
+}) {
+  const sections = allSections.filter(
+    (section) => withTour || section.id !== "recorrido",
+  );
   const [active, setActive] = useState("resumen");
   const navigation = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -59,7 +66,7 @@ export function PropertySectionNav() {
       window.removeEventListener("resize", schedule);
       window.cancelAnimationFrame(frame);
     };
-  }, []);
+  }, [withTour]);
   return (
     <nav
       ref={navigation}

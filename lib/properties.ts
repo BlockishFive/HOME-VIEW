@@ -21,7 +21,9 @@ export type Property = {
   cover: string;
   rooms: Room[];
   priceValue: number;
-  propertyType: "Casa" | "Departamento";
+  propertyType: "Casa" | "Departamento" | "Terreno";
+  operation: "Venta" | "Renta";
+  coordinates: { lat: number; lng: number };
   address: string;
   annualTax: number;
   monthlyMaintenance: number;
@@ -29,7 +31,6 @@ export type Property = {
   builtYear: number;
   parking: number;
   features: string[];
-  mapPosition: { x: number; y: number };
   gallery: { src: string; alt: string; label: string }[];
   buildingType: string;
   levels: number;
@@ -101,10 +102,11 @@ export const properties: Property[] = [
     builtYear: 2021,
     parking: 2,
     features: ["Jardín privado", "Cocina abierta", "Área de lavado", "Terraza"],
-    mapPosition: { x: 370, y: 295 },
+    operation: "Venta",
+    coordinates: { lat: 21.133, lng: -101.697 },
     slug: "casa-oliva",
     title: "Casa Oliva",
-    location: "Distrito Jardín · Ciudad demo",
+    location: "Barrio Jardín (demo) · León, Guanajuato",
     price: "$4,850,000",
     area: 185,
     beds: 3,
@@ -131,10 +133,11 @@ export const properties: Property[] = [
     builtYear: 2023,
     parking: 1,
     features: ["Elevador", "Balcón", "Cocina integral", "Área de trabajo"],
-    mapPosition: { x: 625, y: 390 },
+    operation: "Venta",
+    coordinates: { lat: 21.115, lng: -101.674 },
     slug: "loft-arena",
     title: "Loft Arena",
-    location: "Barrio del Sol · Ciudad demo",
+    location: "Barrio del Sol (demo) · León, Guanajuato",
     price: "$2,950,000",
     area: 92,
     beds: 1,
@@ -161,10 +164,11 @@ export const properties: Property[] = [
     builtYear: 2020,
     parking: 3,
     features: ["Jardín", "Terraza cubierta", "Estudio", "Bodega"],
-    mapPosition: { x: 550, y: 165 },
+    operation: "Venta",
+    coordinates: { lat: 21.149, lng: -101.676 },
     slug: "residencia-brisa",
     title: "Residencia Brisa",
-    location: "Colinas del Norte · Ciudad demo",
+    location: "Colinas del Norte (demo) · León, Guanajuato",
     price: "$6,200,000",
     area: 240,
     beds: 4,
@@ -174,6 +178,78 @@ export const properties: Property[] = [
     description:
       "Un hogar imaginario para disfrutar de la calma. Sus ambientes amplios y su paleta natural son el escenario de esta experiencia de demostración.",
     rooms,
+  },
+  {
+    slug: "casa-jardin-renta",
+    title: "Casa Jardín en renta",
+    operation: "Renta",
+    propertyType: "Casa",
+    priceValue: 18500,
+    price: "$18,500",
+    area: 150,
+    beds: 3,
+    baths: 2,
+    plotArea: 180,
+    tag: "Renta mensual · Demostración",
+    address: "Ubicación aproximada de demostración · Sin domicilio real",
+    location: "Zona de referencia · León, Guanajuato",
+    neighborhood: "Por confirmar · Demo",
+    annualTax: 6400,
+    monthlyMaintenance: 0,
+    builtYear: 2022,
+    parking: 2,
+    levels: 2,
+    buildingType: "Casa independiente",
+    ownership: "Por verificar · Demo",
+    reference: "HV-DEMO-004",
+    description:
+      "Casa ficticia en renta mensual en León, Guanajuato. Esta ficha muestra cómo presentar una vivienda con fotografías convencionales. Las imágenes son ilustraciones compartidas de demostración; el domicilio, las condiciones de renta y las fotos de tu inmueble se incorporarán cuando los proporciones. No incluye un recorrido 360.",
+    features: ["Sala y comedor", "Cocina", "Patio", "Sin recorrido 360"],
+    cover: "/panoramas/sala-cover.jpg",
+    gallery: demoImages,
+    rooms: [],
+    coordinates: { lat: 21.122, lng: -101.686 },
+  },
+  {
+    slug: "terreno-leon-demo",
+    title: "Terreno en León",
+    operation: "Venta",
+    propertyType: "Terreno",
+    priceValue: 980000,
+    price: "$980,000",
+    area: 320,
+    beds: 0,
+    baths: 0,
+    plotArea: 320,
+    tag: "Terreno · Demostración",
+    address: "Ubicación aproximada de demostración · Sin domicilio real",
+    location: "Zona de referencia · León, Guanajuato",
+    neighborhood: "Por confirmar · Demo",
+    annualTax: 1800,
+    monthlyMaintenance: 0,
+    builtYear: 0,
+    parking: 0,
+    levels: 0,
+    buildingType: "Sin construcción",
+    ownership: "Por verificar · Demo",
+    reference: "HV-DEMO-005",
+    description:
+      "Terreno ficticio de 320 m² en la zona de León. El polígono de la ilustración no es un levantamiento topográfico. Uso de suelo, medidas, servicios y situación jurídica requieren verificación. Los terrenos se presentan con imágenes, descripción y ubicación; no tienen recorrido 360.",
+    features: [
+      "Superficie ilustrativa",
+      "Uso de suelo por verificar",
+      "Sin recorrido 360",
+    ],
+    cover: "/illustrations/terreno.svg",
+    gallery: [
+      {
+        src: "/illustrations/terreno.svg",
+        alt: "Esquema original de un terreno ficticio, sin validez topográfica",
+        label: "Esquema del terreno",
+      },
+    ],
+    rooms: [],
+    coordinates: { lat: 21.096, lng: -101.705 },
   },
 ];
 export function getProperty(slug: string) {
@@ -192,6 +268,7 @@ export function filterProperties(
   query: string,
   type: string,
   maxPrice: number,
+  operation: string = "Todas",
 ) {
   const normalized = (text: string) =>
     text
@@ -204,6 +281,14 @@ export function filterProperties(
         normalized(query.trim()),
       ) &&
       (type === "Todos" || p.propertyType === type) &&
-      p.priceValue <= maxPrice,
+      p.priceValue <= maxPrice &&
+      (operation === "Todas" || p.operation === operation),
   );
+}
+
+export function hasTour(property: Property) {
+  return property.propertyType !== "Terreno" && property.rooms.length > 0;
+}
+export function priceUnit(property: Property) {
+  return property.operation === "Renta" ? "MXN / mes" : "MXN";
 }

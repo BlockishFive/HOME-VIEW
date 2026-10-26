@@ -1,8 +1,28 @@
 "use client";
-import { useRef, useState } from "react";
+
+import { useEffect, useRef, useState } from "react";
+import type * as Leaflet from "leaflet";
 import type { Property } from "@/lib/properties";
 
-type Point = { x: number; y: number };
+const regions = {
+  León: { center: [21.122, -101.686] as [number, number], zoom: 13 },
+  Guanajuato: { center: [20.94, -101.0] as [number, number], zoom: 8 },
+  México: { center: [23.63, -102.55] as [number, number], zoom: 5 },
+};
+type Region = keyof typeof regions;
+type TileState = "loading" | "ready" | "error";
+
+function markerPrice(property: Property) {
+  if (property.operation === "Renta") {
+    return `${new Intl.NumberFormat("es-MX", { maximumFractionDigits: 0 }).format(property.priceValue)} / mes`;
+  }
+  return property.priceValue >= 1000000
+    ? `${(property.priceValue / 1000000).toFixed(2)} M`
+    : new Intl.NumberFormat("es-MX", { maximumFractionDigits: 0 }).format(
+        property.priceValue,
+      );
+}
+
 export function PropertyMap({
   properties,
   selected,
@@ -12,238 +32,247 @@ export function PropertyMap({
   selected: string;
   onSelect: (slug: string) => void;
 }) {
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
-  const gesture = useRef<{
-    id: number;
-    x: number;
-    y: number;
-    start: Point;
-  } | null>(null);
-  function clamp(n: number) {
-    return Math.max(-250, Math.min(250, n));
+  const host = useRef<HTMLDivElement>(null);
+  const map = useRef<Leaflet.Map | null>(null);
+  const library = useRef<typeof Leaflet | null>(null);
+  const markers = useRef<Leaflet.LayerGroup | null>(null);
+  const select = useRef(onSelect);
+  select.current = onSelect;
+  const [region, setRegion] = useState<Region>("León");
+  const [zoom, setZoom] = useState(13);
+  const [initialized, setInitialized] = useState(false);
+  const [tileState, setTileState] = useState<TileState>("loading");
+  const [initializationError, setInitializationError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    let instance: Leaflet.Map | undefined;
+    let observer: ResizeObserver | undefined;
+    async function initialize() {
+      try {
+        const module = await import("leaflet");
+        const L = module.default ?? module;
+        if (cancelled || !host.current) return;
+        instance = L.map(host.current, {
+          center: regions.León.center,
+          zoom: regions.León.zoom,
+          minZoom: 4,
+          maxZoom: 19,
+          zoomControl: false,
+          attributionControl: false,
+          scrollWheelZoom: false,
+        });
+        map.current = instance;
+        library.current = L;
+        markers.current = L.layerGroup().addTo(instance);
+        // Keep failures until that exact tile succeeds or leaves the layer.
+        // A partial pan may retain failed tiles from the previous request batch.
+        const failedTiles = new Set<string>();
+        const tiles = L.tileLayer(
+          "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          {
+            minZoom: 4,
+            maxZoom: 19,
+            // Normal interactive use only: no background prefetch or offline downloads.
+            updateWhenIdle: true,
+            keepBuffer: 1,
+          },
+        );
+        const tileKey = (coords: Leaflet.Coords) =>
+          `${coords.z}/${coords.x}/${coords.y}`;
+        function updateTileState() {
+          if (!cancelled) {
+            setTileState(
+              failedTiles.size
+                ? "error"
+                : tiles.isLoading()
+                  ? "loading"
+                  : "ready",
+            );
+          }
+        }
+        tiles.on("loading", updateTileState);
+        tiles.on("tileerror", (event: Leaflet.TileErrorEvent) => {
+          failedTiles.add(tileKey(event.coords));
+          updateTileState();
+        });
+        tiles.on("tileload", (event: Leaflet.TileEvent) => {
+          failedTiles.delete(tileKey(event.coords));
+          updateTileState();
+        });
+        tiles.on("tileunload", (event: Leaflet.TileEvent) => {
+          failedTiles.delete(tileKey(event.coords));
+          updateTileState();
+        });
+        tiles.on("load", updateTileState);
+        tiles.addTo(instance);
+        const activeMap = instance;
+        activeMap.on("zoomend", () => {
+          if (!cancelled) setZoom(activeMap.getZoom());
+        });
+        observer = new ResizeObserver(() =>
+          activeMap.invalidateSize({ pan: false }),
+        );
+        observer.observe(host.current);
+        setInitialized(true);
+      } catch {
+        if (!cancelled) {
+          instance?.remove();
+          instance = undefined;
+          map.current = null;
+          markers.current = null;
+          setInitializationError(true);
+          setTileState("error");
+        }
+      }
+    }
+    void initialize();
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+      instance?.remove();
+      map.current = null;
+      library.current = null;
+      markers.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const L = library.current;
+    const group = markers.current;
+    if (!initialized || !L || !group) return;
+    group.clearLayers();
+    for (const property of properties) {
+      const point = property.coordinates;
+      if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lng))
+        continue;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `geo-marker${selected === property.slug ? " selected" : ""}`;
+      button.setAttribute("aria-pressed", String(selected === property.slug));
+      button.setAttribute(
+        "aria-label",
+        `Seleccionar ${property.title} en el mapa, ${property.price} MXN${property.operation === "Renta" ? " por mes" : ""}`,
+      );
+      button.textContent = markerPrice(property);
+      button.addEventListener("click", () => select.current(property.slug));
+      L.DomEvent.disableClickPropagation(button);
+      const icon = L.divIcon({
+        html: button,
+        className: "geo-marker-shell",
+        iconSize: [112, 40],
+        iconAnchor: [56, 40],
+      });
+      L.marker([point.lat, point.lng], { icon, keyboard: false }).addTo(group);
+    }
+  }, [properties, selected, initialized]);
+
+  useEffect(() => {
+    const property = properties.find((item) => item.slug === selected);
+    const point = property?.coordinates;
+    if (!initialized || !map.current || !point) return;
+    map.current.setView(
+      [point.lat, point.lng],
+      Math.max(12, map.current.getZoom()),
+      { animate: false },
+    );
+    setRegion("León");
+  }, [selected, properties, initialized]);
+
+  function chooseRegion(next: Region) {
+    setRegion(next);
+    map.current?.setView(regions[next].center, regions[next].zoom, {
+      animate: false,
+    });
   }
-  function reset() {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-  }
+
   return (
-    <div className="property-map">
-      <div className="map-heading">
-        <span>
-          <span className="live-dot" /> Ciudad demo
-        </span>
-        <span>Mapa ilustrativo</span>
-      </div>
+    <div
+      className="property-map geo-map"
+      data-zoom={zoom}
+      data-region={region}
+      data-tile-state={tileState}
+    >
       <div
-        className="map-viewport"
-        onPointerDown={(event) => {
-          if ((event.target as Element).closest("button")) return;
-          gesture.current = {
-            id: event.pointerId,
-            x: event.clientX,
-            y: event.clientY,
-            start: pan,
-          };
-          event.currentTarget.setPointerCapture(event.pointerId);
-        }}
-        onPointerMove={(event) => {
-          const g = gesture.current;
-          if (!g || g.id !== event.pointerId) return;
-          const dx = event.clientX - g.x,
-            dy = event.clientY - g.y;
-          setPan({ x: clamp(g.start.x + dx), y: clamp(g.start.y + dy) });
-        }}
-        onPointerUp={() => {
-          gesture.current = null;
-        }}
-        onPointerCancel={() => {
-          gesture.current = null;
-        }}
+        ref={host}
+        className="geo-map-canvas"
+        role="region"
+        aria-label={`Mapa geográfico de ${region}`}
+      />
+      <div
+        className="geo-region-buttons"
+        role="group"
+        aria-label="Alcance del mapa"
       >
-        <div
-          className="map-layer"
-          style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-          }}
-        >
-          <svg
-            viewBox="0 0 900 600"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-            className="map-art"
+        {(Object.keys(regions) as Region[]).map((name) => (
+          <button
+            key={name}
+            type="button"
+            onClick={() => chooseRegion(name)}
+            aria-pressed={region === name}
+            disabled={!initialized}
           >
-            <defs>
-              <pattern
-                id="city-grid"
-                width="90"
-                height="75"
-                patternUnits="userSpaceOnUse"
-              >
-                <rect width="90" height="75" fill="#202522" />
-                <rect
-                  x="7"
-                  y="7"
-                  width="32"
-                  height="24"
-                  rx="3"
-                  fill="#282e29"
-                />
-                <rect
-                  x="46"
-                  y="7"
-                  width="37"
-                  height="24"
-                  rx="3"
-                  fill="#252c27"
-                />
-                <rect
-                  x="7"
-                  y="38"
-                  width="76"
-                  height="30"
-                  rx="3"
-                  fill="#262d28"
-                />
-                <path d="M0 0H90 M0 0V75" stroke="#3b453b" strokeWidth="3" />
-              </pattern>
-            </defs>
-            <rect width="900" height="600" fill="url(#city-grid)" />
-            <path
-              d="M0 500 Q120 310 200 480 T420 430 T650 520 T950 400"
-              fill="none"
-              stroke="#283d3b"
-              strokeWidth="70"
-            />
-            <path
-              d="M0 500 Q120 310 200 480 T420 430 T650 520 T950 400"
-              fill="none"
-              stroke="#395450"
-              strokeWidth="2"
-            />
-            <path
-              d="M0 200 L900 340 M250 0L470 600 M0 80L900 80 M730 0L730 600"
-              fill="none"
-              stroke="#4c5545"
-              strokeWidth="13"
-            />
-            <path
-              d="M0 200 L900 340 M250 0L470 600 M0 80L900 80 M730 0L730 600"
-              fill="none"
-              stroke="#c8cb9f"
-              strokeWidth="1"
-              strokeDasharray="8 9"
-              opacity=".45"
-            />
-            <path
-              d="M85 95H220L255 190L80 165Z M480 330L570 348L610 450L490 435Z M490 100H660V210L545 190Z"
-              fill="#34432b"
-              stroke="#4c5d37"
-              strokeWidth="2"
-            />
-            <g fill="#4d6439" opacity=".7">
-              {Array.from({ length: 12 }, (_, i) => (
-                <circle
-                  key={i}
-                  cx={100 + (i % 4) * 32}
-                  cy={115 + Math.floor(i / 4) * 16}
-                  r="8"
-                />
-              ))}
-            </g>
-            <g fontFamily="Arial, sans-serif" textAnchor="middle">
-              <text x="165" y="145" fill="#b0be8c" fontSize="12">
-                PARQUE OLIVO
-              </text>
-              <text
-                x="335"
-                y="355"
-                fill="#9aa88c"
-                fontSize="15"
-                letterSpacing="2"
-              >
-                DISTRITO JARDÍN
-              </text>
-              <text
-                x="595"
-                y="235"
-                fill="#9aa88c"
-                fontSize="15"
-                letterSpacing="2"
-              >
-                COLINAS DEL NORTE
-              </text>
-              <text
-                x="640"
-                y="445"
-                fill="#9aa88c"
-                fontSize="15"
-                letterSpacing="2"
-              >
-                BARRIO DEL SOL
-              </text>
-              <text x="785" y="102" fill="#8e9985" fontSize="11">
-                AV. HORIZONTE
-              </text>
-              <text
-                x="170"
-                y="506"
-                fill="#8ca6a1"
-                fontSize="11"
-                letterSpacing="3"
-              >
-                RÍO DEMO
-              </text>
-            </g>
-          </svg>
-          {properties.map((property) => (
-            <button
-              key={property.slug}
-              className={`map-pin ${selected === property.slug ? "selected" : ""}`}
-              style={{
-                left: `${property.mapPosition.x / 9}%`,
-                top: `${property.mapPosition.y / 6}%`,
-              }}
-              aria-pressed={selected === property.slug}
-              aria-label={`Seleccionar ${property.title} en el mapa, ${property.price} MXN`}
-              onClick={() => {
-                onSelect(property.slug);
-              }}
-            >
-              {(property.priceValue / 1000000).toFixed(2)} M
-              <span className="sr-only"> · {property.title}</span>
-            </button>
-          ))}
-        </div>
+            {name}
+          </button>
+        ))}
       </div>
       <div
-        className="map-controls"
+        className="geo-map-controls"
         role="group"
         aria-label="Controles del mapa"
       >
         <button
+          type="button"
           aria-label="Acercar mapa"
-          disabled={zoom >= 1.8}
-          onClick={() => setZoom((v) => Math.min(1.8, v + 0.2))}
+          disabled={!initialized || zoom >= 19}
+          onClick={() => map.current?.zoomIn(undefined, { animate: false })}
         >
           +
         </button>
         <button
+          type="button"
           aria-label="Alejar mapa"
-          disabled={zoom <= 0.8}
-          onClick={() => setZoom((v) => Math.max(0.8, v - 0.2))}
+          disabled={!initialized || zoom <= 4}
+          onClick={() => map.current?.zoomOut(undefined, { animate: false })}
         >
           −
         </button>
-        <button aria-label="Restablecer mapa" onClick={reset}>
+        <button
+          type="button"
+          aria-label="Restablecer mapa"
+          disabled={!initialized}
+          onClick={() => chooseRegion("León")}
+        >
           ⌖
         </button>
       </div>
-      <span className="map-compass" aria-hidden="true">
-        ↑<small>N</small>
-      </span>
-      <div className="map-disclaimer">
-        Ubicaciones ficticias · Arrastra para explorar · Sin escala real
+      {tileState !== "ready" && (
+        <p
+          className={`geo-map-notice${tileState === "error" ? " geo-map-error" : ""}`}
+          aria-live="polite"
+        >
+          {initializationError
+            ? "No se pudo iniciar el mapa. Puedes explorar las propiedades desde la lista."
+            : tileState === "error"
+              ? "La cartografía no está disponible por un problema de conexión. La lista y los marcadores siguen disponibles."
+              : "Cargando cartografía de OpenStreetMap…"}
+        </p>
+      )}
+      <div className="geo-map-footer">
+        <span>
+          Geografía real · Anuncios demo con ubicaciones aproximadas ficticias
+        </span>
+        <span className="geo-map-attribution">
+          ©{" "}
+          <a
+            href="https://www.openstreetmap.org/copyright"
+            target="_blank"
+            rel="noopener"
+          >
+            OpenStreetMap contributors
+          </a>{" "}
+          · ODbL
+        </span>
       </div>
     </div>
   );

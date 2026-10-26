@@ -2,27 +2,68 @@
 import { ArrowIcon } from "@/components/ArrowIcon";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { filterProperties, formatMXN, type Property } from "@/lib/properties";
+import {
+  filterProperties,
+  formatMXN,
+  hasTour,
+  type Property,
+} from "@/lib/properties";
 import { PropertyMap } from "./PropertyMap";
 import { PropertyCard } from "./PropertyCard";
-export function PropertyExplorer({ properties }: { properties: Property[] }) {
+export function PropertyExplorer({
+  properties,
+  initialOperation = "Todas",
+  initialType = "Todos",
+}: {
+  properties: Property[];
+  initialOperation?: string;
+  initialType?: string;
+}) {
+  const [operation, setOperation] = useState(initialOperation);
   const [query, setQuery] = useState("");
-  const [type, setType] = useState("Todos");
-  const [maxPrice, setMaxPrice] = useState(10000000);
+  const [type, setType] = useState(initialType);
+  const [maxPrice, setMaxPrice] = useState(Number.POSITIVE_INFINITY);
   const [mode, setMode] = useState<"cards" | "map">("map");
   const [selection, setSelection] = useState(properties[0].slug);
   const filtered = useMemo(
-    () => filterProperties(properties, query, type, maxPrice),
-    [properties, query, type, maxPrice],
+    () => filterProperties(properties, query, type, maxPrice, operation),
+    [properties, query, type, maxPrice, operation],
   );
   const selected = filtered.find((p) => p.slug === selection) ?? filtered[0];
   function clear() {
     setQuery("");
-    setType("Todos");
-    setMaxPrice(10000000);
+    setType(initialType);
+    setOperation(initialOperation);
+    setMaxPrice(Number.POSITIVE_INFINITY);
   }
   return (
     <>
+      <div
+        className="operation-tabs"
+        role="group"
+        aria-label="Operación del catálogo"
+      >
+        {["Todas", "Venta", "Renta"].map((value) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={operation === value}
+            onClick={() => {
+              setOperation(value);
+              setMaxPrice(Number.POSITIVE_INFINITY);
+            }}
+          >
+            {value === "Todas"
+              ? "Todas las propiedades"
+              : value === "Venta"
+                ? "En venta"
+                : "En renta"}
+          </button>
+        ))}
+        <Link href="/alta">
+          Preparar mi anuncio <ArrowIcon />
+        </Link>
+      </div>
       <form
         className="search-bar"
         onSubmit={(event) => event.preventDefault()}
@@ -46,6 +87,7 @@ export function PropertyExplorer({ properties }: { properties: Property[] }) {
             <option>Todos</option>
             <option value="Casa">Casas</option>
             <option value="Departamento">Departamentos</option>
+            <option value="Terreno">Terrenos</option>
           </select>
         </label>
         <label>
@@ -54,7 +96,14 @@ export function PropertyExplorer({ properties }: { properties: Property[] }) {
             value={maxPrice}
             onChange={(event) => setMaxPrice(Number(event.target.value))}
           >
-            <option value={10000000}>Cualquier precio</option>
+            <option value={Number.POSITIVE_INFINITY}>Cualquier precio</option>
+            {operation === "Renta" && (
+              <>
+                <option value={15000}>Hasta $15,000 / mes</option>
+                <option value={20000}>Hasta $20,000 / mes</option>
+                <option value={30000}>Hasta $30,000 / mes</option>
+              </>
+            )}
             <option value={3000000}>Hasta $3 millones</option>
             <option value={5000000}>Hasta $5 millones</option>
             <option value={7000000}>Hasta $7 millones</option>
@@ -126,7 +175,8 @@ export function PropertyExplorer({ properties }: { properties: Property[] }) {
                 className="button button-dark"
                 href={`/propiedades/${selected.slug}`}
               >
-                Explorar en 360° <ArrowIcon />
+                {hasTour(selected) ? "Explorar en 360°" : "Ver inmueble"}{" "}
+                <ArrowIcon />
               </Link>
             </div>
           </div>
@@ -153,9 +203,9 @@ export function PropertyExplorer({ properties }: { properties: Property[] }) {
         </div>
       )}
       <p className="demo-note">
-        Colección de demostración · Inmuebles, ubicaciones, importes y plano
-        urbano ficticios. Los recorridos comparten imágenes sintéticas. Los
-        precios no constituyen ofertas.
+        Cartografía real de OpenStreetMap · Anuncios, precios y posiciones de
+        demostración ficticios. La renta se expresa por mes. Las galerías
+        comparten ilustraciones; no representan domicilios reales.
       </p>
     </>
   );

@@ -1,9 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import { properties, getProperty, filterProperties } from "../lib/properties";
+import {
+  properties,
+  getProperty,
+  filterProperties,
+  hasTour,
+} from "../lib/properties";
 test("catalog has unique routes and resolves unknown properties safely", () => {
-  assert.equal(properties.length, 3);
+  assert.equal(properties.length, 5);
   assert.equal(new Set(properties.map((p) => p.slug)).size, properties.length);
   for (const p of properties) assert.equal(getProperty(p.slug), p);
   assert.equal(getProperty("no-existe"), undefined);
@@ -11,6 +16,11 @@ test("catalog has unique routes and resolves unknown properties safely", () => {
 test("each tour graph is connected and every hotspot points to an existing room", () => {
   for (const property of properties) {
     const rooms = property.rooms;
+    if (!rooms.length) {
+      assert.equal(hasTour(property), false);
+      continue;
+    }
+    assert.notEqual(property.propertyType, "Terreno");
     const visited = new Set<string>();
     function walk(id: string) {
       if (visited.has(id)) return;
@@ -30,16 +40,26 @@ test("each tour graph is connected and every hotspot points to an existing room"
     }
   }
 });
-test("all demo media are local JPEGs, with no external asset dependencies", () => {
+test("demo photos and original land illustration are local and valid", () => {
   for (const property of properties)
     for (const path of [
       property.cover,
       ...property.gallery.map((image) => image.src),
       ...property.rooms.map((r) => r.panorama),
     ]) {
-      assert.match(path, /^\/panoramas\/[a-z-]+\.jpg$/);
+      assert.match(
+        path,
+        /^\/(panoramas\/[a-z-]+\.jpg|illustrations\/terreno\.svg)$/,
+      );
       const bytes = readFileSync(`public${path}`);
-      assert.equal(bytes.readUInt16BE(0), 0xffd8);
+      if (path.endsWith(".jpg")) assert.equal(bytes.readUInt16BE(0), 0xffd8);
+      else {
+        assert.match(bytes.toString(), /<svg/);
+        assert.doesNotMatch(
+          bytes.toString(),
+          /<script|foreignObject|(?:href|src)=/i,
+        );
+      }
     }
 });
 
@@ -47,11 +67,15 @@ test("demo fiscal and map data are valid and filters compose", () => {
   for (const property of properties) {
     assert.ok(property.annualTax > 0 && Number.isFinite(property.annualTax));
     assert.ok(property.monthlyMaintenance >= 0);
-    assert.ok(property.mapPosition.x > 0 && property.mapPosition.x < 900);
-    assert.ok(property.mapPosition.y > 0 && property.mapPosition.y < 600);
+    assert.ok(property.coordinates.lat > 14 && property.coordinates.lat < 33);
+    assert.ok(
+      property.coordinates.lng > -119 && property.coordinates.lng < -86,
+    );
   }
   assert.deepEqual(
-    filterProperties(properties, "jardin", "Casa", 5000000).map((p) => p.slug),
+    filterProperties(properties, "jardin", "Casa", 5000000, "Venta").map(
+      (p) => p.slug,
+    ),
     ["casa-oliva"],
   );
   assert.deepEqual(

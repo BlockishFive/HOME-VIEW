@@ -8,7 +8,7 @@ import { PropertyCosts } from "@/components/PropertyCosts";
 import { PropertyDetails } from "@/components/PropertyDetails";
 import { PropertyLocation } from "@/components/PropertyLocation";
 import { PropertyTour } from "@/components/PropertyTour";
-import { getProperty, properties } from "@/lib/properties";
+import { getProperty, properties, hasTour, priceUnit } from "@/lib/properties";
 export function generateStaticParams() {
   return properties.map(({ slug }) => ({ slug }));
 }
@@ -38,7 +38,7 @@ export default async function PropertyPage({
         <div className="property-heading">
           <div>
             <p className="eyebrow">
-              RECORRIDO VIRTUAL · PROPIEDAD DE DEMOSTRACIÓN
+              {property.operation.toUpperCase()} · PROPIEDAD DE DEMOSTRACIÓN
             </p>
             <h1>{property.title}</h1>
             <p className="muted">
@@ -51,28 +51,52 @@ export default async function PropertyPage({
             <span>
               <strong>{property.area}</strong> m²
             </span>
-            <span>
-              <strong>{property.beds}</strong> recámaras
-            </span>
-            <span>
-              <strong>{property.baths}</strong> baños
-            </span>
+            {property.propertyType !== "Terreno" && (
+              <>
+                <span>
+                  <strong>{property.beds}</strong> recámaras
+                </span>
+                <span>
+                  <strong>{property.baths}</strong> baños
+                </span>
+              </>
+            )}
           </div>
         </div>
         <div className="property-toolbar">
           <div className="property-asking-price">
-            <span>PRECIO DE VENTA · DEMO</span>
+            <span>
+              {property.operation === "Renta"
+                ? "RENTA MENSUAL"
+                : "PRECIO DE VENTA"}{" "}
+              · DEMO
+            </span>
             <strong>
               {property.price}
-              <small> MXN</small>
+              <small> {priceUnit(property)}</small>
             </strong>
           </div>
           <PropertyActions title={property.title} />
         </div>
         <PropertyGallery title={property.title} images={property.gallery} />
-        <PropertySectionNav />
+        <PropertySectionNav withTour={hasTour(property)} />
         <PropertyDetails property={property} />
-        <PropertyTour property={property} />
+        {hasTour(property) ? (
+          <PropertyTour property={property} />
+        ) : (
+          <section className="no-tour">
+            <h2>
+              {property.propertyType === "Terreno"
+                ? "Un terreno, con toda la perspectiva."
+                : "Conoce la casa en imágenes."}
+            </h2>
+            <p>
+              {property.propertyType === "Terreno"
+                ? "Este terreno se presenta con imágenes y ubicación; no tiene recorrido 360."
+                : "Esta casa en renta utiliza fotos convencionales. Un recorrido 360 requiere capturas panorámicas específicas."}
+            </p>
+          </section>
+        )}
         <PropertyLocation property={property} />
         <PropertyCosts property={property} />
       </main>

@@ -60,7 +60,9 @@ export function PropertyGallery({
 
   return (
     <section className="property-gallery" aria-label={`Galería de ${title}`}>
-      <div className="gallery-mosaic">
+      <div
+        className={`gallery-mosaic ${images.length === 1 ? "gallery-mosaic-single" : ""}`}
+      >
         {images.slice(0, 3).map((image, imageIndex) => (
           <button
             key={image.src}

@@ -20,7 +20,7 @@ Next.js App Router renderiza el catálogo y las rutas conocidas. Los slugs desco
 
 ## Pruebas
 
-`tests/properties.test.ts` comprueba rutas únicas, selección inexistente, conectividad del grafo, destinos válidos, coordenadas del plano y presencia/formato de todos los medios. `tests/browser/tour.spec.ts` comprueba catálogo, inicio real del visor WebGL, cambio por hotspot/plano/lista, aviso de visita, ausencia de errores JS, 404 y adaptación móvil. `playwright.config.ts` puede iniciar la compilación de producción. El renderer software permite pruebas WebGL en máquinas sin GPU.
+`tests/properties.test.ts` comprueba rutas únicas, selección inexistente, conectividad del grafo, destinos válidos, coordenadas geográficas de referencia y presencia/formato de todos los medios. `tests/browser/tour.spec.ts` comprueba catálogo, inicio real del visor WebGL, cambio por hotspot/plano/lista, aviso de visita, ausencia de errores JS, 404 y adaptación móvil. `playwright.config.ts` puede iniciar la compilación de producción. El renderer software permite pruebas WebGL en máquinas sin GPU.
 
 ## Evolución
 
@@ -28,13 +28,13 @@ Cambiar datos locales por un repositorio de datos validado en servidor, con iden
 
 ## Exploración con mapa y datos de México
 
-`PropertyExplorer` mantiene filtros por texto (sin distinguir acentos), tipo y presupuesto, selección y vista mapa/tarjetas. `filterProperties` es una función pura compartida y probada. La lista de resultados y los marcadores reciben exactamente el mismo conjunto filtrado; al excluir la selección anterior se selecciona el primer resultado disponible. Un estado vacío ofrece restablecer los filtros.
+`PropertyExplorer` mantiene filtros por texto (sin distinguir acentos), tipo, operación y presupuesto, selección y vista mapa/tarjetas. `filterProperties` es una función pura compartida y probada. La lista de resultados y los marcadores reciben exactamente el mismo conjunto filtrado; al excluir la selección anterior se selecciona el primer resultado disponible. Un estado vacío ofrece restablecer los filtros.
 
-`PropertyMap` dibuja una ciudad ficticia mediante SVG original, con marcadores accesibles por teclado, desplazamiento por arrastre, zoom y restablecimiento. No es un mapa geográfico: las coordenadas son posiciones dentro de un esquema de 900×600, no latitud/longitud. No requiere proveedores, tokens, geolocalización ni solicitudes externas. `PropertyLocation` reutiliza el componente con una sola propiedad.
+`PropertyMap` carga Leaflet solo en el navegador y solicita teselas HTTPS de OpenStreetMap con atribución visible. El alcance inicial es León, con accesos a Guanajuato y México. Se usan coordenadas geográficas reales para ubicar marcadores ficticios aproximados. No hay geocodificación, GPS, rutas ni descargas masivas. La selección sincroniza marcador y lista. Los errores de red se informan sin fingir una cartografía cargada; la lista permanece operativa. `PropertyLocation` reutiliza el componente con una sola propiedad.
 
 `PropertyDetails` presenta construcción, terreno de referencia, recámaras, baños, estacionamientos, año, equipamiento y costos. Predial anual y mantenimiento mensual son cifras inventadas en MXN, nunca cálculos fiscales. Se usan valores numéricos y `Intl.NumberFormat` para su presentación. La interfaz combina fondo negro, superficies oscuras y acentos lima/amarillo, según la referencia visual del usuario.
 
-Para un mapa real se deberá elegir un proveedor con licencia y atribución compatibles, almacenar coordenadas geográficas autorizadas, decidir la precisión pública de domicilios, implementar límites y filtros por viewport y validar costos, términos y privacidad. El prototipo no representa rutas, distancias, catastro ni límites administrativos reales.
+Para publicar ubicaciones reales se deberá decidir su precisión pública, obtener autorización, implementar límites y filtros por viewport y revisar las condiciones del proveedor y los costos de infraestructura. No se representan límites catastrales ni levantamientos topográficos. Véase SERVICES.md.
 
 La configuración de desarrollo permite explícitamente el origen de loopback `127.0.0.1` para las comprobaciones locales de Next.js; no autoriza orígenes externos arbitrarios.
 
@@ -46,4 +46,12 @@ La ruta de cada propiedad abre con nombre, dirección ficticia, precio de demost
 
 `PropertyActions` invoca Web Share cuando está disponible. Si no lo está o falla, intenta Clipboard API y confirma únicamente después de copiar; si el permiso se deniega, presenta una URL de solo lectura para copiar manualmente. Cancelar el diálogo nativo no activa el portapapeles. El fragmento de sección se elimina del enlace compartido. Imprimir abre la función del navegador; una hoja de impresión conserva descripción, resumen, precio, imagen principal y costos, y omite controles y WebGL.
 
-Los datos de titularidad y referencia son ficticios; no son certificados ni comprobaciones registrales. El prototipo mantiene el recorrido 360 y el mapa esquemático de forma independiente a la galería.
+Los datos de titularidad y referencia son ficticios; no son certificados ni comprobaciones registrales. El prototipo mantiene el recorrido 360 y el mapa geográfico de forma independiente a la galería.
+
+## Venta, renta, terrenos y alta local
+
+`Property.operation` diferencia Venta/Renta; el precio de una renta es mensual y se etiqueta en tarjetas, marcadores y ficha. `/venta`, `/renta` y `/terrenos` reutilizan `CatalogPage` y `PropertyExplorer` con filtros iniciales. `hasTour` exige una vivienda y escenas: ningún terreno renderiza visor, hotspots, mini plano o acceso a 360. La casa en renta incluida es una demo con fotos convencionales.
+
+`ListingForm` y `lib/listing-drafts.ts` no dependen del catálogo estático ni de un backend. Validan datos, permisos sobre imágenes, cantidad, tipo y tamaño; las fotos se decodifican y reencodan con canvas antes de guardar blobs en IndexedDB. Las transacciones se confirman antes de anunciar éxito. Se revocan las ObjectURL de previsualización y se maneja almacenamiento denegado/cuota. El respaldo JSON incluye las fotos; no hay todavía importación ni sincronización.
+
+Los datos del formulario no se insertan en `lib/properties.ts` ni se publican en rutas del servidor. Para un catálogo compartido se necesita una capa persistente con autorización, validación en servidor y moderación. Las pruebas de navegador cubren persistencia, exportación y eliminación de borradores y mockean las teselas: no equivalen a verificar acceso al proveedor externo.

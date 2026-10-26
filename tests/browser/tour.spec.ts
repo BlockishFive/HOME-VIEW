@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 test("catalog, immersive navigation, plan and demo visit request", async ({
   page,
 }) => {
@@ -8,7 +8,7 @@ test("catalog, immersive navigation, plan and demo visit request", async ({
   await expect(
     page.getByRole("heading", { name: "Un espacio para cada historia." }),
   ).toBeVisible();
-  await expect(page.locator(".property-card")).toHaveCount(3);
+  await expect(page.locator(".property-card")).toHaveCount(5);
   await page.locator(".property-card").first().click();
   await expect(
     page.getByRole("heading", { name: "Casa Oliva", exact: true }),
@@ -89,25 +89,19 @@ test("map selection, zoom and catalog filters stay synchronized", async ({
   await expect(page.locator(".selected-property")).toContainText("Loft Arena");
   await expect(page.locator(".selected-property")).toContainText("$4,200");
   await page.getByRole("button", { name: "Acercar mapa", exact: true }).click();
-  await expect(page.locator(".map-layer")).toHaveAttribute(
-    "style",
-    /scale\(1\.2\)/,
-  );
+  await expect(page.locator(".geo-map")).toHaveAttribute("data-zoom", "14");
   await page.getByRole("button", { name: "Restablecer mapa" }).click();
-  await expect(page.locator(".map-layer")).toHaveAttribute(
-    "style",
-    /scale\(1\)/,
-  );
+  await expect(page.locator(".geo-map")).toHaveAttribute("data-zoom", "13");
   await page.getByLabel("TIPO DE INMUEBLE").selectOption("Departamento");
   await expect(page.locator(".property-card")).toHaveCount(1);
-  await expect(page.locator(".map-pin")).toHaveCount(1);
+  await expect(page.locator(".geo-marker")).toHaveCount(1);
   await page.getByRole("button", { name: "Limpiar filtros" }).click();
   await page.getByLabel("PRESUPUESTO MÁXIMO").selectOption("5000000");
-  await expect(page.locator(".property-card")).toHaveCount(2);
+  await expect(page.locator(".property-card")).toHaveCount(4);
   await page
     .getByPlaceholder("¿Dónde comienza tu próxima historia?")
     .fill("jardin");
-  await expect(page.locator(".property-card")).toHaveCount(1);
+  await expect(page.locator(".property-card")).toHaveCount(2);
   await page
     .getByPlaceholder("¿Dónde comienza tu próxima historia?")
     .fill("imposible");
@@ -115,9 +109,9 @@ test("map selection, zoom and catalog filters stay synchronized", async ({
     page.getByText("No encontramos espacios con esos filtros."),
   ).toBeVisible();
   await page.getByRole("button", { name: "Ver todas las propiedades" }).click();
-  await expect(page.locator(".map-pin")).toHaveCount(3);
+  await expect(page.locator(".geo-marker")).toHaveCount(5);
   await page.getByRole("button", { name: "Tarjetas", exact: false }).click();
-  await expect(page.locator(".property-grid .property-card")).toHaveCount(3);
+  await expect(page.locator(".property-grid .property-card")).toHaveCount(5);
 });
 test("property page explains fictional fiscal costs and location", async ({
   page,

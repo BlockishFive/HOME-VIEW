@@ -3,10 +3,20 @@ export function PropertyDetails({ property }: { property: Property }) {
   const facts = [
     ["Tipo de inmueble", property.propertyType],
     ["Tipo de construcción", property.buildingType],
-    ["Niveles", String(property.levels)],
-    ["Superficie construida", `${property.area} m²`],
+    [
+      "Niveles",
+      property.propertyType === "Terreno"
+        ? "No aplica"
+        : String(property.levels),
+    ],
+    [
+      property.propertyType === "Terreno"
+        ? "Superficie de terreno anunciada"
+        : "Superficie construida",
+      `${property.area} m²`,
+    ],
     ["Colonia / barrio", property.neighborhood],
-    ["Localidad", "Ciudad demo · Ficticia"],
+    ["Localidad", "León, Guanajuato · Ubicación demo"],
     ["Régimen de propiedad", property.ownership],
     [
       "Superficie de terreno",
@@ -14,11 +24,26 @@ export function PropertyDetails({ property }: { property: Property }) {
         ? "No especificada"
         : `${property.plotArea} m²`,
     ],
-    ["Año de construcción", String(property.builtYear)],
+    [
+      "Año de construcción",
+      property.propertyType === "Terreno"
+        ? "No aplica"
+        : String(property.builtYear),
+    ],
     ["Predial anual (demo)", `${formatMXN(property.annualTax)} MXN`],
-    ["Estacionamientos", String(property.parking)],
-    ["Recámaras / baños", `${property.beds} / ${property.baths}`],
-    ["Operación", "Venta · Demostración"],
+    [
+      "Estacionamientos",
+      property.propertyType === "Terreno"
+        ? "No aplica"
+        : String(property.parking),
+    ],
+    [
+      "Recámaras / baños",
+      property.propertyType === "Terreno"
+        ? "No aplica"
+        : `${property.beds} / ${property.baths}`,
+    ],
+    ["Operación", `${property.operation} · Demostración`],
     ["Referencia del anuncio", property.reference],
     [
       "Mantenimiento (demo)",

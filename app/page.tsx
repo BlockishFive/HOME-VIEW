@@ -49,11 +49,14 @@ export default function Home() {
             <span className="hero-image-tag">
               ESPACIOS QUE SE SIENTEN COMO HOGAR
             </span>
-            <Link href="/propiedades/casa-oliva" className="hero-feature">
+            <Link
+              href="/propiedades/casa-jardin-renta"
+              className="hero-feature"
+            >
               <span>
                 <small>DESCUBRE POR DENTRO</small>
-                <strong>Casa Oliva</strong>
-                <span>Distrito Jardín · 185 m² · Demo</span>
+                <strong>Casa Jardín en renta</strong>
+                <span>León, Guanajuato · $18,500 MXN / mes · Demo</span>
               </span>
               <span className="feature-play" aria-hidden="true">
                 <ArrowIcon />

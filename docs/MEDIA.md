@@ -15,3 +15,5 @@ python scripts/generate-demo-images.py
 ```
 
 Al sustituirlos por fotografías se debe documentar autor, licencia, consentimiento, atribución cuando corresponda y revisión de privacidad. No descargar imágenes de resultados de búsqueda sin autorización.
+
+El terreno de demostración utiliza `public/illustrations/terreno.svg`, un esquema original sin validez topográfica. La cartografía real de OpenStreetMap tiene atribución/licencia independiente y se carga desde el proveedor; no forma parte de las imágenes sintéticas. Las fotos aportadas al formulario de alta permanecen en el navegador hasta que el propietario las exporta; no se añaden automáticamente al repositorio.

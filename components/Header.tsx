@@ -10,7 +10,12 @@ export function Header() {
         <span className="brand-dot">.</span>
       </Link>
       <nav aria-label="Navegación principal">
-        <Link href="/#propiedades">Explorar propiedades</Link>
+        <Link href="/venta">Venta</Link>
+        <Link href="/renta">Renta</Link>
+        <Link href="/terrenos">Terrenos</Link>
+        <Link href="/alta" className="header-add">
+          Alta de inmueble
+        </Link>
         <span className="demo-pill">Prototipo demo</span>
       </nav>
     </header>
