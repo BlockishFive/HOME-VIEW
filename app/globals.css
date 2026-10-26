@@ -3143,3 +3143,86 @@ small {
 .geo-map .maplibregl-marker.geo-marker.selected {
   z-index: 2;
 }
+
+/* Installable mobile pilot: storage remains local to this origin. */
+.pwa-install {
+  margin: 28px auto;
+  width: min(1100px, calc(100% - 40px));
+  padding: 20px 24px;
+  border: 1px solid #52653b;
+  border-radius: 18px;
+  background: #1d2419;
+  color: #e9eddf;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.pwa-install strong { color: #c5f53a; font-size: 15px; }
+.pwa-install p { margin: 6px 0; }
+.pwa-install details { max-width: 850px; }
+.pwa-install summary { cursor: pointer; color: #f4d34f; }
+.pwa-install button {
+  border: 0;
+  border-radius: 24px;
+  background: #c5f53a;
+  color: #141614;
+  padding: 14px 20px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pwa-install :is(button, summary):focus-visible { outline: 3px solid #f4d34f; outline-offset: 4px; }
+@media (max-width: 700px) {
+  .pwa-install { flex-direction: column; align-items: stretch; padding: 20px; }
+}
+@media print { .pwa-install { display: none; } }
+
+/* Pilot terms keep long labels readable on narrow mobile screens. */
+.card-cost-summary { color: var(--lime, #d2ee74); font-size: .78rem; line-height: 1.5; margin-top: .7rem; }
+.draft-terms-preview { margin-block: 1.5rem; }
+.listing-form .cost-card { padding: clamp(1rem, 3vw, 2rem); }
+.listing-form .cost-card dl > div, .draft-card .cost-card dl > div { gap: 1rem; }
+.listing-form .cost-card dd, .draft-card .cost-card dd { overflow-wrap: anywhere; }
+.draft-card .cost-card { margin-block: 1.25rem; }
+.listing-local-notice button { margin-top: .75rem; padding: .5rem .8rem; border: 1px solid currentColor; border-radius: .4rem; }
+@media (max-width: 520px) {
+  .listing-form .cost-card dl > div, .draft-card .cost-card dl > div { flex-direction: column; align-items: flex-start; gap: .35rem; }
+}
+
+/* Operation terms have many conditions; keep them legible without oversized rows. */
+.cost-card.terms-card > dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 20px;
+}
+.cost-card.terms-card > dl > div {
+  min-width: 0;
+  padding: 10px 0;
+  border-top: 0;
+  border-bottom: 1px solid #455634;
+}
+.cost-card.terms-card > dl dt {
+  font-size: 12px;
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+.cost-card.terms-card > dl dd,
+.property-costs .cost-card.terms-card > dl dd {
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.cost-card.terms-card > dl > .terms-price,
+.cost-card.terms-card > dl > .terms-total {
+  grid-column: 1 / -1;
+}
+.cost-card.terms-card > dl > .terms-price dd,
+.cost-card.terms-card > dl > .terms-total dd {
+  font-size: 22px;
+}
+@media (max-width: 600px) {
+  .cost-card.terms-card > dl { grid-template-columns: minmax(0, 1fr); }
+}

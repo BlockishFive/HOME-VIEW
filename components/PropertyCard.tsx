@@ -2,6 +2,7 @@ import { ArrowIcon } from "@/components/ArrowIcon";
 import Image from "next/image";
 import Link from "next/link";
 import { hasTour, priceUnit, type Property } from "@/lib/properties";
+import { maintenanceLabel, rentalSummary } from "@/lib/property-terms";
 export function PropertyCard({ property }: { property: Property }) {
   return (
     <Link href={`/propiedades/${property.slug}`} className="property-card">
@@ -28,6 +29,7 @@ export function PropertyCard({ property }: { property: Property }) {
             <small> {priceUnit(property)}</small>
           </span>
         </div>
+        <p className="card-cost-summary">{property.operation === "Renta" ? rentalSummary(property.rental, property.maintenance) : `Mantenimiento: ${maintenanceLabel(property.maintenance)}`}</p>
         <p className="muted location">{property.location}</p>
         <div className="card-facts">
           <span>{property.area} m²</span>

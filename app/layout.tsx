@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { PwaInstall } from "@/components/PwaInstall";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 export const metadata: Metadata = {
@@ -9,13 +10,16 @@ export const metadata: Metadata = {
   description:
     "Explora propiedades de demostración en recorridos virtuales 360. Prototipo con datos e imágenes ficticias.",
   robots: { index: false, follow: false },
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Home View" },
+  icons: { apple: "/icons/apple-touch-icon.png" },
 };
+export const viewport: Viewport = { themeColor: "#141614" };
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>{children}<PwaInstall /></body>
     </html>
   );
 }

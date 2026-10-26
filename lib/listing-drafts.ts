@@ -2,11 +2,18 @@
 export type ListingOperation = "Venta" | "Renta";
 export type ListingKind = "Casa" | "Departamento" | "Terreno";
 export type DraftPhoto = { id: string; name: string; blob: Blob };
+import {
+  defaultMaintenance,
+  defaultRentalTerms,
+  type Community,
+  type Maintenance,
+  type RentalTerms,
+  type SaleTerms,
+} from "./property-terms";
+import { validateDraftScenes, type DraftScene } from "./draft-tour";
 export type DraftInput = {
   title: string;
-  operation: ListingOperation;
   propertyType: ListingKind;
-  price: number;
   description: string;
   state: string;
   city: string;
@@ -14,17 +21,67 @@ export type DraftInput = {
   area: number;
   beds: number | null;
   baths: number | null;
-  annualTax: number | null;
-  monthlyMaintenance: number | null;
+  maintenance: Maintenance;
+  community: Community;
   latitude: number;
   longitude: number;
   imageRights: boolean;
-};
+} & (
+  | { operation: "Renta"; rental: RentalTerms; sale?: never }
+  | { operation: "Venta"; sale: SaleTerms; rental?: never }
+);
 export type ListingDraft = DraftInput & {
+  schemaVersion: 2;
+  id: string;
+  createdAt: string;
+  updatedAt?: string;
+  photos: DraftPhoto[];
+  scenes: DraftScene[];
+  migrationNote?: string;
+};
+/** Legacy rows stay intact in IndexedDB until explicitly saved by their owner. */
+export type LegacyDraft = Omit<
+  DraftInput,
+  "operation" | "rental" | "sale" | "maintenance" | "community"
+> & {
+  operation: ListingOperation;
+  price: number;
+  annualTax: number | null;
+  monthlyMaintenance: number | null;
   id: string;
   createdAt: string;
   photos: DraftPhoto[];
 };
+export function migrateListingDraft(
+  stored: ListingDraft | LegacyDraft,
+): ListingDraft {
+  if ("schemaVersion" in stored && stored.schemaVersion === 2) return stored;
+  const old = stored as LegacyDraft;
+  const { price, annualTax, monthlyMaintenance, operation, ...common } = old;
+  const base = {
+    ...common,
+    schemaVersion: 2 as const,
+    scenes: [],
+    community: "unknown" as const,
+    maintenance:
+      monthlyMaintenance !== null && monthlyMaintenance > 0
+        ? {
+            status: "yes" as const,
+            amount: monthlyMaintenance,
+            included: "unknown" as const,
+          }
+        : defaultMaintenance(),
+    migrationNote:
+      "Borrador antiguo: revisa mantenimiento y condiciones. No se dedujeron requisitos ni servicios; el predial solo se conserva para venta.",
+  };
+  return operation === "Venta"
+    ? { ...base, operation, sale: { purchasePrice: price, annualTax } }
+    : {
+        ...base,
+        operation: "Renta",
+        rental: { ...defaultRentalTerms(), monthlyRent: price },
+      };
+}
 export const MAX_PHOTOS = 8;
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 export const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -48,10 +105,16 @@ export function validateDraftInput(input: DraftInput): Record<string, string> {
     errors.operation = "Selecciona venta o renta.";
   if (!["Casa", "Departamento", "Terreno"].includes(input.propertyType))
     errors.propertyType = "Selecciona un tipo de inmueble válido.";
+  const price =
+    input.operation === "Renta"
+      ? input.rental.monthlyRent
+      : input.sale.purchasePrice;
   if (
-    !Number.isFinite(input.price) ||
-    input.price <= 0 ||
-    input.price > 10000000000
+    !Number.isFinite(price) ||
+    price === null ||
+    price <= 0 ||
+    price > 10000000000 ||
+    !isMoney(price)
   )
     errors.price =
       "Escribe un precio mayor que cero y menor o igual a 10,000 millones de MXN.";
@@ -76,15 +139,7 @@ export function validateDraftInput(input: DraftInput): Record<string, string> {
         errors[field] =
           "Usa un número entero de 0 a 100, o deja el campo vacío.";
     }
-  for (const field of ["annualTax", "monthlyMaintenance"] as const) {
-    const value = input[field];
-    if (
-      value !== null &&
-      (!Number.isFinite(value) || value < 0 || value > 100000000)
-    )
-      errors[field] =
-        "Usa un monto mayor o igual a cero, o deja el campo vacío.";
-  }
+  Object.assign(errors, validateTerms(input));
   if (
     !Number.isFinite(input.latitude) ||
     input.latitude < 14 ||
@@ -105,16 +160,44 @@ export function validateDraftInput(input: DraftInput): Record<string, string> {
   return errors;
 }
 export function normalizeDraftInput(input: DraftInput): DraftInput {
-  return {
-    ...input,
+  // Pick only schema fields so a switched operation cannot leak hidden form values.
+  const common = {
     title: input.title.trim(),
     description: input.description.trim(),
     state: input.state.trim(),
     city: input.city.trim(),
     neighborhood: input.neighborhood.trim(),
+    propertyType: input.propertyType,
+    area: input.area,
     beds: input.propertyType === "Terreno" ? null : input.beds,
     baths: input.propertyType === "Terreno" ? null : input.baths,
+    latitude: input.latitude,
+    longitude: input.longitude,
+    imageRights: input.imageRights,
+    community: input.community,
+    maintenance:
+      input.maintenance.status === "yes"
+        ? {
+            ...input.maintenance,
+            included:
+              input.operation === "Venta"
+                ? ("unknown" as const)
+                : input.maintenance.included,
+          }
+        : { ...defaultMaintenance(), status: input.maintenance.status },
   };
+  return input.operation === "Venta"
+    ? { ...common, operation: "Venta", sale: { ...input.sale } }
+    : {
+        ...common,
+        operation: "Renta",
+        rental: {
+          ...input.rental,
+          ...(input.rental.guarantee === "either"
+            ? { guarantor: "unknown" as const, legalPolicy: "unknown" as const }
+            : {}),
+        },
+      };
 }
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -174,14 +257,81 @@ async function useStore<T>(
   }
 }
 export async function getListingDrafts(): Promise<ListingDraft[]> {
-  const drafts = await useStore<ListingDraft[]>("readonly", (store) =>
-    store.getAll(),
+  const drafts = await useStore<(ListingDraft | LegacyDraft)[]>(
+    "readonly",
+    (store) => store.getAll(),
   );
-  return drafts.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return drafts
+    .map(migrateListingDraft)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 export async function saveListingDraft(draft: ListingDraft): Promise<void> {
+  const errors = validateDraftInput(draft);
+  const sceneError = validateDraftScenes(draft.scenes);
+  if (Object.keys(errors).length || sceneError)
+    throw new Error(sceneError || Object.values(errors)[0]);
+  if (!draft.photos.length || draft.photos.length > MAX_PHOTOS)
+    throw new Error("Añade entre 1 y 8 fotografías.");
   await useStore("readwrite", (store) => store.put(draft));
 }
 export async function deleteListingDraft(id: string): Promise<void> {
   await useStore("readwrite", (store) => store.delete(id));
+}
+
+function isMoney(value: number): boolean {
+  return Math.abs(value * 100 - Math.round(value * 100)) < 0.0001;
+}
+function validateTerms(input: DraftInput): Record<string, string> {
+  const errors: Record<string, string> = {};
+  const amount = (key: string, value: number | null, max = 100000000) => {
+    if (
+      value !== null &&
+      (!Number.isFinite(value) || value < 0 || value > max || !isMoney(value))
+    )
+      errors[key] =
+        "Usa un monto con hasta dos decimales mayor o igual a cero, o déjalo por confirmar.";
+  };
+  const choice = (key: string, value: string, allowed: string[]) => {
+    if (!allowed.includes(value)) errors[key] = "Selecciona una opción válida.";
+  };
+  choice("community", input.community, [
+    "condominium",
+    "gated",
+    "neither",
+    "unknown",
+  ]);
+  choice("maintenanceStatus", input.maintenance.status, [
+    "yes",
+    "no",
+    "unknown",
+  ]);
+  if (input.maintenance.status === "yes") {
+    amount("maintenanceAmount", input.maintenance.amount);
+    choice("maintenanceIncluded", input.maintenance.included, [
+      "yes",
+      "no",
+      "unknown",
+    ]);
+  }
+  if (input.operation === "Venta") amount("annualTax", input.sale.annualTax);
+  else {
+    const r = input.rental;
+    amount("deposit", r.deposit);
+    if (
+      r.minimumMonths !== null &&
+      (!Number.isInteger(r.minimumMonths) ||
+        r.minimumMonths < 1 ||
+        r.minimumMonths > 1200)
+    )
+      errors.minimumMonths =
+        "Usa un plazo entero de 1 a 1200 meses o déjalo por confirmar.";
+    choice("guarantee", r.guarantee, ["independent", "either", "unknown"]);
+    for (const key of ["guarantor", "legalPolicy"] as const)
+      choice(key, r[key], ["required", "not-required", "unknown"]);
+    choice("pets", r.pets, ["yes", "no", "conditional", "unknown"]);
+    choice("furnished", r.furnished, ["yes", "no", "partial", "unknown"]);
+    for (const key of ["water", "electricity", "gas", "internet"] as const)
+      choice(key, r.services[key], ["included", "excluded", "unknown"]);
+  }
+  return errors;
 }

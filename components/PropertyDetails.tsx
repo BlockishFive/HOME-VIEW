@@ -1,4 +1,5 @@
-import { formatMXN, type Property } from "@/lib/properties";
+import { type Property } from "@/lib/properties";
+import { communityLabel, formatMXN, maintenanceLabel } from "@/lib/property-terms";
 export function PropertyDetails({ property }: { property: Property }) {
   const facts = [
     ["Tipo de inmueble", property.propertyType],
@@ -30,7 +31,7 @@ export function PropertyDetails({ property }: { property: Property }) {
         ? "No aplica"
         : String(property.builtYear),
     ],
-    ["Predial anual (demo)", `${formatMXN(property.annualTax)} MXN`],
+    ...(property.operation === "Venta" ? [["Predial anual (demo)", property.sale.annualTax === null ? "Por confirmar" : `${formatMXN(property.sale.annualTax)} MXN`]] : []),
     [
       "Estacionamientos",
       property.propertyType === "Terreno"
@@ -47,8 +48,9 @@ export function PropertyDetails({ property }: { property: Property }) {
     ["Referencia del anuncio", property.reference],
     [
       "Mantenimiento (demo)",
-      `${formatMXN(property.monthlyMaintenance)} MXN / mes`,
+      maintenanceLabel(property.maintenance, property.operation === "Renta"),
     ],
+    ["Fraccionamiento o condominio", communityLabel(property.community)],
     ["Estado del anuncio", "Prototipo · Sin oferta real"],
   ];
   return (

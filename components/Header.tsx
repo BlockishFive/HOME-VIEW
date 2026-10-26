@@ -13,6 +13,7 @@ export function Header() {
         <Link href="/venta">Venta</Link>
         <Link href="/renta">Renta</Link>
         <Link href="/terrenos">Terrenos</Link>
+        <Link href="/alta#saved-title">Mis borradores</Link>
         <Link href="/alta" className="header-add">
           Alta de inmueble
         </Link>

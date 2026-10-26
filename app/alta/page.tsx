@@ -19,7 +19,7 @@ export default function ListingPage() {
           <h1>Un nuevo espacio comienza aquí.</h1>
           <p>
             Empieza con tu casa en renta en León, Guanajuato. Completa la
-            información y añade tus fotos para preparar una ficha privada.
+            información y añade material autorizado para preparar un borrador local. No tiene protección por contraseña.
           </p>
         </div>
         <ListingForm />

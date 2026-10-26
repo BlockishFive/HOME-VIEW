@@ -1,18 +1,25 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import type { Room, RoomId } from "@/lib/properties";
+type PanoramaRoom<Id extends string> = {
+  id: Id;
+  name: string;
+  panorama: string;
+  hotspots: { target: Id; yaw: number; pitch: number }[];
+};
 
 type Controls = {
   move: (axis: "yaw" | "pitch" | "fov", delta: number) => void;
 };
-export function PanoramaViewer({
+export function PanoramaViewer<Id extends string>({
   rooms,
   current,
   onSelect,
+  label = "INTERIOR SINTÉTICO · DEMO",
 }: {
-  rooms: Room[];
-  current: RoomId;
-  onSelect: (id: RoomId) => void;
+  rooms: PanoramaRoom<Id>[];
+  current: Id;
+  onSelect: (id: Id) => void;
+  label?: string;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const shell = useRef<HTMLDivElement>(null);
@@ -23,12 +30,13 @@ export function PanoramaViewer({
   );
   const [fullscreen, setFullscreen] = useState(false);
   select.current = onSelect;
-  const room = rooms.find((r) => r.id === current)!;
+  const room = rooms.find((r) => r.id === current) ?? rooms[0];
   useEffect(() => {
     let cancelled = false;
     let destroy: (() => void) | undefined;
     let image: HTMLImageElement | undefined;
     setStatus("loading");
+    if (!room) return;
     async function initialize() {
       try {
         const { default: M } = await import("marzipano");
@@ -51,12 +59,13 @@ export function PanoramaViewer({
         );
         const scene = viewer.createScene({
           source: M.ImageUrlSource.fromString(room.panorama),
-          geometry: new M.EquirectGeometry([{ width: 2048 }]),
+          geometry: new M.EquirectGeometry([{ width: image.naturalWidth }]),
           view,
           pinFirstLevel: true,
         });
         room.hotspots.forEach((h) => {
-          const target = rooms.find((r) => r.id === h.target)!;
+          const target = rooms.find((r) => r.id === h.target);
+          if (!target) return;
           const button = document.createElement("button");
           button.className = "hotspot";
           button.type = "button";
@@ -119,6 +128,7 @@ export function PanoramaViewer({
       /* Browser may disallow fullscreen. The regular viewer remains available. */
     }
   }
+  if (!room) return <p>No hay escenas disponibles.</p>;
   return (
     <div className="viewer-shell" ref={shell}>
       <div
@@ -131,7 +141,7 @@ export function PanoramaViewer({
           <span className="live-dot" />
           {room.name}
         </span>
-        <span className="viewer-demo">INTERIOR SINTÉTICO · DEMO</span>
+        <span className="viewer-demo">{label}</span>
       </div>
       {status === "loading" && (
         <div className="viewer-status" role="status">
@@ -145,7 +155,7 @@ export function PanoramaViewer({
             Comprueba tu conexión y que WebGL esté habilitado. Puedes cambiar de
             habitación desde el plano o la lista.
           </p>
-          <button className="button" onClick={() => window.location.reload()}>
+          <button type="button" className="button" onClick={() => window.location.reload()}>
             Volver a intentar
           </button>
         </div>
@@ -166,6 +176,7 @@ export function PanoramaViewer({
             ["Alejar", "−", "fov", 0.15],
           ].map(([label, symbol, axis, delta]) => (
             <button
+              type="button"
               key={label}
               aria-label={String(label)}
               disabled={status !== "ready"}
@@ -180,6 +191,7 @@ export function PanoramaViewer({
             </button>
           ))}
           <button
+            type="button"
             onClick={toggleFullscreen}
             aria-label={
               fullscreen ? "Salir de pantalla completa" : "Pantalla completa"

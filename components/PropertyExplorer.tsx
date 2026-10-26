@@ -8,6 +8,7 @@ import {
   hasTour,
   type Property,
 } from "@/lib/properties";
+import { rentalSummary } from "@/lib/property-terms";
 import { PropertyMap } from "./PropertyMap";
 import { PropertyCard } from "./PropertyCard";
 export function PropertyExplorer({
@@ -166,10 +167,13 @@ export function PropertyExplorer({
                 </strong>
               </div>
               <div>
-                <small>Predial anual (demo)</small>
-                <strong>
-                  {formatMXN(selected.annualTax)} <small>MXN</small>
-                </strong>
+                {selected.operation === "Renta" ? <>
+                  <small>Renta mensual</small>
+                  <strong>{rentalSummary(selected.rental, selected.maintenance)}</strong>
+                </> : <>
+                  <small>Predial anual (demo)</small>
+                  <strong>{selected.sale.annualTax === null ? "Por confirmar" : `${formatMXN(selected.sale.annualTax)} MXN`}</strong>
+                </>}
               </div>
               <Link
                 className="button button-dark"

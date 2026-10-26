@@ -14,11 +14,24 @@ import {
   type ListingKind,
   type ListingOperation,
 } from "@/lib/listing-drafts";
+import {
+  defaultMaintenance,
+  defaultRentalTerms,
+  type Maintenance,
+  type RentalTerms,
+  type SaleTerms,
+  type Community,
+} from "@/lib/property-terms";
+import { TermsDetails } from "./PropertyCosts";
+import { ListingTermsFields } from "./ListingTermsFields";
+import { DraftTourEditor, DraftTourSavedPreview } from "./DraftTourEditor";
+import { validateDraftScenes, type DraftScene } from "@/lib/draft-tour";
 const initial = {
   title: "",
   operation: "Renta" as ListingOperation,
   propertyType: "Casa" as ListingKind,
-  price: "",
+  rentPrice: "",
+  salePrice: "",
   description: "",
   state: "Guanajuato",
   city: "León",
@@ -26,8 +39,6 @@ const initial = {
   area: "",
   beds: "",
   baths: "",
-  annualTax: "",
-  monthlyMaintenance: "",
   latitude: "21.122",
   longitude: "-101.686",
   imageRights: false,
@@ -115,10 +126,29 @@ async function exportDraft(draft: ListingDraft) {
       }),
     })),
   );
+  const scenes = await Promise.all(
+    draft.scenes.map(async (scene) => ({
+      ...scene,
+      blob: undefined,
+      dataUrl: await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () =>
+          reject(new Error("No se pudo exportar un panorama."));
+        reader.readAsDataURL(scene.blob);
+      }),
+    })),
+  );
   const blob = new Blob(
     [
       JSON.stringify(
-        { format: "home-view-local-draft", version: 1, ...draft, photos },
+        {
+          format: "home-view-local-draft",
+          version: 2,
+          ...draft,
+          photos,
+          scenes,
+        },
         null,
         2,
       ),
@@ -136,6 +166,17 @@ export function ListingForm() {
   const formId = useId();
   const fieldId = (name: string) => `${formId}-${name}`;
   const [values, setValues] = useState(initial);
+  const [rental, setRental] = useState<RentalTerms>(defaultRentalTerms);
+  const [sale, setSale] = useState<SaleTerms>({
+    purchasePrice: null,
+    annualTax: null,
+  });
+  const [maintenance, setMaintenance] =
+    useState<Maintenance>(defaultMaintenance);
+  const [community, setCommunity] = useState<Community>("unknown");
+  const [scenes, setScenes] = useState<DraftScene[]>([]);
+  const [editing, setEditing] = useState<ListingDraft | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const [photos, setPhotos] = useState<DraftPhoto[]>([]);
   const [drafts, setDrafts] = useState<ListingDraft[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -199,19 +240,41 @@ export function ListingForm() {
     const form = event.currentTarget;
     setMessage("");
     const input: DraftInput = {
-      ...values,
-      price: Number(values.price),
+      title: values.title,
+      propertyType: values.propertyType,
+      description: values.description,
+      state: values.state,
+      city: values.city,
+      neighborhood: values.neighborhood,
+      imageRights: values.imageRights,
+      ...(values.operation === "Renta"
+        ? {
+            operation: "Renta" as const,
+            rental: { ...rental, monthlyRent: Number(values.rentPrice) },
+          }
+        : {
+            operation: "Venta" as const,
+            sale: { ...sale, purchasePrice: Number(values.salePrice) },
+          }),
+      maintenance,
+      community,
       area: Number(values.area),
       latitude: Number(values.latitude),
       longitude: Number(values.longitude),
       beds: numberOrNull(values.beds),
       baths: numberOrNull(values.baths),
-      annualTax: numberOrNull(values.annualTax),
-      monthlyMaintenance: numberOrNull(values.monthlyMaintenance),
     };
     const nextErrors = validateDraftInput(input);
+    const sceneError =
+      values.propertyType === "Terreno" ? null : validateDraftScenes(scenes);
+    if (sceneError) nextErrors.scenes = sceneError;
     if (!photos.length)
       nextErrors.photos = "Añade al menos una fotografía del inmueble.";
+    if (nextErrors.price) {
+      nextErrors[values.operation === "Renta" ? "rentPrice" : "salePrice"] =
+        nextErrors.price;
+      delete nextErrors.price;
+    }
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
       window.requestAnimationFrame(() => {
@@ -223,14 +286,19 @@ export function ListingForm() {
     try {
       const draft: ListingDraft = {
         ...normalizeDraftInput(input),
-        id: crypto.randomUUID(),
-        createdAt: new Date().toISOString(),
+        schemaVersion: 2,
+        id: editing?.id ?? crypto.randomUUID(),
+        createdAt: editing?.createdAt ?? new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         photos,
+        scenes: values.propertyType === "Terreno" ? [] : scenes,
       };
       await saveListingDraft(draft);
-      setDrafts((previous) => [draft, ...previous]);
-      setValues(initial);
-      setPhotos([]);
+      setDrafts((previous) => [
+        draft,
+        ...previous.filter((item) => item.id !== draft.id),
+      ]);
+      resetEditor();
       if (fileInput.current) fileInput.current.value = "";
       setStorageError("");
       setMessage(
@@ -242,11 +310,69 @@ export function ListingForm() {
       setBusy(false);
     }
   }
+  function resetEditor() {
+    setValues(initial);
+    setRental(defaultRentalTerms());
+    setSale({ purchasePrice: null, annualTax: null });
+    setMaintenance(defaultMaintenance());
+    setCommunity("unknown");
+    setPhotos([]);
+    setScenes([]);
+    setEditing(null);
+    setErrors({});
+    if (fileInput.current) fileInput.current.value = "";
+  }
+  function edit(draft: ListingDraft) {
+    setEditing(draft);
+    setValues({
+      ...initial,
+      title: draft.title,
+      operation: draft.operation,
+      propertyType: draft.propertyType,
+      rentPrice:
+        draft.operation === "Renta"
+          ? String(draft.rental.monthlyRent ?? "")
+          : "",
+      salePrice:
+        draft.operation === "Venta"
+          ? String(draft.sale.purchasePrice ?? "")
+          : "",
+      description: draft.description,
+      state: draft.state,
+      city: draft.city,
+      neighborhood: draft.neighborhood,
+      area: String(draft.area),
+      beds: String(draft.beds ?? ""),
+      baths: String(draft.baths ?? ""),
+      latitude: String(draft.latitude),
+      longitude: String(draft.longitude),
+      imageRights: draft.imageRights,
+    });
+    setRental(
+      draft.operation === "Renta" ? draft.rental : defaultRentalTerms(),
+    );
+    setSale(
+      draft.operation === "Venta"
+        ? draft.sale
+        : { purchasePrice: null, annualTax: null },
+    );
+    setMaintenance(draft.maintenance);
+    setCommunity(draft.community);
+    setPhotos(draft.photos);
+    setScenes(draft.scenes);
+    setErrors({});
+    setMessage(
+      draft.migrationNote ||
+        "Editando un borrador local. Guarda para conservar los cambios.",
+    );
+    formRef.current?.scrollIntoView({ behavior: "smooth" });
+  }
   async function remove(id: string) {
     setBusy(true);
     try {
       await deleteListingDraft(id);
       setDrafts((previous) => previous.filter((draft) => draft.id !== id));
+      if (editing?.id === id) resetEditor();
       setMessage("Borrador eliminado de este navegador.");
     } catch (error) {
       setStorageError(storageMessage(error));
@@ -314,7 +440,15 @@ export function ListingForm() {
           {message}
         </p>
       )}
-      <form className="listing-form" onSubmit={submit} noValidate>
+      <form ref={formRef} className="listing-form" onSubmit={submit} noValidate>
+        {editing && (
+          <div className="listing-local-notice">
+            <strong>Editando: {editing.title}</strong>
+            <button type="button" disabled={busy} onClick={resetEditor}>
+              Cancelar edición
+            </button>
+          </div>
+        )}
         {Object.values(errors).some(Boolean) && (
           <div className="listing-error" role="alert" aria-atomic="true">
             <strong>Revisa la información del borrador.</strong>
@@ -371,7 +505,7 @@ export function ListingForm() {
             </label>
             {field("title", "Título del anuncio")}
             {field(
-              "price",
+              values.operation === "Renta" ? "rentPrice" : "salePrice",
               values.operation === "Renta"
                 ? "Renta mensual (MXN)"
                 : "Precio de venta (MXN)",
@@ -390,17 +524,51 @@ export function ListingForm() {
                 {field("baths", "Baños (opcional)", "number")}
               </>
             )}
-            {field(
-              "annualTax",
-              "Predial anual (MXN, opcional)",
-              "number",
-              "Monto proporcionado por ti; no es un cálculo fiscal.",
-            )}
-            {field(
-              "monthlyMaintenance",
-              "Mantenimiento mensual (MXN, opcional)",
-              "number",
-            )}
+          </div>
+          <ListingTermsFields
+            fieldId={fieldId}
+            operation={values.operation}
+            rental={rental}
+            sale={sale}
+            maintenance={maintenance}
+            community={community}
+            onRental={setRental}
+            onSale={setSale}
+            onMaintenance={setMaintenance}
+            onCommunity={setCommunity}
+            errors={errors}
+          />
+          <div
+            className="draft-terms-preview"
+            aria-label="Vista previa de costos"
+          >
+            <TermsDetails
+              terms={
+                values.operation === "Renta"
+                  ? {
+                      operation: "Renta",
+                      rental: {
+                        ...rental,
+                        monthlyRent: values.rentPrice.trim()
+                          ? Number(values.rentPrice)
+                          : null,
+                      },
+                      maintenance,
+                      community,
+                    }
+                  : {
+                      operation: "Venta",
+                      sale: {
+                        ...sale,
+                        purchasePrice: values.salePrice.trim()
+                          ? Number(values.salePrice)
+                          : null,
+                      },
+                      maintenance,
+                      community,
+                    }
+              }
+            />
           </div>
           <label className="listing-field">
             <span id={`${fieldId("description")}-label`}>Descripción</span>
@@ -471,6 +639,26 @@ export function ListingForm() {
               />
             ))}
           </div>
+          {errors.scenes && (
+            <p id="error-scenes" className="listing-error" role="alert">
+              {errors.scenes}
+            </p>
+          )}
+          {values.propertyType !== "Terreno" && (
+            <div
+              id={fieldId("scenes")}
+              tabIndex={-1}
+              aria-invalid={!!errors.scenes}
+              aria-describedby={errors.scenes ? "error-scenes" : undefined}
+            >
+              <DraftTourEditor
+                scenes={scenes}
+                onChange={setScenes}
+                disabled={busy}
+                onBusyChange={setBusy}
+              />
+            </div>
+          )}
           <label className="listing-rights">
             <input
               id={fieldId("imageRights")}
@@ -482,7 +670,8 @@ export function ListingForm() {
               aria-describedby={errors.imageRights ? "error-rights" : undefined}
             />
             <span id={`${fieldId("imageRights")}-label`}>
-              Tomé estas fotos o tengo autorización para utilizarlas.
+              Tomé estas fotos y panoramas o tengo autorización para
+              utilizarlos.
             </span>
           </label>
           {errors.imageRights && (
@@ -491,7 +680,11 @@ export function ListingForm() {
             </p>
           )}
           <button type="submit" className="button button-dark">
-            {busy ? "Preparando…" : "Guardar borrador en este navegador"}
+            {busy
+              ? "Preparando…"
+              : editing
+                ? "Guardar cambios del borrador"
+                : "Guardar borrador en este navegador"}
           </button>
         </fieldset>
       </form>
@@ -518,15 +711,19 @@ export function ListingForm() {
                   <h3>{draft.title}</h3>
                   <p>
                     {draft.propertyType} · {draft.operation} ·{" "}
-                    {new Intl.NumberFormat("es-MX", {
-                      style: "currency",
-                      currency: "MXN",
-                      maximumFractionDigits: 0,
-                    }).format(draft.price)}
-                    {draft.operation === "Renta" ? " / mes" : ""}
+                    {draft.operation === "Renta"
+                      ? "Renta mensual"
+                      : "Precio de compra"}
                   </p>
                 </div>
                 <div className="draft-actions">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => edit(draft)}
+                  >
+                    Editar borrador
+                  </button>
                   <button
                     type="button"
                     disabled={busy}
@@ -550,7 +747,12 @@ export function ListingForm() {
               <p>
                 {draft.city}, {draft.state} · {draft.neighborhood}
               </p>
+              {draft.migrationNote && (
+                <p className="listing-help">{draft.migrationNote}</p>
+              )}
               <p className="draft-description">{draft.description}</p>
+              <TermsDetails terms={draft} />
+
               <div className="draft-photo-grid">
                 {draft.photos.map((photo, i) => (
                   <PhotoPreview
@@ -560,10 +762,15 @@ export function ListingForm() {
                   />
                 ))}
               </div>
+              {draft.scenes.length > 0 && (
+                <DraftTourSavedPreview scenes={draft.scenes} />
+              )}
               <p className="draft-no-tour">
                 {draft.propertyType === "Terreno"
                   ? "Terreno: ficha y fotografías, sin recorrido 360."
-                  : "Galería de fotos normales. Este borrador no tiene recorrido 360."}
+                  : draft.scenes.length
+                    ? "Recorrido 360 local con conexiones manuales; no publicado."
+                    : "Galería de fotos normales. Este borrador no tiene recorrido 360."}
               </p>
             </article>
           ))

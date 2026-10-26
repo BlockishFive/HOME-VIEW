@@ -82,7 +82,7 @@ test("a rental draft keeps photos locally, survives reload, exports and deletes"
     .getByLabel("Seleccionar fotografías")
     .setInputFiles("public/panoramas/sala-cover.jpg");
   await expect(page.locator(".listing-photo-preview img")).toHaveCount(1);
-  await page.getByRole("checkbox").check();
+  await page.getByRole("checkbox", { name: "Tomé estas fotos y panoramas o tengo autorización para utilizarlos.", exact: true }).check();
   await page
     .getByRole("button", { name: "Guardar borrador en este navegador" })
     .click();
@@ -99,8 +99,14 @@ test("a rental draft keeps photos locally, survives reload, exports and deletes"
   const path = await download.path();
   const saved = JSON.parse(await readFile(path!, "utf8"));
   expect(saved.operation).toBe("Renta");
-  expect(saved.price).toBe(12500);
-  expect(saved.annualTax).toBeNull();
+  expect(saved.schemaVersion).toBe(2);
+  expect(saved.rental.monthlyRent).toBe(12500);
+  expect(saved.rental.deposit).toBeNull();
+  expect(saved.rental.services.water).toBe("unknown");
+  expect(saved).not.toHaveProperty("sale");
+  expect(saved).not.toHaveProperty("price");
+  expect(saved).not.toHaveProperty("annualTax");
+  expect(saved.scenes).toEqual([]);
   expect(saved.photos[0].dataUrl).toMatch(/^data:image\/jpeg;base64,/);
   expect(posts).toEqual([]);
   await page.getByRole("button", { name: "Eliminar borrador" }).click();
