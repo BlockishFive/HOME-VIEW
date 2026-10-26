@@ -1,11 +1,11 @@
 # Pendientes antes de producción
 
-Este prototipo es estático en cuanto a datos: no hay autenticación, cobros, formularios de contacto ni persistencia de información personal. El aviso de visita no representa una reserva ni envía mensajes. No añadir credenciales al repositorio.
+El catálogo es estático y ficticio. Los borradores y medios aportados se guardan solo en el navegador; no hay autenticación, cobros, formularios de contacto ni persistencia de información personal en servidor. El aviso de visita no representa una reserva ni envía mensajes. No añadir credenciales al repositorio.
 
 Antes de operar con propiedades o personas reales:
 
 - Acreditar derechos sobre fotos, panoramas, planos y textos. Obtener consentimiento para interiores privados; retirar rostros, documentos, placas, objetos sensibles y metadatos EXIF/GPS. Revisar también los reflejos de los panoramas.
-- Validar en servidor todas las entradas de catálogo y hotspots; autorizar orígenes de imágenes. Evitar URLs arbitrarias, SSRF en importadores y HTML sin sanear. El prototipo solo utiliza rutas locales predefinidas y texto escapado por React.
+- Validar en servidor todas las entradas de catálogo y hotspots; autorizar orígenes de imágenes. Evitar URLs arbitrarias, SSRF en importadores y HTML sin sanear. El catálogo usa rutas locales predefinidas; las vistas previas locales usan URLs blob creadas por el navegador y texto escapado por React. No se aceptan URLs remotas de medios.
 - Diseñar el backend de solicitudes: validación y límites de tamaño, rate limiting, protección antibots y contra abuso, CSRF/origin según el modelo de sesión, y envío de correo desde servidor con secretos gestionados. No afirmar que una solicitud fue enviada si el proveedor no la aceptó.
 - Establecer aviso de privacidad, consentimiento y finalidad, retención mínima, eliminación y control de acceso a datos personales. No registrar datos personales o tokens en logs. Revisar requisitos legales de la jurisdicción.
 - Si se incorporan cuentas, diseñar autenticación y autorización por recurso, sesiones seguras, cookies HttpOnly/Secure/SameSite y recuperación de acceso; no confiar en identificadores suministrados por el cliente.
@@ -40,3 +40,12 @@ No mostrar la posición exacta de una vivienda sin permiso. Los rangos numérico
 ## Archivo vectorial local
 
 Mantener PMTiles y snapshots como datos estáticos verificados. La generación valida SHA256 de sus entradas. Si se aceptan archivos PMTiles/GeoJSON externos en el futuro, limitar tamaño, geometrías y recursos antes de procesarlos. No crear un proxy abierto a URLs arbitrarias. Los límites generalizados no acreditan superficies ni situación jurídica de inmuebles.
+
+## Piloto PWA, borradores v2 y panoramas
+
+- El worker solo cachea el aviso offline y dos iconos; no cachea HTML de borradores, respuestas de APIs, blobs ni mapas. Mantener esa exclusión al añadir rutas privadas. HTTPS es requisito de instalación y APIs seguras. Instalar la PWA no agrega contraseña, cifrado ni autorización.
+- IndexedDB y los respaldos contienen descripciones y medios locales. Cualquiera con acceso al perfil puede leerlos; evitar datos sensibles. Las URL blob se revocan al desmontar. Los respaldos no se transmiten y su importación sigue pendiente; un futuro importador necesitará validación de esquema, tamaño, tipos, destinos y política de medios.
+- La migración v1 es no destructiva al leer. Revisar explícitamente condiciones antes de guardar v2: montos antiguos cero no prueban exención, y una cuota positiva no prueba que se incluya en la renta. No extrapolar aval, póliza ni servicios. Conservar respaldos antes de cambios de dominio o limpieza de almacenamiento.
+- Las fotografías y panoramas se validan/reencodan en cliente con límites de bytes y píxeles, pero la decodificación puede consumir memoria antes de medir dimensiones. Probar móviles de poca memoria; limitar recursos y validar independientemente en cualquier futuro servidor. Proporción 2:1 no garantiza contenido panorámico ni autorización. No ocultar rostros/reflejos/documentos solo por retirar metadatos.
+- Antes de almacenamiento compartido: autenticación privada, autorización por inmueble y medio, cargas acotadas, moderación, retención/borrado y backups probados. No usar el panel actual como administración protegida ni exponer IndexedDB por endpoints improvisados.
+- Edición concurrente entre pestañas no tiene bloqueo ni combinación: última escritura gana. Pruebas automáticas no equivalen a revisión física de instalación iOS/Android ni a auditoría de seguridad.

@@ -2,13 +2,13 @@
 
 > HOME-VIEW · Project Design for Real Estate Services
 
-Prototipo en español para venta y renta de casas, departamentos y terrenos. Incluye cinco fichas ficticias, mapa vectorial propio MapLibre/PMTiles con vistas de referencia de México, Guanajuato y León, galería ampliable, datos de predial y costos, compartir e imprimir. Las tres viviendas originales tienen recorridos 360 con Marzipano. La casa en renta de demostración utiliza una galería convencional; los terrenos no ofrecen 360.
+Prototipo en español para venta y renta de casas, departamentos y terrenos. Incluye cinco fichas ficticias, mapa vectorial propio MapLibre/PMTiles con vistas de referencia de México, Guanajuato y León, galería ampliable, costos separados para venta y renta, compartir e imprimir. Las tres viviendas originales tienen recorridos 360 con Marzipano. La casa en renta de demostración utiliza una galería convencional; los terrenos no ofrecen 360.
 
 `/alta` permite preparar una ficha con tus propias fotos autorizadas y guardarla como borrador solo en este navegador. No hay cuentas, pagos, envío de contactos ni publicación de los borradores en un catálogo compartido.
 
 ## Ejecutar localmente
 
-Requisitos: Node.js 24 LTS y npm 11 (versiones utilizadas en desarrollo). No se necesitan claves ni variables de entorno. El mapa incluido se sirve desde este mismo sitio; no necesita conexión a un proveedor cartográfico ni claves de API.
+Requisitos: Node.js 24 LTS y npm 11 (versiones utilizadas en desarrollo). No se necesitan claves. `NEXT_TELEMETRY_DISABLED=1` evita escrituras de telemetría en entornos con directorio personal de solo lectura. El mapa incluido se sirve desde este mismo sitio; no necesita conexión a un proveedor cartográfico ni claves de API.
 
 ```sh
 npm ci
@@ -20,7 +20,7 @@ Abre el puerto 3000 en tu navegador local. En un entorno donde el directorio per
 ```sh
 npm test                # integridad del catálogo, grafo de habitaciones y medios
 npm run typecheck       # TypeScript
-npm run build           # compilación de producción
+NEXT_TELEMETRY_DISABLED=1 npm run build  # compilación de producción
 npm run start           # servir la compilación en puerto 3000
 ```
 
@@ -54,12 +54,24 @@ Los JPEG locales son ilustraciones originales generadas mediante trazado de rayo
 ## Preparar tu casa en renta
 
 1. Abre **Alta de inmueble** (`/alta`). Se inicia con Renta, Casa, Guanajuato y León.
-2. Completa título, mensualidad en MXN, superficie, descripción y colonia. Recámaras, baños, predial y mantenimiento pueden dejarse sin especificar; no se inventan montos.
-3. Ajusta latitud/longitud a una ubicación aproximada de tu zona. La referencia inicial es el centro de León; no indica tu domicilio.
-4. Selecciona entre 1 y 8 fotos JPEG/PNG/WebP de hasta 5 MB cada una. Convierte HEIC previamente. El navegador las decodifica, reduce a un máximo de 1920 px y reencoda como JPEG sin los metadatos originales. Las fotos normales no se convierten en panoramas 360.
-5. Confirma que tienes autorización para usar las imágenes y guarda el borrador. Sigue siendo local, no publicado y accesible a quien use ese navegador. Usa **Descargar respaldo** para conservar una copia JSON con fotos; la importación de respaldos aún está pendiente.
+2. Completa título, mensualidad en MXN, superficie, descripción y colonia. Para **Renta** registra depósito en MXN, plazo mínimo en meses, aval y póliza como requisitos independientes o como alternativas («aval o póliza»), mascotas, amueblado y agua/electricidad/gas/internet incluidos. Todos pueden quedar **Por confirmar**. No se pide ni muestra predial en renta. Para **Venta** se pide precio de compra y predial anual opcional, sin requisitos de arrendamiento.
+3. Indica si pertenece a fraccionamiento o condominio y si existe cuota de mantenimiento: **Sí**, **No aplica** o **Por confirmar**. Si existe, el monto puede quedar pendiente; en renta indica además si ya está incluido en la mensualidad. **$18,000 + $900** produce **Renta y mantenimiento: $18,900/mes**; una cuota incluida no se vuelve a sumar. Solo se muestra el total cuando renta, cuota e inclusión son conocidos. Nunca se suman servicios, depósito ni póliza.
+4. Ajusta latitud/longitud a una ubicación aproximada de tu zona. La referencia inicial es el centro de León; no indica tu domicilio.
+5. Selecciona entre 1 y 8 fotos JPEG/PNG/WebP de hasta 5 MB cada una. Convierte HEIC previamente. El navegador las decodifica, reduce a un máximo de 1920 px y reencoda como JPEG sin los metadatos originales. Las fotos normales no se convierten en panoramas 360.
+6. Opcional para viviendas: en **Panoramas 360 y escenas**, confirma que son capturas equirectangulares completas autorizadas. Añade hasta 8 imágenes 2:1 de al menos 1024×512 y hasta 12 MB cada una; se reencodan a un máximo de 4096 px, sin recortar la esfera. Nombra escenas y crea conexiones de un solo sentido con destino y ángulos manuales. Añade la conexión de regreso si hace falta. **Abrir vista previa 360** reutiliza Marzipano; una foto convencional no se transforma en 360. Los terrenos conservan galería, sin recorrido.
+7. Confirma que tienes autorización para usar las imágenes y guarda el borrador. Sigue siendo local, no publicado y accesible a quien use ese navegador. Usa **Descargar respaldo** para conservar una copia JSON con fotos; la importación de respaldos aún está pendiente.
+
+Desde **Mis borradores** (`/alta#saved-title`) puedes revisar costos y condiciones, editar, guardar sobre el mismo borrador, descargar respaldo o eliminar. Las escenas guardadas se abren bajo demanda. El respaldo JSON v2 incluye fotos y panoramas; la importación sigue pendiente. **Cancelar edición** descarta los cambios aún no guardados.
+
+Los borradores v1 se adaptan al leerlos sin sobreescribir el original: el precio pasa al bloque de la operación, el predial solo a venta y una cuota positiva conserva su importe con inclusión por confirmar. Una cuota anterior vacía o cero requiere revisión; no demuestra «No aplica». Los requisitos, servicios y pertenencia a conjunto quedan por confirmar. La edición y guardado explícitos escriben el esquema v2.
 
 Los borradores se almacenan en IndexedDB, no se suben al servidor y no aparecen en otros dispositivos ni en el catálogo público. Pueden perderse al borrar datos del navegador o cambiar de dirección/origen del sitio. Antes de publicar inmuebles reales se necesita backend, control de acceso y almacenamiento compartido.
+
+## Piloto móvil PWA
+
+La aplicación tiene manifest, iconos originales y base instalable en HTTPS (o localhost). Usa **Instalar Home View** cuando el navegador lo ofrezca, o su menú de instalación; en iPhone, Compartir → Añadir a pantalla de inicio. Instalar no crea una cuenta ni protección privada. Los borradores siguen vinculados al navegador, perfil y origen; no pasan a otros dispositivos.
+
+El piloto necesita conexión para abrir sus pantallas. El service worker solo conserva un aviso sin conexión e iconos públicos, sin cachear páginas, medios del usuario ni rangos del mapa. La edición offline completa y la comprobación en teléfonos físicos siguen pendientes. Véase [PWA y alcance offline](docs/PWA.md).
 
 ## Servicios y costos
 
@@ -70,6 +82,8 @@ Las pruebas de navegador usan el archivo PMTiles real, comprueban HTTP206/Range 
 ## Documentación
 
 - [Arquitectura y decisiones](docs/ARCHITECTURE.md)
+- [Validación del piloto y comprobaciones pendientes](docs/VALIDATION.md)
+- [Piloto móvil PWA](docs/PWA.md)
 - [Servicios, costos y límites](docs/SERVICES.md)
 - [Datos del mapa y regeneración](docs/MAP_DATA.md)
 - [Pendientes de seguridad y producción](docs/SECURITY.md)
