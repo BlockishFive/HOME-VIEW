@@ -1,0 +1,30 @@
+# Pendientes antes de producción
+
+Este prototipo es estático en cuanto a datos: no hay autenticación, cobros, formularios de contacto ni persistencia de información personal. El aviso de visita no representa una reserva ni envía mensajes. No añadir credenciales al repositorio.
+
+Antes de operar con propiedades o personas reales:
+
+- Acreditar derechos sobre fotos, panoramas, planos y textos. Obtener consentimiento para interiores privados; retirar rostros, documentos, placas, objetos sensibles y metadatos EXIF/GPS. Revisar también los reflejos de los panoramas.
+- Validar en servidor todas las entradas de catálogo y hotspots; autorizar orígenes de imágenes. Evitar URLs arbitrarias, SSRF en importadores y HTML sin sanear. El prototipo solo utiliza rutas locales predefinidas y texto escapado por React.
+- Diseñar el backend de solicitudes: validación y límites de tamaño, rate limiting, protección antibots y contra abuso, CSRF/origin según el modelo de sesión, y envío de correo desde servidor con secretos gestionados. No afirmar que una solicitud fue enviada si el proveedor no la aceptó.
+- Establecer aviso de privacidad, consentimiento y finalidad, retención mínima, eliminación y control de acceso a datos personales. No registrar datos personales o tokens en logs. Revisar requisitos legales de la jurisdicción.
+- Si se incorporan cuentas, diseñar autenticación y autorización por recurso, sesiones seguras, cookies HttpOnly/Secure/SameSite y recuperación de acceso; no confiar en identificadores suministrados por el cliente.
+- Revisar dependencias con `npm audit`, actualizaciones y avisos de Next.js/React/Marzipano. Marzipano incorpora dependencias antiguas: analizar y mitigar su riesgo antes del despliegue. Conservar lockfile y habilitar actualizaciones automatizadas y análisis de secretos.
+- Configurar HTTPS, cabeceras de seguridad y una CSP probada con Next.js y WebGL (scripts, workers, imágenes, conexiones). Aplicar HSTS solo con HTTPS operativo, `frame-ancestors`, `nosniff` y Permissions-Policy según las funciones usadas. No usar una CSP que deshabilite el visor sin probarla.
+- Validar límites de memoria/GPU y rendimiento en móviles; detectar dispositivos sin WebGL, recuperación por pérdida de contexto y ofrecer alternativas descriptivas o imágenes estáticas equivalentes. Revisar WCAG, contraste, foco, lectura y movimiento con usuarios y tecnologías de asistencia.
+- Separar demostración y datos reales; verificar precios, medidas y planos. Añadir contacto verificable y obligaciones legales de publicidad inmobiliaria. Retirar `noindex` únicamente tras revisión y lanzamiento autorizado.
+- Definir monitorización con minimización de datos, gestión de incidentes, backups si existe persistencia y pruebas de restauración. Revisar políticas del hosting y caché antes de publicar.
+
+El resultado de auditorías o pruebas se informa por separado; esta lista no es una certificación de seguridad ni implica que todas las medidas estén implementadas.
+
+## Ubicaciones y predial
+
+El mapa actual es enteramente ficticio. Antes de integrar cartografía real: revisar licencia y atribución de teselas, términos de geocodificación, límites y facturación, restricciones de claves públicas, exposición de IP/ubicación a proveedores y precisión con que se divulgan domicilios. No solicitar ubicación del usuario sin necesidad y consentimiento. Validar coordenadas y datos de marcadores en servidor.
+
+El predial anual y las cuotas actuales son datos sintéticos. Para cifras reales documentar municipio, ejercicio fiscal, fecha y fuente de actualización; distinguir montos oficiales, estimaciones y adeudos. Confirmar con autoridades y administración. No presentar un cálculo ilustrativo como avalúo, obligación fiscal o asesoría legal.
+
+## Galería y acciones del anuncio
+
+El diálogo de galería usa imágenes locales y texto alternativo definido en datos; validar esos campos si se introducen cargas de usuarios. No incorporar fotos o descripciones de un portal de terceros sin licencia. El régimen de propiedad de la demo no acredita titularidad ni ausencia de gravámenes: exigir verificación documental antes de publicar información jurídica real.
+
+Compartir y copiar dependen de permisos del navegador y de un contexto seguro. La aplicación ofrece una copia manual y no confirma una copia fallida ni publica automáticamente en redes. Evitar datos personales o secretos en URLs compartidas; el prototipo solo comparte la ruta de una propiedad ficticia. Revisar accesibilidad del diálogo con lectores de pantalla y navegadores reales, además de las pruebas automatizadas.
