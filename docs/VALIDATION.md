@@ -35,3 +35,11 @@ No se comprobó la instalación desde la interfaz del sistema operativo en telé
 No existe todavía backend ni acceso privado, almacenamiento compartido, sincronización, importación de respaldos, resolución de conflictos entre pestañas, panoramas multirresolución ni edición offline completa. Se conserva un aviso offline, no las pantallas completas de Next.js. Las fotos/panoramas de pruebas son ilustraciones procedurales del repositorio; no se añadieron datos de inmuebles o personas reales.
 
 Antes de un uso compartido consultar [seguridad](SECURITY.md), [arquitectura](ARCHITECTURE.md) y [PWA](PWA.md). No se implementaron pagos ni registro público; este cambio no despliega ni publica los borradores.
+
+## Ampliación: legibilidad e interfaz español/inglés
+
+La rama incorpora textos secundarios de al menos 14 px, campos y descripciones de 16 px, controles táctiles y selector ES/EN persistente. Se verificaron 16 combinaciones de pantalla/ruta en español (1440, 1024, 768 y 390 px) y 8 en inglés (1024 y 390 px), sin desbordamiento horizontal en inicio, alta, renta y ficha. Los textos del propietario se conservan y los importes siguen en MXN.
+
+Después de esta ampliación pasan TypeScript, compilación de producción y 32 pruebas unitarias. La suite de navegador tiene 33 casos: 31 pasaron en la ejecución conjunta; se corrigió una aserción que confundía el verbo inglés «Describe» con texto español y se repitió ese caso correctamente. La inicialización WebGL del recorrido excedió el límite de cinco segundos en esa ejecución concurrente y se comprobó además de forma aislada. Los nuevos casos cubren preferencia persistente, formulario sin pérdida de datos, valores canónicos, validación, moneda, manifest inglés y aviso offline bilingüe.
+
+La prueba automatizada no acredita funcionamiento en un iPad físico ni elimina el pendiente de revisar Safari y lectores de pantalla. [Idiomas y límites de renderizado](I18N.md).

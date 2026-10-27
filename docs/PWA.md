@@ -21,3 +21,7 @@ npx playwright test tests/browser/pwa.spec.ts
 ```
 
 La prueba comprueba manifest, iconos, registro, aviso offline y que Cache Storage solo contiene los recursos permitidos. La instalación real en un dispositivo iOS/Android y sus opciones del menú requieren validación manual; Playwright no representa la interfaz de instalación del sistema operativo.
+
+## Idiomas
+
+El selector de idioma usa el manifest español o `public/manifest-en.webmanifest` con el mismo ID y start_url. El aviso offline tiene español/inglés y conserva la preferencia del navegador. El worker v2 renueva su caché de aviso e iconos; no lee ni cachea borradores. La versión instalada del sistema operativo puede conservar su nombre hasta actualizar/reinstalar según el navegador. Véase [idiomas](I18N.md).

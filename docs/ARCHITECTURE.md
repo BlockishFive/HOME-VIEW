@@ -89,3 +89,9 @@ El esquema de registro es `schemaVersion: 2`; la base IndexedDB conserva su vers
 Véase [PWA](PWA.md) para instalación, worker y límites offline. No se cambian el mapa ni sus datos/licencias. No hay pagos ni registro público. El panel local no es un área privada autenticada: almacenamiento compartido, URLs de medios con autorización, usuarios privados, validación en servidor y política de backups requieren otra fase.
 
 Pruebas nuevas: reglas de cantidades/mantenimiento/garantías, migración y normalización v1/v2, límites/grafo 360 y regresiones de navegador de separación por operación, mantenimiento, edición, persistencia, respaldo, escenas manuales, manifest y aviso offline. Los archivos `tests/browser/*` usan medios procedurales del repositorio, no material de terceros.
+
+## Interfaz bilingüe y captura en iPad
+
+`I18nProvider` conserva locale cliente sin cambiar ruta/origen ni esquema de IndexedDB. Los diccionarios explícitos de `lib/i18n/` traducen la interfaz y el catálogo ficticio; se preserva el contenido escrito por el propietario. Los helpers de costos admiten locale opcional sin cambiar las cantidades ni cálculos. Las vistas cliente de inicio, alta y propiedad dejan en servidor la resolución de rutas, 404 y parámetros estáticos. Los componentes de mapa actualizan etiquetas conservando vista y filtros.
+
+Los dos manifests comparten identidad PWA; el aviso offline usa la misma preferencia y el worker v2 mantiene la caché limitada. El HTML estático inicial sigue en español y `noindex`, con traducción al hidratar. No es una implementación de SEO multilingüe en servidor. Véase [I18N.md](I18N.md) para límites y tipografía.

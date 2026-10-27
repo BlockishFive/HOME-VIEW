@@ -73,6 +73,12 @@ La aplicación tiene manifest, iconos originales y base instalable en HTTPS (o l
 
 El piloto necesita conexión para abrir sus pantallas. El service worker solo conserva un aviso sin conexión e iconos públicos, sin cachear páginas, medios del usuario ni rangos del mapa. La edición offline completa y la comprobación en teléfonos físicos siguen pendientes. Véase [PWA y alcance offline](docs/PWA.md).
 
+## Idiomas y lectura en iPad
+
+Usa **Idioma / Language** en el encabezado para alternar Español y English. La preferencia se conserva en este navegador y la captura en curso no se reinicia. Se traducen navegación, filtros, formularios, avisos, condiciones, fichas de demostración, mapa, galería y recorrido 360. Los importes siguen en MXN.
+
+Los textos que escribas en los borradores se conservan en su idioma original. Cambiar la interfaz no los traduce ni publica. La PWA y su aviso offline también ofrecen ambos idiomas. La letra secundaria tiene un mínimo de 14 px y los campos/descripciones principales 16 px, con controles táctiles más amplios. Véase [idiomas, renderizado y legibilidad](docs/I18N.md).
+
 ## Servicios y costos
 
 No se integraron servicios con claves de pago. Las bibliotecas son de código abierto; el mapa utiliza un archivo PMTiles local de 304 KB, sin proveedor externo de teselas. El visor se descarga por separado y se conserva en caché. Hosting, dominios y Codespaces tienen límites y pueden generar costos. Consulta [servicios y costos](docs/SERVICES.md).

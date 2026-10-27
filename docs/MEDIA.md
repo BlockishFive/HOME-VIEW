@@ -23,3 +23,5 @@ El terreno de demostración utiliza `public/illustrations/terreno.svg`, un esque
 Los iconos PNG de `public/icons/` son un dibujo geométrico original generado por `scripts/generate-pwa-icons.mjs`, sin imágenes de terceros ni servicios remotos. El script es determinista y usa únicamente Node.js.
 
 Las fotos y los panoramas aportados en `/alta` se guardan en el navegador y no se añaden al repositorio ni al catálogo. Se requiere confirmar autorización. El editor distingue fotos convencionales de capturas equirectangulares 360 completas; no genera una esfera desde fotografías normales. Las pruebas de carga y conexión reutilizan exclusivamente las ilustraciones procedurales incluidas.
+
+`public/illustrations/terreno-en.svg` es la variante del esquema original con sus dos etiquetas en inglés. No cambia geometría, superficie ficticia ni procedencia. El selector solo elige esa variante para la presentación inglesa del terreno demo.

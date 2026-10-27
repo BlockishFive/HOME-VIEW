@@ -107,7 +107,7 @@ test("English validation messages retain accessible focus and avoid Spanish fall
   const errors = page.locator(".listing-form .listing-error");
   await expect(errors).toBeVisible();
   await expect(errors).toContainText(/title/i);
-  await expect(errors).not.toContainText(/Escribe|Describe|Añade|Confirma|Revisa/);
+  await expect(errors).not.toContainText(/Escribe|Describe el inmueble|Añade|Confirma que|Revisa la/);
   await expect(page.locator('.listing-form input[name="title"]')).toBeFocused();
 });
 
