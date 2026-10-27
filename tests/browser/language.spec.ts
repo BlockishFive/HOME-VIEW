@@ -34,7 +34,7 @@ test("Spanish is the default and an English preference survives navigation and r
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await page.reload();
   await expect(page.getByRole("combobox", { name: "Idioma / Language", exact: true })).toHaveValue("en");
-  await expect(page.locator('.site-header a[href="/alta#saved-title"]')).toHaveText("My drafts");
+  await expect(page.locator('.site-header a[href="/alta#saved-title"]')).toHaveText("Local drafts");
   await language(page, "es");
   await expect(page.locator('.site-header a[href="/renta"]')).toHaveText("Renta");
 });
@@ -129,8 +129,8 @@ test("English installation metadata and the offline notice honor the same langua
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute("href", "/manifest-en.webmanifest");
   const manifest = await (await request.get("/manifest-en.webmanifest")).json();
   expect(manifest.lang).toBe("en");
-  expect(manifest.name).toContain("Local pilot");
-  expect(manifest.start_url).toBe("/alta#saved-title");
+  expect(manifest.name).toContain("Private pilot");
+  expect(manifest.start_url).toBe("/privado");
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
   await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
   await context.setOffline(true);
@@ -138,7 +138,7 @@ test("English installation metadata and the offline notice honor the same langua
     await page.goto("/alta");
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     await expect(page.getByRole("heading", { name: "You need a connection to open this screen.", exact: true })).toBeVisible();
-    await expect(page.getByText("Your saved drafts are still in this browser.", { exact: true })).toBeVisible();
+    await expect(page.getByText("Local drafts remain in this browser; private drafts remain on the server.", { exact: true })).toBeVisible();
     await expect(page).toHaveTitle("Offline · Home View");
     await language(page, "es");
     await expect(page.getByRole("heading", { name: "Necesitas conexión para abrir esta pantalla.", exact: true })).toBeVisible();

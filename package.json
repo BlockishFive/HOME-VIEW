@@ -10,7 +10,9 @@
     "test": "node --import tsx --test --test-isolation=none tests/*.test.ts",
     "predev": "node scripts/prepare-map-worker.mjs",
     "prebuild": "node scripts/prepare-map-worker.mjs",
-    "prestart": "node scripts/prepare-map-worker.mjs"
+    "prestart": "node scripts/prepare-map-worker.mjs",
+    "setup:private": "node --env-file-if-exists=.env.local --import tsx scripts/setup-private.ts",
+    "backup:private": "node --env-file-if-exists=.env.local --import tsx scripts/backup-private.ts"
   },
   "dependencies": {
     "maplibre-gl": "^6.16.0",
@@ -18,7 +20,8 @@
     "next": "^16.0.0",
     "pmtiles": "^4.5.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

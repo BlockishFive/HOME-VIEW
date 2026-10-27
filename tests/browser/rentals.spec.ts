@@ -110,6 +110,7 @@ test("a rental draft keeps photos locally, survives reload, exports and deletes"
   expect(saved.photos[0].dataUrl).toMatch(/^data:image\/jpeg;base64,/);
   expect(posts).toEqual([]);
   await page.getByRole("button", { name: "Eliminar borrador" }).click();
+  await expect(page.locator(".draft-card")).toHaveCount(0);
   await page.reload();
   await expect(page.locator(".listing-empty")).toBeVisible();
 });

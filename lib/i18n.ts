@@ -1,3 +1,4 @@
+import { privateMessages } from "./i18n/private-messages";
 import { siteMessages } from "./i18n/site-messages";
 import { catalogMessages } from "./i18n/catalog-messages";
 import { listingMessages } from "./i18n/listing-messages";
@@ -8,6 +9,7 @@ export function validLocale(value: unknown): Locale {
 }
 export const englishMessages: Record<string, string> = {
   ...siteMessages,
+  ...privateMessages,
   ...catalogMessages,
   ...listingMessages,
   ...propertyMessages,

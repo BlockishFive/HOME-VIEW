@@ -1,5 +1,5 @@
 /* Minimal pilot worker: no pages, draft data, blobs, API responses or map ranges are cached. */
-const OFFLINE_CACHE = "home-view-offline-v2";
+const OFFLINE_CACHE = "home-view-offline-v3";
 const OFFLINE_FILES = ["/offline.html", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {

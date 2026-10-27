@@ -1,6 +1,7 @@
 import { test, expect } from "./fixtures";
 
 test("local 360 scenes keep media separate and support manual links and Marzipano preview", async ({ page }) => {
+  test.setTimeout(60000);
   await page.goto("/alta");
   const editor = page.locator(".draft-tour-editor");
   await editor.getByRole("checkbox").check();

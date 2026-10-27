@@ -17,8 +17,9 @@ export function Header() {
         <Link href="/venta">{t("Venta")}</Link>
         <Link href="/renta">{t("Renta")}</Link>
         <Link href="/terrenos">{t("Terrenos")}</Link>
-        <Link href="/alta#saved-title">{t("Mis borradores")}</Link>
-        <Link href="/alta" className="header-add">
+        <Link href="/privado" className="header-add">{t("Área privada")}</Link>
+        <Link href="/alta#saved-title">{t("Borradores locales")}</Link>
+        <Link href="/alta">
           {t("Alta de inmueble")}
         </Link>
         <span className="demo-pill">{t("Prototipo demo")}</span>

@@ -82,6 +82,7 @@ test("additional maintenance is summed once and editing to included preserves a 
   await expect(preview).toContainText("$18,000 MXN/mes · Mantenimiento incluido.");
   await expect(preview).not.toContainText("$18,900/mes");
   await page.getByRole("button", { name: "Guardar cambios del borrador", exact: true }).click();
+  await expect(page.locator(".listing-success")).toContainText("Borrador guardado");
   await page.reload();
   await expect(card).toHaveCount(1);
   await expect(card).toContainText("$18,000/mes");
@@ -159,6 +160,7 @@ test("legacy IndexedDB drafts migrate without inventing guarantees or fee inclus
   await expect(page.getByLabel("Internet en la renta", { exact: true })).toHaveValue("unknown");
   await expect(page.getByLabel("¿La renta anunciada incluye mantenimiento?", { exact: true })).toHaveValue("unknown");
   await page.getByRole("button", { name: "Guardar cambios del borrador", exact: true }).click();
+  await expect(page.locator(".listing-success")).toContainText("Borrador guardado");
   await page.reload();
   await expect(card).toHaveCount(1);
   const [saved] = await readStored(page);

@@ -1,4 +1,10 @@
 "use client";
+import Link from "next/link";
+import {
+  getSharedDrafts,
+  saveSharedDraft,
+  deleteSharedDraft,
+} from "@/lib/shared-drafts";
 import { useI18n } from "@/components/I18nProvider";
 import { useEffect, useId, useRef, useState } from "react";
 import {
@@ -163,7 +169,22 @@ async function exportDraft(draft: ListingDraft) {
   anchor.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-export function ListingForm() {
+export function ListingForm({
+  storage = "local",
+}: {
+  storage?: "local" | "shared";
+}) {
+  const shared = storage === "shared";
+  const sharedRevision = useRef(0);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [copyError, setCopyError] = useState<{
+    id: string;
+    message: string;
+  } | null>(null);
+  const revisionOf = (draft: ListingDraft) =>
+    "sharedRevision" in draft && typeof draft.sharedRevision === "number"
+      ? draft.sharedRevision
+      : 0;
   const { t } = useI18n();
   function localizeMessage(message: string) {
     const photoError = message.match(/^No se pudo leer (.+): (.*)$/);
@@ -201,7 +222,7 @@ export function ListingForm() {
   const fileInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     let active = true;
-    getListingDrafts()
+    (shared ? getSharedDrafts() : getListingDrafts())
       .then((result) => {
         if (active) setDrafts(result);
       })
@@ -214,7 +235,7 @@ export function ListingForm() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [shared]);
   function change(name: keyof typeof initial, value: string | boolean) {
     setValues((previous) => ({ ...previous, [name]: value }));
     if (name === "propertyType" && value === "Terreno")
@@ -312,7 +333,11 @@ export function ListingForm() {
         photos,
         scenes: values.propertyType === "Terreno" ? [] : scenes,
       };
-      await saveListingDraft(draft);
+      if (shared) {
+        const revision = await saveSharedDraft(draft, sharedRevision.current);
+        sharedRevision.current = revision;
+        Object.assign(draft, { sharedRevision: revision });
+      } else await saveListingDraft(draft);
       setDrafts((previous) => [
         draft,
         ...previous.filter((item) => item.id !== draft.id),
@@ -321,7 +346,9 @@ export function ListingForm() {
       setSavedId(draft.id);
       setStorageError("");
       setMessage(
-        "Borrador guardado solo en este navegador. No se ha publicado ni enviado a un servidor.",
+        shared
+          ? "Borrador guardado en el servidor privado. Abre el área privada en tu otro dispositivo y actualiza la lista."
+          : "Borrador guardado solo en este navegador. No se ha publicado ni enviado a un servidor.",
       );
     } catch (error) {
       setStorageError(storageMessage(error));
@@ -333,6 +360,7 @@ export function ListingForm() {
     }
   }
   function resetEditor() {
+    sharedRevision.current = 0;
     identity.current = null;
     setSavedId(null);
     setMessage("");
@@ -348,6 +376,7 @@ export function ListingForm() {
     if (fileInput.current) fileInput.current.value = "";
   }
   function edit(draft: ListingDraft) {
+    sharedRevision.current = revisionOf(draft);
     identity.current = { id: draft.id, createdAt: draft.createdAt };
     setSavedId(null);
     setEditing(draft);
@@ -397,12 +426,48 @@ export function ListingForm() {
   async function remove(id: string) {
     setBusy(true);
     try {
-      await deleteListingDraft(id);
+      if (shared)
+        await deleteSharedDraft(
+          id,
+          revisionOf(drafts.find((draft) => draft.id === id)!),
+        );
+      else await deleteListingDraft(id);
       setDrafts((previous) => previous.filter((draft) => draft.id !== id));
       if (editing?.id === id) resetEditor();
-      setMessage("Borrador eliminado de este navegador.");
+      setMessage(
+        shared
+          ? "Borrador eliminado del servidor privado."
+          : "Borrador eliminado de este navegador.",
+      );
     } catch (error) {
       setStorageError(storageMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function refreshShared() {
+    setBusy(true);
+    setStorageError("");
+    try {
+      setDrafts(await getSharedDrafts());
+      setMessage(
+        "Lista privada actualizada. La captura en curso permanece en el formulario.",
+      );
+    } catch (error) {
+      setStorageError(storageMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function copyToPrivate(draft: ListingDraft) {
+    setBusy(true);
+    setCopyError(null);
+    setCopied(null);
+    try {
+      await saveSharedDraft(draft, 0);
+      setCopied(draft.id);
+    } catch (error) {
+      setCopyError({ id: draft.id, message: storageMessage(error) });
     } finally {
       setBusy(false);
     }
@@ -449,13 +514,47 @@ export function ListingForm() {
   return (
     <div className="listing-workspace">
       <div className="listing-local-notice">
-        <strong>{t("Borradores locales · No publicados")}</strong>
+        <strong>
+          {t(
+            shared
+              ? "Borradores privados · Guardados en el servidor"
+              : "Borradores locales · No publicados",
+          )}
+        </strong>
         <p>
           {t(
-            "Se guardan solo en este navegador y dispositivo. No aparecen en el catálogo público ni se comparten con otras personas. Al borrar los datos del navegador puedes perderlos; descarga un respaldo para conservarlos.",
+            shared
+              ? "Estos borradores e imágenes se comparten entre tus dispositivos al iniciar sesión en esta misma dirección. No aparecen en el catálogo público. Conserva respaldos del servidor."
+              : "Se guardan solo en este navegador y dispositivo. No aparecen en el catálogo público ni se comparten con otras personas. Al borrar los datos del navegador puedes perderlos; descarga un respaldo para conservarlos.",
           )}
         </p>
-        <p>{t("Un borrador creado aquí no aparecerá en tu otro dispositivo. La sincronización todavía no está disponible.")}</p>
+        {!shared && (
+          <>
+            <p>
+              {t(
+                "Estos borradores locales no se sincronizan. Para verlos en tu otro dispositivo, copia cada uno al área privada.",
+              )}
+            </p>
+            <Link
+              href="/privado"
+              target="_blank"
+              rel="noopener"
+              className="back-link"
+            >
+              {t("Abrir área privada para compartir entre dispositivos")}
+            </Link>
+          </>
+        )}
+        {shared && (
+          <button
+            type="button"
+            className="button button-dark"
+            disabled={busy || !loaded}
+            onClick={() => void refreshShared()}
+          >
+            {t("Actualizar lista privada")}
+          </button>
+        )}
       </div>
       <form
         ref={formRef}
@@ -680,6 +779,7 @@ export function ListingForm() {
               aria-describedby={errors.scenes ? "error-scenes" : undefined}
             >
               <DraftTourEditor
+                shared={shared}
                 scenes={scenes}
                 onChange={setScenes}
                 disabled={busy}
@@ -750,22 +850,34 @@ export function ListingForm() {
               ? t("Preparando…")
               : editing
                 ? t("Guardar cambios del borrador")
-                : t("Guardar borrador en este navegador")}
+                : t(
+                    shared
+                      ? "Guardar borrador privado"
+                      : "Guardar borrador en este navegador",
+                  )}
           </button>
         </fieldset>
       </form>
       <section className="listing-saved" aria-labelledby="saved-title">
-        <h2 id="saved-title">{t("Mis borradores locales")}</h2>
+        <h2 id="saved-title">
+          {t(shared ? "Mis borradores privados" : "Mis borradores locales")}
+        </h2>
         <p className="listing-help">
           {t(
-            "Estos anuncios no están publicados. Quien use este navegador en este dispositivo podría acceder a ellos.",
+            shared
+              ? "Estos anuncios no están publicados. Solo están disponibles con el acceso privado del piloto."
+              : "Estos anuncios no están publicados. Quien use este navegador en este dispositivo podría acceder a ellos.",
           )}
         </p>
         {!loaded ? (
           <p role="status">{t("Leyendo borradores…")}</p>
         ) : drafts.length === 0 ? (
           <p className="listing-empty">
-            {t("Todavía no has guardado borradores en este navegador.")}
+            {t(
+              shared
+                ? "Todavía no hay borradores en el servidor privado."
+                : "Todavía no has guardado borradores en este navegador.",
+            )}
           </p>
         ) : (
           drafts.map((draft) => (
@@ -778,7 +890,11 @@ export function ListingForm() {
               <div className="draft-card-heading">
                 <div>
                   <span className="draft-status">
-                    {t("Borrador local · No publicado")}
+                    {t(
+                      shared
+                        ? "Borrador privado · No publicado"
+                        : "Borrador local · No publicado",
+                    )}
                   </span>
                   <h3>{draft.title}</h3>
                   <p>
@@ -789,6 +905,15 @@ export function ListingForm() {
                   </p>
                 </div>
                 <div className="draft-actions">
+                  {!shared && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void copyToPrivate(draft)}
+                    >
+                      {t("Copiar al área privada")}
+                    </button>
+                  )}
                   <button
                     type="button"
                     disabled={busy}
@@ -816,6 +941,22 @@ export function ListingForm() {
                   </button>
                 </div>
               </div>
+              {copied === draft.id && (
+                <p role="status">
+                  {t(
+                    "Copia guardada en el servidor privado. El original sigue en este navegador.",
+                  )}{" "}
+                  <Link href="/privado">{t("Ver área privada")}</Link>
+                </p>
+              )}
+              {copyError?.id === draft.id && (
+                <p className="listing-error" role="alert">
+                  {t(copyError.message)}{" "}
+                  <Link href="/privado" target="_blank" rel="noopener">
+                    {t("Abrir área privada")}
+                  </Link>
+                </p>
+              )}
               <p>
                 {draft.city}, {draft.state} · {draft.neighborhood}
               </p>
@@ -838,7 +979,7 @@ export function ListingForm() {
                 ))}
               </div>
               {draft.scenes.length > 0 && (
-                <DraftTourSavedPreview scenes={draft.scenes} />
+                <DraftTourSavedPreview scenes={draft.scenes} shared={shared} />
               )}
               <p className="draft-no-tour">
                 {draft.propertyType === "Terreno"

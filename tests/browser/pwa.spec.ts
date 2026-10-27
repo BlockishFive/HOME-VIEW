@@ -5,7 +5,7 @@ test("PWA exposes install assets and an offline notice without caching user page
   expect(response.ok()).toBe(true);
   const manifest = await response.json();
   expect(manifest.display).toBe("standalone");
-  expect(manifest.start_url).toBe("/alta#saved-title");
+  expect(manifest.start_url).toBe("/privado");
   for (const icon of manifest.icons) {
     const asset = await request.get(icon.src);
     expect(asset.headers()["content-type"]).toContain("image/png");
@@ -30,6 +30,6 @@ test("PWA exposes install assets and an offline notice without caching user page
   await context.setOffline(true);
   await page.goto("/alta");
   await expect(page.getByRole("heading", { name: "Necesitas conexión para abrir esta pantalla." })).toBeVisible();
-  await expect(page.getByText("Los borradores que guardaste siguen en este navegador.", { exact: false })).toBeVisible();
+  await expect(page.getByText("Los borradores locales siguen en este navegador; los privados permanecen en el servidor.", { exact: false })).toBeVisible();
   await context.setOffline(false);
 });

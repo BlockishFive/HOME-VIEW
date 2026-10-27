@@ -3315,3 +3315,8 @@ small {
 .draft-save-feedback { scroll-margin-block: 100px; }
 .draft-save-feedback .draft-actions { margin-bottom: 20px; }
 .draft-card:focus { outline: 3px solid var(--yellow); outline-offset: 5px; }
+
+.private-login { max-width: 600px; margin-inline: auto; }
+.private-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px; padding: 20px; border: 1px solid #607841; border-radius: 12px; }
+.private-toolbar p { max-width: 700px; }
+.draft-card [role="status"] a, .draft-card [role="alert"] a { color: var(--accent); text-decoration: underline; }

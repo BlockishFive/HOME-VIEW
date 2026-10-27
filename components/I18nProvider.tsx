@@ -31,12 +31,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, []);
   useEffect(() => {
     document.documentElement.lang = locale;
-    document
-      .querySelector('link[rel="manifest"]')
-      ?.setAttribute(
-        "href",
-        locale === "en" ? "/manifest-en.webmanifest" : "/manifest.webmanifest",
-      );
   }, [locale]);
   const setLocale = useCallback((value: Locale) => {
     updateLocale(value);
@@ -55,7 +49,17 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     () => ({ locale, setLocale, t }),
     [locale, setLocale, t],
   );
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+  return (
+    <I18nContext.Provider value={value}>
+      <link
+        rel="manifest"
+        href={
+          locale === "en" ? "/manifest-en.webmanifest" : "/manifest.webmanifest"
+        }
+      />
+      {children}
+    </I18nContext.Provider>
+  );
 }
 export function useI18n() {
   const context = useContext(I18nContext);

@@ -10,3 +10,6 @@ test-results/
 # Generated from the exact installed MapLibre package by predev/prebuild/prestart
 public/maps/maplibre-gl-worker.mjs
 public/maps/MapLibre-LICENSE.txt
+
+# Private pilot database, media and sessions (never commit or serve publicly)
+.home-view/

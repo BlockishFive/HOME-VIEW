@@ -67,7 +67,7 @@ export function PwaInstall() {
         <strong>{t("Home View en tu móvil")}</strong>
         <p>
           {t(
-            "Instala el piloto desde el navegador. Los borradores siguen solo en este dispositivo.",
+            "Instala el piloto desde el navegador. Usa el área privada para compartir capturas entre tus dispositivos.",
           )}
         </p>
         <details>
@@ -79,7 +79,7 @@ export function PwaInstall() {
           </p>
           <p>
             {t(
-              "Este piloto necesita conexión para abrir sus pantallas. Sin conexión muestra un aviso; los borradores guardados no se borran. No hay sincronización ni acceso privado.",
+              "Este piloto necesita conexión para abrir sus pantallas. Sin conexión muestra un aviso. Los borradores locales permanecen en el navegador; los privados, en el servidor.",
             )}
           </p>
         </details>

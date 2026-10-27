@@ -50,7 +50,13 @@ async function preparePanorama(file: File): Promise<Blob> {
   }
 }
 
-export function DraftTourPreview({ scenes }: { scenes: DraftScene[] }) {
+export function DraftTourPreview({
+  scenes,
+  shared = false,
+}: {
+  scenes: DraftScene[];
+  shared?: boolean;
+}) {
   const { t } = useI18n();
   const [rooms, setRooms] = useState<
     {
@@ -78,17 +84,25 @@ export function DraftTourPreview({ scenes }: { scenes: DraftScene[] }) {
   if (!selected) return null;
   return (
     <div className="draft-tour-preview">
-      <h3>{t("Vista previa 360 local")}</h3>
+      <h3>
+        {t(shared ? "Vista previa 360 privada" : "Vista previa 360 local")}
+      </h3>
       <p>
         {t(
-          "Solo en este dispositivo. Las conexiones son manuales y no se crean automáticamente.",
+          shared
+            ? "Vista previa privada. Las conexiones son manuales y no se crean automáticamente."
+            : "Solo en este dispositivo. Las conexiones son manuales y no se crean automáticamente.",
         )}
       </p>
       <PanoramaViewer
         rooms={rooms}
         current={selected}
         onSelect={setCurrent}
-        label={t("VISTA PREVIA LOCAL · NO PUBLICADA")}
+        label={t(
+          shared
+            ? "VISTA PREVIA PRIVADA · NO PUBLICADA"
+            : "VISTA PREVIA LOCAL · NO PUBLICADA",
+        )}
       />
       <div
         className="draft-scene-tabs"
@@ -111,7 +125,13 @@ export function DraftTourPreview({ scenes }: { scenes: DraftScene[] }) {
 }
 
 /** Saved drafts do not allocate WebGL viewers until explicitly opened. */
-export function DraftTourSavedPreview({ scenes }: { scenes: DraftScene[] }) {
+export function DraftTourSavedPreview({
+  scenes,
+  shared = false,
+}: {
+  scenes: DraftScene[];
+  shared?: boolean;
+}) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   if (!scenes.length) return null;
@@ -128,7 +148,7 @@ export function DraftTourSavedPreview({ scenes }: { scenes: DraftScene[] }) {
             : "Ver recorrido 360 del borrador",
         )}
       </button>
-      {open && <DraftTourPreview scenes={scenes} />}
+      {open && <DraftTourPreview scenes={scenes} shared={shared} />}
     </div>
   );
 }
@@ -137,11 +157,13 @@ export function DraftTourEditor({
   scenes,
   onChange,
   disabled = false,
+  shared = false,
   onBusyChange,
 }: {
   scenes: DraftScene[];
   onChange: (scenes: DraftScene[]) => void;
   disabled?: boolean;
+  shared?: boolean;
   onBusyChange?: (busy: boolean) => void;
 }) {
   const { t } = useI18n();
@@ -394,7 +416,7 @@ export function DraftTourEditor({
           </button>
         )}
       </fieldset>
-      {preview && <DraftTourPreview scenes={scenes} />}
+      {preview && <DraftTourPreview scenes={scenes} shared={shared} />}
     </section>
   );
 }

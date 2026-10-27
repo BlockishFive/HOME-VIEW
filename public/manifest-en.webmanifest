@@ -1,10 +1,10 @@
 {
   "id": "/",
-  "name": "Home View · Local pilot",
+  "name": "Home View · Private pilot",
   "short_name": "Home View",
-  "description": "Fictional catalog and property drafts stored only on this device.",
+  "description": "Demo catalog and private property capture shared across your devices.",
   "lang": "en",
-  "start_url": "/alta#saved-title",
+  "start_url": "/privado",
   "scope": "/",
   "display": "standalone",
   "background_color": "#141614",
