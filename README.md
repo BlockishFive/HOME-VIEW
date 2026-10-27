@@ -2,13 +2,13 @@
 
 > HOME-VIEW · Project Design for Real Estate Services
 
-Prototipo en español para venta y renta de casas, departamentos y terrenos. Incluye cinco fichas ficticias, mapa vectorial propio MapLibre/PMTiles con vistas de referencia de México, Guanajuato y León, galería ampliable, datos de predial y costos, compartir e imprimir. Las tres viviendas originales tienen recorridos 360 con Marzipano. La casa en renta de demostración utiliza una galería convencional; los terrenos no ofrecen 360.
+Prototipo en español para venta y renta de casas, departamentos y terrenos. Incluye cinco fichas ficticias, mapa vectorial propio MapLibre/PMTiles con vistas de referencia de México, Guanajuato y León, galería ampliable, costos separados para venta y renta, compartir e imprimir. Las tres viviendas originales tienen recorridos 360 con Marzipano. La casa en renta de demostración utiliza una galería convencional; los terrenos no ofrecen 360.
 
-`/alta` permite preparar una ficha con tus propias fotos autorizadas y guardarla como borrador solo en este navegador. No hay cuentas, pagos, envío de contactos ni publicación de los borradores en un catálogo compartido.
+`/alta` conserva borradores locales en el navegador. `/privado` añade captura compartida entre iPad y PC con una cuenta privada configurada por terminal y almacenamiento en el servidor. Ninguno publica automáticamente en el catálogo. No hay registro público, pagos ni envío de contactos.
 
 ## Ejecutar localmente
 
-Requisitos: Node.js 24 LTS y npm 11 (versiones utilizadas en desarrollo). No se necesitan claves ni variables de entorno. El mapa incluido se sirve desde este mismo sitio; no necesita conexión a un proveedor cartográfico ni claves de API.
+Requisitos: Node.js 24 LTS y npm 11 (versiones utilizadas en desarrollo). No se necesitan claves. `NEXT_TELEMETRY_DISABLED=1` evita escrituras de telemetría en entornos con directorio personal de solo lectura. El mapa incluido se sirve desde este mismo sitio; no necesita conexión a un proveedor cartográfico ni claves de API.
 
 ```sh
 npm ci
@@ -20,11 +20,11 @@ Abre el puerto 3000 en tu navegador local. En un entorno donde el directorio per
 ```sh
 npm test                # integridad del catálogo, grafo de habitaciones y medios
 npm run typecheck       # TypeScript
-npm run build           # compilación de producción
+NEXT_TELEMETRY_DISABLED=1 npm run build  # compilación de producción
 npm run start           # servir la compilación en puerto 3000
 ```
 
-Pruebas de navegador (compilar antes; se puede reutilizar un servidor de producción en puerto 3000):
+Pruebas de navegador (compilar antes y dejar libre el puerto 3000; el servidor usa una base temporal y cuenta ficticia aisladas):
 
 ```sh
 npx playwright install chromium
@@ -34,6 +34,23 @@ npx playwright test
 Si Chromium ya está instalado, puedes evitar la descarga con `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npx playwright test` (comando verificado en este entorno).
 
 En Linux, Playwright puede requerir sus dependencias del sistema (`npx playwright install --with-deps chromium`). En la nube usa `PLAYWRIGHT_BROWSERS_PATH=/workspace/.cache/ms-playwright` al instalar y ejecutar si el directorio personal no es escribible.
+
+## Activar el área privada en el piloto
+
+Con el servidor detenido, después de actualizar la rama e instalar dependencias:
+
+```sh
+npm run setup:private
+NEXT_TELEMETRY_DISABLED=1 npm run dev
+```
+
+El primer comando pide un usuario y una contraseña de al menos 14 caracteres, sin mostrarla. No la envíes al chat ni la guardes en GitHub. En el iPad y la PC abre la **misma dirección HTTPS** del sitio y entra en **Área privada** (`/privado`). Guarda desde allí y usa **Actualizar lista privada** en el otro dispositivo.
+
+Para la casa ya capturada en el iPad: conserva un respaldo, inicia sesión en el área privada en otra pestaña y pulsa **Copiar al área privada** en la tarjeta de **Borradores locales**. El original permanece local; no se suben todos los borradores automáticamente.
+
+El servidor guarda datos y medios en `.home-view/private.sqlite`, excluido de Git. Funciona entre dispositivos mientras ese servidor esté activo; Codespaces todavía puede suspenderse y no es alojamiento permanente. Antes de eliminar el Codespace, crea un respaldo con `npm run backup:private` y conserva una copia privada fuera de él. Para cambiar la contraseña conservando datos: `npm run setup:private -- --reset`.
+
+Consulta [configuración, copias, límites y restauración](docs/PRIVATE_PILOT.md). No desplegar esta base en funciones efímeras o instancias sin disco persistente.
 
 ## Uso
 
@@ -54,12 +71,30 @@ Los JPEG locales son ilustraciones originales generadas mediante trazado de rayo
 ## Preparar tu casa en renta
 
 1. Abre **Alta de inmueble** (`/alta`). Se inicia con Renta, Casa, Guanajuato y León.
-2. Completa título, mensualidad en MXN, superficie, descripción y colonia. Recámaras, baños, predial y mantenimiento pueden dejarse sin especificar; no se inventan montos.
-3. Ajusta latitud/longitud a una ubicación aproximada de tu zona. La referencia inicial es el centro de León; no indica tu domicilio.
-4. Selecciona entre 1 y 8 fotos JPEG/PNG/WebP de hasta 5 MB cada una. Convierte HEIC previamente. El navegador las decodifica, reduce a un máximo de 1920 px y reencoda como JPEG sin los metadatos originales. Las fotos normales no se convierten en panoramas 360.
-5. Confirma que tienes autorización para usar las imágenes y guarda el borrador. Sigue siendo local, no publicado y accesible a quien use ese navegador. Usa **Descargar respaldo** para conservar una copia JSON con fotos; la importación de respaldos aún está pendiente.
+2. Completa título, mensualidad en MXN, superficie, descripción y colonia. Para **Renta** registra depósito en MXN, plazo mínimo en meses, aval y póliza como requisitos independientes o como alternativas («aval o póliza»), mascotas, amueblado y agua/electricidad/gas/internet incluidos. Todos pueden quedar **Por confirmar**. No se pide ni muestra predial en renta. Para **Venta** se pide precio de compra y predial anual opcional, sin requisitos de arrendamiento.
+3. Indica si pertenece a fraccionamiento o condominio y si existe cuota de mantenimiento: **Sí**, **No aplica** o **Por confirmar**. Si existe, el monto puede quedar pendiente; en renta indica además si ya está incluido en la mensualidad. **$18,000 + $900** produce **Renta y mantenimiento: $18,900/mes**; una cuota incluida no se vuelve a sumar. Solo se muestra el total cuando renta, cuota e inclusión son conocidos. Nunca se suman servicios, depósito ni póliza.
+4. Ajusta latitud/longitud a una ubicación aproximada de tu zona. La referencia inicial es el centro de León; no indica tu domicilio.
+5. Selecciona entre 1 y 8 fotos JPEG/PNG/WebP de hasta 5 MB cada una. Convierte HEIC previamente. El navegador las decodifica, reduce a un máximo de 1920 px y reencoda como JPEG sin los metadatos originales. Las fotos normales no se convierten en panoramas 360.
+6. Opcional para viviendas: en **Panoramas 360 y escenas**, confirma que son capturas equirectangulares completas autorizadas. Añade hasta 8 imágenes 2:1 de al menos 1024×512 y hasta 12 MB cada una; se reencodan a un máximo de 4096 px, sin recortar la esfera. Nombra escenas y crea conexiones de un solo sentido con destino y ángulos manuales. Añade la conexión de regreso si hace falta. **Abrir vista previa 360** reutiliza Marzipano; una foto convencional no se transforma en 360. Los terrenos conservan galería, sin recorrido.
+7. Confirma que tienes autorización para usar las imágenes y guarda el borrador. Sigue siendo local, no publicado y accesible a quien use ese navegador. Usa **Descargar respaldo** para conservar una copia JSON con fotos; la importación de respaldos aún está pendiente.
 
-Los borradores se almacenan en IndexedDB, no se suben al servidor y no aparecen en otros dispositivos ni en el catálogo público. Pueden perderse al borrar datos del navegador o cambiar de dirección/origen del sitio. Antes de publicar inmuebles reales se necesita backend, control de acceso y almacenamiento compartido.
+Desde **Borradores locales** (`/alta#saved-title`) puedes revisar costos y condiciones, editar, guardar sobre el mismo borrador, descargar respaldo o eliminar. Las escenas guardadas se abren bajo demanda. El respaldo JSON v2 incluye fotos y panoramas; la importación sigue pendiente. **Cancelar edición** descarta los cambios aún no guardados. Al guardar se confirma que el registro se puede volver a leer y la captura permanece en el formulario. **Ver el borrador guardado** abre su tarjeta; **Crear otro borrador** limpia el formulario explícitamente. Guardar otra vez actualiza el mismo registro.
+
+Los borradores v1 se adaptan al leerlos sin sobreescribir el original: el precio pasa al bloque de la operación, el predial solo a venta y una cuota positiva conserva su importe con inclusión por confirmar. Una cuota anterior vacía o cero requiere revisión; no demuestra «No aplica». Los requisitos, servicios y pertenencia a conjunto quedan por confirmar. La edición y guardado explícitos escriben el esquema v2.
+
+Los borradores de `/alta` se almacenan en IndexedDB y no aparecen en otros dispositivos hasta copiarlos explícitamente al área privada. Pueden perderse al borrar datos del navegador o cambiar de dirección/origen del sitio. Los borradores de `/privado` y sus medios se guardan en el servidor tras iniciar sesión. Ambos flujos conservan la separación venta/renta y no publican anuncios en el catálogo.
+
+## Piloto móvil PWA
+
+La aplicación tiene manifest, iconos originales y base instalable en HTTPS (o localhost). Usa **Instalar Home View** cuando el navegador lo ofrezca, o su menú de instalación; en iPhone, Compartir → Añadir a pantalla de inicio. La PWA abre `/privado`, que requiere la cuenta creada por terminal. Los borradores locales siguen vinculados al navegador, perfil y origen; los privados se consultan en el servidor desde ambos dispositivos.
+
+El piloto necesita conexión para abrir sus pantallas. El service worker solo conserva un aviso sin conexión e iconos públicos, sin cachear páginas, medios del usuario ni rangos del mapa. La edición offline completa y la comprobación en teléfonos físicos siguen pendientes. Véase [PWA y alcance offline](docs/PWA.md).
+
+## Idiomas y lectura en iPad
+
+Usa **Idioma / Language** en el encabezado para alternar Español y English. La preferencia se conserva en este navegador y la captura en curso no se reinicia. Se traducen navegación, filtros, formularios, avisos, condiciones, fichas de demostración, mapa, galería y recorrido 360. Los importes siguen en MXN.
+
+Los textos que escribas en los borradores se conservan en su idioma original. Cambiar la interfaz no los traduce ni publica. La PWA y su aviso offline también ofrecen ambos idiomas. La letra secundaria tiene un mínimo de 14 px y los campos/descripciones principales 16 px, con controles táctiles más amplios. Véase [idiomas, renderizado y legibilidad](docs/I18N.md).
 
 ## Servicios y costos
 
@@ -69,7 +104,10 @@ Las pruebas de navegador usan el archivo PMTiles real, comprueban HTTP206/Range 
 
 ## Documentación
 
+- [Área privada y captura compartida](docs/PRIVATE_PILOT.md)
 - [Arquitectura y decisiones](docs/ARCHITECTURE.md)
+- [Validación del piloto y comprobaciones pendientes](docs/VALIDATION.md)
+- [Piloto móvil PWA](docs/PWA.md)
 - [Servicios, costos y límites](docs/SERVICES.md)
 - [Datos del mapa y regeneración](docs/MAP_DATA.md)
 - [Pendientes de seguridad y producción](docs/SECURITY.md)

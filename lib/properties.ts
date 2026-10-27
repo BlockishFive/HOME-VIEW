@@ -1,3 +1,5 @@
+import { defaultRentalTerms, type Maintenance, type RentalTerms, type SaleTerms, type Community } from "./property-terms";
+export { formatMXN } from "./property-terms";
 export type RoomId = "sala" | "cocina" | "recamara";
 export type Hotspot = { target: RoomId; yaw: number; pitch: number };
 export type Room = {
@@ -8,7 +10,7 @@ export type Room = {
   y: number;
   hotspots: Hotspot[];
 };
-export type Property = {
+type PropertyBase = {
   slug: string;
   title: string;
   location: string;
@@ -22,11 +24,10 @@ export type Property = {
   rooms: Room[];
   priceValue: number;
   propertyType: "Casa" | "Departamento" | "Terreno";
-  operation: "Venta" | "Renta";
   coordinates: { lat: number; lng: number };
   address: string;
-  annualTax: number;
-  monthlyMaintenance: number;
+  maintenance: Maintenance;
+  community: Community;
   plotArea: number | null;
   builtYear: number;
   parking: number;
@@ -38,6 +39,11 @@ export type Property = {
   neighborhood: string;
   reference: string;
 };
+
+export type Property = PropertyBase & (
+  | { operation: "Venta"; sale: SaleTerms; rental?: never }
+  | { operation: "Renta"; rental: RentalTerms; sale?: never }
+);
 
 const rooms: Room[] = [
   {
@@ -96,8 +102,9 @@ export const properties: Property[] = [
     priceValue: 4850000,
     propertyType: "Casa",
     address: "Paseo de los Olivos 124 · Dirección ficticia",
-    annualTax: 7800,
-    monthlyMaintenance: 1200,
+    sale: { purchasePrice: 4850000, annualTax: 7800 },
+    maintenance: { status: "yes", amount: 1200, included: "unknown" },
+    community: "unknown",
     plotArea: 210,
     builtYear: 2021,
     parking: 2,
@@ -127,8 +134,9 @@ export const properties: Property[] = [
     priceValue: 2950000,
     propertyType: "Departamento",
     address: "Avenida del Sol 38, interior 4 · Dirección ficticia",
-    annualTax: 4200,
-    monthlyMaintenance: 1800,
+    sale: { purchasePrice: 2950000, annualTax: 4200 },
+    maintenance: { status: "yes", amount: 1800, included: "unknown" },
+    community: "unknown",
     plotArea: null,
     builtYear: 2023,
     parking: 1,
@@ -158,8 +166,9 @@ export const properties: Property[] = [
     priceValue: 6200000,
     propertyType: "Casa",
     address: "Camino de la Brisa 76 · Dirección ficticia",
-    annualTax: 11600,
-    monthlyMaintenance: 2400,
+    sale: { purchasePrice: 6200000, annualTax: 11600 },
+    maintenance: { status: "yes", amount: 2400, included: "unknown" },
+    community: "unknown",
     plotArea: 320,
     builtYear: 2020,
     parking: 3,
@@ -194,8 +203,9 @@ export const properties: Property[] = [
     address: "Ubicación aproximada de demostración · Sin domicilio real",
     location: "Zona de referencia · León, Guanajuato",
     neighborhood: "Por confirmar · Demo",
-    annualTax: 6400,
-    monthlyMaintenance: 0,
+    rental: { ...defaultRentalTerms(), monthlyRent: 18500 },
+    maintenance: { status: "unknown", amount: null, included: "unknown" },
+    community: "unknown",
     builtYear: 2022,
     parking: 2,
     levels: 2,
@@ -225,8 +235,9 @@ export const properties: Property[] = [
     address: "Ubicación aproximada de demostración · Sin domicilio real",
     location: "Zona de referencia · León, Guanajuato",
     neighborhood: "Por confirmar · Demo",
-    annualTax: 1800,
-    monthlyMaintenance: 0,
+    sale: { purchasePrice: 980000, annualTax: 1800 },
+    maintenance: { status: "no", amount: null, included: "unknown" },
+    community: "unknown",
     builtYear: 0,
     parking: 0,
     levels: 0,
@@ -256,13 +267,6 @@ export function getProperty(slug: string) {
   return properties.find((property) => property.slug === slug);
 }
 
-export function formatMXN(value: number) {
-  return new Intl.NumberFormat("es-MX", {
-    style: "currency",
-    currency: "MXN",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
 export function filterProperties(
   items: Property[],
   query: string,

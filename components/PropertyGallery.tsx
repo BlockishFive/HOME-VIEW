@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "./I18nProvider";
 
 import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
@@ -12,6 +13,7 @@ export function PropertyGallery({
   title: string;
   images: GalleryImage[];
 }) {
+  const { locale, t } = useI18n();
   const dialog = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLElement | null>(null);
   const headingId = useId();
@@ -50,16 +52,22 @@ export function PropertyGallery({
 
   if (!images.length) {
     return (
-      <section className="property-gallery" aria-label={`Galería de ${title}`}>
+      <section
+        className="property-gallery"
+        aria-label={t("Galería de {title}", { title })}
+      >
         <p className="gallery-note">
-          No hay imágenes de demostración disponibles.
+          {t("No hay imágenes de demostración disponibles.")}
         </p>
       </section>
     );
   }
 
   return (
-    <section className="property-gallery" aria-label={`Galería de ${title}`}>
+    <section
+      className="property-gallery"
+      aria-label={t("Galería de {title}", { title })}
+    >
       <div
         className={`gallery-mosaic ${images.length === 1 ? "gallery-mosaic-single" : ""}`}
       >
@@ -69,15 +77,20 @@ export function PropertyGallery({
             type="button"
             className={`gallery-tile${imageIndex === 0 ? " gallery-tile-main" : ""}`}
             onClick={(event) => openImage(imageIndex, event.currentTarget)}
-            aria-label={`Abrir imagen ${imageIndex + 1}: ${image.label}`}
+            aria-label={t("Abrir imagen {number}: {label}", {
+              number: imageIndex + 1,
+              label: t(image.label),
+            })}
             aria-haspopup="dialog"
           >
             {failed.has(image.src) ? (
-              <span className="gallery-image-error">Imagen no disponible</span>
+              <span className="gallery-image-error">
+                {t("Imagen no disponible")}
+              </span>
             ) : (
               <Image
                 src={image.src}
-                alt={image.alt}
+                alt={t(image.alt)}
                 fill
                 preload={imageIndex === 0}
                 sizes={
@@ -88,13 +101,15 @@ export function PropertyGallery({
                 onError={() => recordFailure(image.src)}
               />
             )}
-            <span className="gallery-tile-label">{image.label}</span>
+            <span className="gallery-tile-label">{t(image.label)}</span>
           </button>
         ))}
       </div>
       <div className="gallery-toolbar">
         <p className="gallery-note">
-          Ilustraciones sintéticas · Demo · No representan un inmueble real.
+          {t(
+            "Ilustraciones sintéticas · Demo · No representan un inmueble real.",
+          )}
         </p>
         <button
           type="button"
@@ -102,7 +117,7 @@ export function PropertyGallery({
           aria-haspopup="dialog"
           onClick={(event) => openImage(0, event.currentTarget)}
         >
-          Ver todas las imágenes ({images.length})
+          {t("Ver todas las imágenes ({count})", { count: images.length })}
         </button>
       </div>
       <dialog
@@ -127,19 +142,20 @@ export function PropertyGallery({
       >
         <div className="gallery-dialog-header">
           <div>
-            <h2 id={headingId}>Galería de {title}</h2>
+            <h2 id={headingId}>{t("Galería de {title}", { title })}</h2>
             <p id={noteId} className="gallery-note">
-              Ilustraciones sintéticas · Demo
+              {t("Ilustraciones sintéticas · Demo")}
             </p>
           </div>
           <button
             type="button"
             className="gallery-close"
-            aria-label="Cerrar galería"
+            aria-label={t("Cerrar galería")}
             autoFocus
             onClick={() => dialog.current?.close()}
           >
-            Cerrar <span aria-hidden="true">×</span>
+            {t("Cerrar")}
+            <span aria-hidden="true">×</span>
           </button>
         </div>
         <div className="gallery-stage">
@@ -147,14 +163,15 @@ export function PropertyGallery({
             current &&
             (failed.has(current.src) ? (
               <p className="gallery-image-error" role="status">
-                No se pudo cargar esta imagen. Puedes ver las otras imágenes con
-                los botones de navegación.
+                {t(
+                  "No se pudo cargar esta imagen. Puedes ver las otras imágenes con los botones de navegación.",
+                )}
               </p>
             ) : (
               <Image
                 key={current.src}
                 src={current.src}
-                alt={current.alt}
+                alt={t(current.alt)}
                 fill
                 sizes="(max-width: 1000px) 90vw, 1000px"
                 onError={() => recordFailure(current.src)}
@@ -163,28 +180,29 @@ export function PropertyGallery({
         </div>
         <div className="gallery-dialog-footer">
           <p className="gallery-counter" aria-live="polite" aria-atomic="true">
-            {index + 1} / {images.length} · {current?.label}
+            {index + 1} / {images.length} · {t(current?.label ?? "")}
           </p>
           <div
             className="gallery-controls"
             role="group"
-            aria-label="Navegación de la galería"
+            aria-label={t("Navegación de la galería")}
           >
             <button
               type="button"
-              aria-label="Imagen anterior"
+              aria-label={t("Imagen anterior")}
               onClick={() => move(-1)}
               disabled={images.length < 2}
             >
-              <span aria-hidden="true">←</span> Anterior
+              <span aria-hidden="true">←</span> {t("Anterior")}
             </button>
             <button
               type="button"
-              aria-label="Imagen siguiente"
+              aria-label={t("Imagen siguiente")}
               onClick={() => move(1)}
               disabled={images.length < 2}
             >
-              Siguiente <span aria-hidden="true">→</span>
+              {t("Siguiente")}
+              <span aria-hidden="true">→</span>
             </button>
           </div>
         </div>

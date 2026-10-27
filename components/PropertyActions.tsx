@@ -1,8 +1,10 @@
 "use client";
+import { useI18n } from "./I18nProvider";
 
 import { useId, useState } from "react";
 
 export function PropertyActions({ title }: { title: string }) {
+  const { locale, t } = useI18n();
   const inputId = useId();
   const [feedback, setFeedback] = useState("");
   const [manualUrl, setManualUrl] = useState("");
@@ -67,7 +69,7 @@ export function PropertyActions({ title }: { title: string }) {
       <div
         className="action-buttons"
         role="group"
-        aria-label="Acciones de la propiedad"
+        aria-label={t("Acciones de la propiedad")}
       >
         <button
           type="button"
@@ -90,7 +92,7 @@ export function PropertyActions({ title }: { title: string }) {
             <circle cx="18" cy="19" r="3" />
             <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4" />
           </svg>
-          Compartir
+          {t("Compartir")}
         </button>
         <button type="button" className="action-button" onClick={print}>
           <svg
@@ -107,17 +109,17 @@ export function PropertyActions({ title }: { title: string }) {
             <path d="M7 8V3h10v5M7 17H4V9h16v8h-3M7 14h10v7H7Z" />
             <path d="M16 11h1" />
           </svg>
-          Imprimir
+          {t("Imprimir")}
         </button>
       </div>
       {feedback && (
         <p className="action-feedback" role="status">
-          {feedback}
+          {t(feedback)}
         </p>
       )}
       {manualUrl && (
         <div className="action-manual-link">
-          <label htmlFor={inputId}>Enlace de esta propiedad</label>
+          <label htmlFor={inputId}>{t("Enlace de esta propiedad")}</label>
           <input
             id={inputId}
             type="url"

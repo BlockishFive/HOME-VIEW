@@ -1,0 +1,65 @@
+# Validación del piloto venta/renta
+
+Comprobado el 26 de octubre de 2026 con Node.js 24.19.0, npm 11.9.0, Next.js 16.4.3 y Chromium del sistema (`/usr/bin/chromium`). Base revisada: `main` en `99ef514c69eb515d1a726e90bd318afec28e418f`. Se leyeron AGENTS.md, README y las guías instaladas de Next.js antes de modificar la aplicación.
+
+## Resultados
+
+| Comprobación | Resultado |
+| --- | --- |
+| `npm ci --cache /workspace/.cache/npm` | Dependencias del lockfile instaladas |
+| `npm test` | 26 pruebas aprobadas |
+| `npm run typecheck` | Sin errores |
+| `NEXT_TELEMETRY_DISABLED=1 npm run build` | Compilación de producción y generación de las 14 páginas completadas |
+| `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium NEXT_TELEMETRY_DISABLED=1 npx playwright test --workers=2` | 27 pruebas aprobadas sobre servidor de producción |
+| `npm audit --json` | 0 vulnerabilidades conocidas reportadas en esta ejecución |
+| `git diff --check` | Sin errores de espacios |
+| Revisión visual en viewport de 390 px | Formulario, costos y ficha de renta legibles y sin desbordamiento horizontal |
+
+`NEXT_TELEMETRY_DISABLED=1` evita escrituras de configuración en el directorio personal de solo lectura de este entorno. Las comprobaciones de red/servidor requieren que el entorno permita conexiones de npm y loopback. El proyecto no incluye un script de lint independiente.
+
+## Cobertura
+
+- Catálogo, panel del mapa y ficha de renta sin predial; venta con precio de compra, predial y mantenimiento sin requisitos de arrendamiento.
+- Cuota adicional de $900 sobre renta de $18,000 → total de $18,900. Cuota incluida → $18,000, sin duplicar. Importes o inclusión pendientes no generan total ni cero ficticio. Servicios, depósito y póliza quedan fuera de la suma. Los centavos se conservan.
+- Requisitos independientes y aval o póliza como alternativas, mascotas, amueblado, cuatro servicios y pertenencia a conjunto con estado desconocido explícito.
+- Formulario por operación, error con foco accesible, guardado/edición sobre un único ID, recarga, exportación de fotografías, eliminación y errores de almacenamiento/imágenes.
+- Migración IndexedDB v1 no destructiva al leer: precio conservado, cuota con inclusión pendiente, requisitos no inferidos y guardado explícito en v2.
+- Fotos normales separadas de panoramas, rechazo de proporciones incorrectas, dos escenas procedurales, conexión manual y ángulo persistido, visor Marzipano real, limpieza de conexiones al eliminar escena y apertura guardada bajo demanda.
+- Manifest e iconos PNG, registro del worker, caché limitada y aviso sin conexión.
+- Pruebas previas de galería, teclado, compartir/imprimir, 404, WebGL, filtros y mapa. El archivo PMTiles real conserva HTTP Range/206; no se sustituyó por cartografía simulada ni se añadieron peticiones a proveedores externos.
+
+## Comprobaciones pendientes
+
+No se comprobó la instalación desde la interfaz del sistema operativo en teléfonos físicos iOS/Android, el rendimiento en móviles de poca memoria ni el uso con lectores de pantalla reales. El viewport automatizado no sustituye esas pruebas. La auditoría de dependencias no equivale a una auditoría de seguridad.
+
+No existe todavía backend ni acceso privado, almacenamiento compartido, sincronización, importación de respaldos, resolución de conflictos entre pestañas, panoramas multirresolución ni edición offline completa. Se conserva un aviso offline, no las pantallas completas de Next.js. Las fotos/panoramas de pruebas son ilustraciones procedurales del repositorio; no se añadieron datos de inmuebles o personas reales.
+
+Antes de un uso compartido consultar [seguridad](SECURITY.md), [arquitectura](ARCHITECTURE.md) y [PWA](PWA.md). No se implementaron pagos ni registro público; este cambio no despliega ni publica los borradores.
+
+## Ampliación: legibilidad e interfaz español/inglés
+
+La rama incorpora textos secundarios de al menos 14 px, campos y descripciones de 16 px, controles táctiles y selector ES/EN persistente. Se verificaron 16 combinaciones de pantalla/ruta en español (1440, 1024, 768 y 390 px) y 8 en inglés (1024 y 390 px), sin desbordamiento horizontal en inicio, alta, renta y ficha. Los textos del propietario se conservan y los importes siguen en MXN.
+
+Después de esta ampliación pasan TypeScript, compilación de producción y 32 pruebas unitarias. La suite de navegador tiene 33 casos: 31 pasaron en la ejecución conjunta; se corrigió una aserción que confundía el verbo inglés «Describe» con texto español y se repitió ese caso correctamente. La inicialización WebGL del recorrido excedió el límite de cinco segundos en esa ejecución concurrente y se comprobó además de forma aislada. Los nuevos casos cubren preferencia persistente, formulario sin pérdida de datos, valores canónicos, validación, moneda, manifest inglés y aviso offline bilingüe.
+
+La prueba automatizada no acredita funcionamiento en un iPad físico ni elimina el pendiente de revisar Safari y lectores de pantalla. [Idiomas y límites de renderizado](I18N.md).
+
+## Confirmación y conservación de la captura local
+
+Se comprobó el guardado sin vaciar el formulario, confirmación visible junto al botón, enlace y foco al borrador guardado, actualización sobre un único ID y limpieza solo mediante acción explícita. Se añadió lectura de verificación posterior a la transacción. Los fallos simulados de escritura o lectura no borran campos ni fotografías; el reintento conserva la identidad.
+
+La compilación de producción y TypeScript pasan, y las 32 pruebas unitarias siguen aprobadas. Una selección de 22 pruebas de navegador pasó: cuatro regresiones nuevas de guardado, más captura, idioma, migración, persistencia, exportación y escenas. La prueba con HTML modificado mediante atributos `__gcruniqueid` también permite guardar y recargar el registro; no identifica qué herramienta externa añadió los atributos en el navegador del usuario. No se ocultan avisos de hidratación con `suppressHydrationWarning`.
+
+La ausencia de borradores de un iPad en una PC corresponde al almacenamiento local del piloto; no se implementó sincronización. No borrar datos del sitio para tratar de recuperar un borrador. Usar el mismo navegador, perfil y origen donde se capturó.
+
+## Área privada y captura compartida
+
+La rama añade una cuenta privada creada por terminal, API autenticada, SQLite persistente con medios en transacciones, copia explícita desde IndexedDB, revisión optimista, validación Sharp y respaldo consistente. No crea una cuenta real por defecto ni publica registros en el catálogo.
+
+Comprobaciones finales: **38 unitarias aprobadas**, **41 pruebas de navegador aprobadas con un worker**, TypeScript y build de producción correctos; `npm audit` reporta 0 vulnerabilidades conocidas. Se amplió después la prueba de dos dispositivos para confirmar edición desde la PC, actualización de lista en el iPad y rechazo de su captura antigua; esa prueba focalizada también pasó.
+
+La cobertura nueva verifica sesiones revocables/expiración y contraseñas con hash; límites de intentos; origen exacto, proxy de Codespaces y rechazo de forwarded-host arbitrario; bloqueo de API y medios sin sesión; cookies HttpOnly/SameSite; no-store; imágenes malformadas; registros/medios atómicos; revisiones antiguas y eliminación; copia local conservando original; fotos y panorama privados accesibles desde otra sesión; ausencia de datos privados en catálogo público. Los respaldos se comprobaron en una conexión SQLite separada. Se ejecutaron manualmente setup:private y backup:private con una cuenta y directorio ficticios aislados, confirmando contraseña sin eco.
+
+Las regresiones ajustadas esperan confirmación de guardado/eliminación antes de recargar. El recorrido con varias cargas WebGL tiene un presupuesto total de 60 segundos. El manifest se renderiza desde React para evitar duplicados al cambiar idioma durante navegación; se conserva su URL. Las pruebas usan bases temporales y no reutilizan un servidor de datos reales.
+
+Pendiente: Safari/iPad físicos, auditoría independiente, restauración operativa con backups externos y alojamiento Node.js permanente con disco persistente. La implementación funciona en un servidor único activo; no elimina la suspensión de Codespaces. Véase [configuración privada](PRIVATE_PILOT.md).

@@ -7,7 +7,7 @@
   --ink: #edf1e6;
   --accent: #c5f53a;
   --yellow: #edd85a;
-  --muted: #a5ae9c;
+  --muted: #b8c2ad;
   --paper: #141614;
   --surface: #1c1f1b;
   --line: #32382d;
@@ -25,7 +25,7 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   -webkit-font-smoothing: antialiased;
 }
 a {
@@ -89,7 +89,7 @@ button {
   border: 0;
 }
 small {
-  font-size: 11px;
+  font-size: 14px;
 }
 .site-header {
   height: 91px;
@@ -126,7 +126,7 @@ small {
   display: flex;
   gap: 32px;
   align-items: center;
-  font-size: 12px;
+  font-size: 14px;
 }
 .site-header nav a:hover {
   color: var(--accent);
@@ -136,7 +136,7 @@ small {
   border-radius: 30px;
   padding: 8px 13px;
   color: #d0e6a3;
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.3px;
   white-space: nowrap;
   background: #252d1c;
@@ -154,7 +154,7 @@ small {
   align-self: center;
 }
 .eyebrow {
-  font-size: 9px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 2px;
   line-height: 1.6;
@@ -187,7 +187,7 @@ small {
   justify-content: space-between;
   gap: 28px;
   padding: 15px 20px;
-  font-size: 12px;
+  font-size: 14px;
   border-radius: 30px;
   transition:
     background 0.2s,
@@ -211,7 +211,7 @@ small {
   align-items: center;
   margin-top: 37px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 14px;
   line-height: 1.7;
 }
 .hero-meta strong {
@@ -226,7 +226,7 @@ small {
   width: 40px;
   height: 40px;
   color: var(--accent);
-  font-size: 12px;
+  font-size: 14px;
 }
 .hero-image {
   position: relative;
@@ -255,7 +255,7 @@ small {
   background: #1f2d19cc;
   padding: 9px 12px;
   backdrop-filter: blur(10px);
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 1.5px;
   z-index: 1;
   border-radius: 20px;
@@ -281,7 +281,7 @@ small {
   gap: 6px;
 }
 .hero-feature small {
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 1.7px;
   color: #c1d593;
 }
@@ -290,7 +290,7 @@ small {
   font-weight: 500;
 }
 .hero-feature span span {
-  font-size: 10px;
+  font-size: 14px;
   color: #b0bea1;
 }
 .feature-play {
@@ -324,7 +324,7 @@ small {
 }
 .section-heading > p {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
 }
 .search-bar {
   display: flex;
@@ -349,7 +349,7 @@ small {
   flex: 1.6;
 }
 .search-bar label > span {
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 1.6px;
   color: #acbe90;
 }
@@ -361,7 +361,7 @@ small {
   color: #e9efdd;
   padding: 4px 0;
   min-height: 26px;
-  font-size: 12px;
+  font-size: 14px;
   border-radius: 3px;
 }
 .search-bar input::placeholder {
@@ -378,7 +378,7 @@ small {
   padding: 13px 17px;
   border-radius: 25px;
   color: #1d280e;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 600;
 }
 .catalog-bar {
@@ -388,7 +388,7 @@ small {
   justify-content: space-between;
   align-items: center;
   gap: 10px;
-  font-size: 10px;
+  font-size: 14px;
   color: var(--muted);
 }
 .catalog-bar strong {
@@ -410,7 +410,7 @@ small {
   border-radius: 20px;
   background: transparent;
   color: #b1bda2;
-  font-size: 10px;
+  font-size: 14px;
 }
 .view-toggle button[aria-pressed="true"] {
   background: #cadf9e;
@@ -451,7 +451,7 @@ small {
   top: 13px;
   background: #1b2913e8;
   padding: 7px 10px;
-  font-size: 9px;
+  font-size: 14px;
   border-radius: 20px;
   color: #d5f2aa;
 }
@@ -472,7 +472,7 @@ small {
   padding: 18px;
 }
 .card-body .eyebrow {
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 1.3px;
 }
 .card-title {
@@ -487,19 +487,19 @@ small {
   letter-spacing: -0.5px;
 }
 .card-title > span {
-  font-size: 12px;
+  font-size: 14px;
   white-space: nowrap;
   color: #e6edcf;
 }
 .card-title small {
-  font-size: 8px;
+  font-size: 14px;
   color: #a6b491;
 }
 .muted {
   color: var(--muted);
 }
 .location {
-  font-size: 10px;
+  font-size: 14px;
   margin-top: 8px;
 }
 .card-facts {
@@ -508,11 +508,11 @@ small {
   margin-top: 15px;
   padding-top: 13px;
   border-top: 1px solid var(--line);
-  font-size: 10px;
+  font-size: 14px;
   color: #b5c29f;
 }
 .demo-note {
-  font-size: 10px;
+  font-size: 14px;
   line-height: 1.8;
   color: #a2af93;
   margin-top: 23px;
@@ -543,7 +543,7 @@ small {
 }
 .steps p:not(.eyebrow) {
   color: #adb99c;
-  font-size: 12px;
+  font-size: 14px;
   max-width: 280px;
 }
 .site-footer {
@@ -552,7 +552,7 @@ small {
   justify-content: space-between;
   align-items: center;
   gap: 20px;
-  font-size: 10px;
+  font-size: 14px;
   color: #a5b195;
   max-width: 1440px;
   margin: auto;
@@ -566,7 +566,7 @@ small {
   padding-top: 28px;
 }
 .back-link {
-  font-size: 11px;
+  font-size: 14px;
   color: #b2c197;
 }
 .back-link:hover {
@@ -584,13 +584,13 @@ small {
   margin: 10px 0;
 }
 .property-heading .muted {
-  font-size: 12px;
+  font-size: 14px;
 }
 .detail-facts {
   display: flex;
   gap: 24px;
   padding-bottom: 9px;
-  font-size: 11px;
+  font-size: 14px;
   color: #adb99c;
 }
 .detail-facts strong {
@@ -639,7 +639,7 @@ small {
   border: 1px solid #98b36655;
   border-radius: 25px;
   padding: 9px 12px;
-  font-size: 11px;
+  font-size: 14px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -653,7 +653,7 @@ small {
   box-shadow: 0 0 12px #b5e63933;
 }
 .viewer-demo {
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 1px;
   color: #e0edcf;
   background: #1b2618cc;
@@ -673,7 +673,7 @@ small {
 }
 .drag-hint {
   color: #e0edcf;
-  font-size: 10px;
+  font-size: 14px;
   background: #1b2618cc;
   padding: 10px 12px;
   border-radius: 20px;
@@ -714,7 +714,7 @@ small {
 }
 .viewer-status p {
   max-width: 400px;
-  font-size: 13px;
+  font-size: 14px;
 }
 .viewer-status button {
   background: var(--accent);
@@ -748,7 +748,7 @@ small {
   padding: 6px 10px;
   border: 1px solid #8ba35e66;
   border-radius: 20px;
-  font-size: 10px;
+  font-size: 14px;
 }
 .hotspot:hover > span:first-child {
   background: var(--yellow);
@@ -769,12 +769,12 @@ small {
   justify-content: space-between;
   gap: 7px;
   align-items: center;
-  font-size: 10px;
+  font-size: 14px;
   color: #b4c59c;
   min-height: 48px;
 }
 .room-tabs button span:first-child {
-  font-size: 9px;
+  font-size: 14px;
   opacity: 0.8;
 }
 .room-tabs button[aria-pressed="true"] {
@@ -794,7 +794,7 @@ small {
   margin: 11px 0;
 }
 .tour-sidebar > .muted {
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.9;
 }
 .floorplan {
@@ -806,13 +806,13 @@ small {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 14px;
 }
 .floorplan-heading strong {
   font-weight: 500;
 }
 .floorplan-heading span {
-  font-size: 8px;
+  font-size: 14px;
   color: #a7b592;
 }
 .plan-canvas {
@@ -837,7 +837,7 @@ small {
   position: absolute;
   transform: translate(-50%, -50%);
   background: transparent;
-  font-size: 9px;
+  font-size: 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -855,7 +855,7 @@ small {
   font-weight: 600;
 }
 .floorplan small {
-  font-size: 8px;
+  font-size: 14px;
   color: #adba9a;
 }
 .sidebar-price {
@@ -865,7 +865,7 @@ small {
   margin: 20px 0;
 }
 .sidebar-price small {
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 1.7px;
   color: #afbf98;
 }
@@ -874,7 +874,7 @@ small {
   font-weight: 500;
 }
 .sidebar-price strong span {
-  font-size: 10px;
+  font-size: 14px;
   color: #afbf98;
 }
 .visit-request > .button {
@@ -883,12 +883,12 @@ small {
 .visit-request > small {
   display: block;
   text-align: center;
-  font-size: 8px;
+  font-size: 14px;
   color: #adba9a;
   margin-top: 10px;
 }
 .visit-message {
-  font-size: 11px;
+  font-size: 14px;
   background: #2d3b21;
   padding: 15px;
   margin-top: 15px;
@@ -903,7 +903,7 @@ small {
   padding: 8px 0;
   background: transparent;
   text-decoration: underline;
-  font-size: 11px;
+  font-size: 14px;
   color: var(--accent);
 }
 .about-property {
@@ -920,7 +920,7 @@ small {
 }
 .about-property > div > p:not(.eyebrow):not(.demo-note) {
   color: #b8c4a6;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.9;
 }
 .missing {
@@ -971,13 +971,13 @@ small {
   padding: 9px 12px;
   border: 1px solid #566841;
   border-radius: 25px;
-  font-size: 11px;
+  font-size: 14px;
 }
 .map-heading > span:last-child {
   background: #1a2217df;
   padding: 7px 10px;
   border-radius: 20px;
-  font-size: 9px;
+  font-size: 14px;
   color: #b6c6a0;
 }
 .map-viewport {
@@ -1010,7 +1010,7 @@ small {
   border: 2px solid #141e0f;
   padding: 8px 12px;
   border-radius: 25px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   box-shadow: 0 3px 15px #0006;
   white-space: nowrap;
@@ -1070,7 +1070,7 @@ small {
   pointer-events: none;
   background: #182014e8;
   padding: 10px 14px;
-  font-size: 8px;
+  font-size: 14px;
   color: #bdcba9;
   text-align: center;
 }
@@ -1086,7 +1086,7 @@ small {
   pointer-events: none;
 }
 .map-compass small {
-  font-size: 9px;
+  font-size: 14px;
 }
 .selected-property {
   display: flex;
@@ -1100,7 +1100,7 @@ small {
   padding: 18px;
 }
 .selected-property .eyebrow {
-  font-size: 7px;
+  font-size: 14px;
   letter-spacing: 1.5px;
 }
 .selected-property strong {
@@ -1111,7 +1111,7 @@ small {
 }
 .selected-property strong > span {
   display: block;
-  font-size: 9px;
+  font-size: 14px;
   font-weight: 400;
   color: #b1bf9e;
   margin-top: 5px;
@@ -1122,7 +1122,7 @@ small {
 }
 .selected-property small {
   color: #b8c8a4;
-  font-size: 9px;
+  font-size: 14px;
 }
 .selected-property > div:nth-child(2) > strong {
   font-size: 16px;
@@ -1130,7 +1130,7 @@ small {
 }
 .selected-property > .button {
   padding: 12px 14px;
-  font-size: 10px;
+  font-size: 14px;
   white-space: nowrap;
 }
 .explorer-map > .property-map {
@@ -1175,7 +1175,7 @@ small {
 .map-results .card-image .image-label {
   left: 7px;
   top: 8px;
-  font-size: 7px;
+  font-size: 14px;
   padding: 5px 7px;
 }
 .map-results .card-arrow {
@@ -1197,27 +1197,27 @@ small {
 }
 .map-results .card-title > span {
   display: block;
-  font-size: 12px;
+  font-size: 14px;
   margin-top: 8px;
 }
 .map-results .card-body .eyebrow {
-  font-size: 6px;
+  font-size: 14px;
   letter-spacing: 1px;
 }
 .map-results .location {
-  font-size: 9px;
+  font-size: 14px;
   margin-top: 5px;
 }
 .map-results .card-facts {
   gap: 9px;
-  font-size: 8px;
+  font-size: 14px;
   margin-top: 9px;
   padding-top: 9px;
 }
 .locate-button {
   background: transparent;
   color: #bfd49f;
-  font-size: 9px;
+  font-size: 14px;
   width: 100%;
   text-align: right;
   padding: 8px 11px 7px;
@@ -1243,7 +1243,7 @@ small {
 }
 .empty-results p {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
 }
 .empty-results .button {
   margin-top: 23px;
@@ -1275,7 +1275,7 @@ small {
   gap: 20px;
   border-bottom: 1px solid var(--line);
   padding: 12px 0;
-  font-size: 12px;
+  font-size: 14px;
 }
 .facts-table dt {
   color: #b7c3a4;
@@ -1297,7 +1297,7 @@ small {
   border: 1px solid #475b31;
   border-radius: 20px;
   color: #c2d8a0;
-  font-size: 10px;
+  font-size: 14px;
 }
 .cost-card {
   background: #20291a;
@@ -1318,7 +1318,7 @@ small {
   margin-bottom: 20px;
 }
 .cost-card > p {
-  font-size: 11px;
+  font-size: 14px;
   color: #b4c39e;
 }
 .cost-card h3 {
@@ -1332,7 +1332,7 @@ small {
   border-bottom: 1px solid #455634;
 }
 .cost-card dt {
-  font-size: 11px;
+  font-size: 14px;
   color: #c5d2b1;
   margin-bottom: 8px;
 }
@@ -1342,11 +1342,11 @@ small {
   color: var(--yellow);
 }
 .cost-card dd small {
-  font-size: 10px;
+  font-size: 14px;
   color: #b9c9a2;
 }
 .cost-card .cost-note {
-  font-size: 10px;
+  font-size: 14px;
   line-height: 1.8;
   margin-top: 17px;
 }
@@ -1362,13 +1362,13 @@ small {
   margin: 14px 0 24px;
 }
 .location-section > div:first-child > p:not(.eyebrow) {
-  font-size: 12px;
+  font-size: 14px;
   color: #b8c6a6;
 }
 .location-section strong {
   display: block;
   margin-top: 10px;
-  font-size: 13px;
+  font-size: 14px;
   color: #d0ddbc;
   font-weight: 500;
 }
@@ -1431,7 +1431,7 @@ small {
   .search-reset {
     padding: 12px;
     margin: 0 5px 0 12px;
-    font-size: 9px;
+    font-size: 14px;
   }
 }
 @media (max-width: 850px) {
@@ -1442,7 +1442,7 @@ small {
     gap: 14px;
   }
   .site-header nav a {
-    font-size: 10px;
+    font-size: 14px;
   }
   .brand {
     font-size: 25px;
@@ -1472,7 +1472,7 @@ small {
     border-radius: 14px 55px 14px 14px;
   }
   .hero-image-tag {
-    font-size: 7px;
+    font-size: 14px;
   }
   .catalog {
     padding-top: 40px;
@@ -1538,10 +1538,10 @@ small {
     margin-top: 0;
   }
   .map-results .card-body .eyebrow {
-    font-size: 8px;
+    font-size: 14px;
   }
   .map-results .card-facts {
-    font-size: 10px;
+    font-size: 14px;
   }
   .map-results .card-title h3 {
     font-size: 23px;
@@ -1558,7 +1558,7 @@ small {
     align-items: center;
   }
   .card-facts {
-    font-size: 11px;
+    font-size: 14px;
   }
   .steps-grid {
     grid-template-columns: 1fr;
@@ -1604,14 +1604,14 @@ small {
     margin: 40px 0;
   }
   .viewer-demo {
-    font-size: 7px;
+    font-size: 14px;
   }
   .room-tabs {
     gap: 6px;
   }
   .room-tabs button {
     padding: 12px 8px;
-    font-size: 9px;
+    font-size: 14px;
   }
   .hero-image .hero-feature {
     left: 18px;
@@ -1659,10 +1659,10 @@ small {
     font-size: 20px;
   }
   .map-results .card-body .eyebrow {
-    font-size: 6px;
+    font-size: 14px;
   }
   .map-results .card-facts {
-    font-size: 8px;
+    font-size: 14px;
     gap: 8px;
   }
   .hero-feature {
@@ -1672,21 +1672,21 @@ small {
     font-size: 22px;
   }
   .catalog-bar {
-    font-size: 9px;
+    font-size: 14px;
   }
   .view-toggle button {
-    font-size: 9px;
+    font-size: 14px;
     padding: 8px 10px;
   }
   .property-map .map-heading > span:last-child {
-    font-size: 7px;
+    font-size: 14px;
   }
   .map-pin {
-    font-size: 10px;
+    font-size: 14px;
     padding: 7px 9px;
   }
   .map-disclaimer {
-    font-size: 7px;
+    font-size: 14px;
   }
   .property-map .map-heading {
     left: 12px;
@@ -1697,10 +1697,10 @@ small {
   }
   .demo-pill {
     padding: 7px 9px;
-    font-size: 8px;
+    font-size: 14px;
   }
   .site-header nav a {
-    font-size: 9px;
+    font-size: 14px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1737,7 +1737,7 @@ small {
   gap: 8px;
 }
 .property-asking-price > span {
-  font-size: 8px;
+  font-size: 14px;
   letter-spacing: 1.8px;
   color: #b0c293;
 }
@@ -1748,7 +1748,7 @@ small {
   letter-spacing: -1px;
 }
 .property-asking-price small {
-  font-size: 11px;
+  font-size: 14px;
   color: #b7c79f;
   letter-spacing: 0;
 }
@@ -1772,7 +1772,7 @@ small {
   color: #dbe8c7;
   border: 1px solid #4a5a36;
   border-radius: 25px;
-  font-size: 11px;
+  font-size: 14px;
 }
 .action-button:hover {
   background: #354729;
@@ -1788,7 +1788,7 @@ small {
   height: 100%;
 }
 .action-feedback {
-  font-size: 10px;
+  font-size: 14px;
   color: #c6d9a9;
   margin-top: 8px;
   line-height: 1.7;
@@ -1800,7 +1800,7 @@ small {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 8px;
-  font-size: 10px;
+  font-size: 14px;
   color: #c6d9a9;
 }
 .action-manual-link label {
@@ -1863,7 +1863,7 @@ small {
   border: 1px solid #a4be7a66;
   background: #192513e8;
   color: #e2f4c5;
-  font-size: 10px;
+  font-size: 14px;
   border-radius: 20px;
   pointer-events: none;
 }
@@ -1876,7 +1876,7 @@ small {
 }
 .gallery-note {
   color: #a5b893;
-  font-size: 10px;
+  font-size: 14px;
   line-height: 1.7;
 }
 .gallery-open-button {
@@ -1886,7 +1886,7 @@ small {
   border-radius: 25px;
   padding: 11px 17px;
   min-height: 44px;
-  font-size: 11px;
+  font-size: 14px;
   white-space: nowrap;
 }
 .gallery-open-button:hover {
@@ -1921,7 +1921,7 @@ small {
   line-height: 1.3;
 }
 .gallery-dialog-header p {
-  font-size: 10px;
+  font-size: 14px;
   color: #b6c79e;
 }
 .gallery-close {
@@ -1956,7 +1956,7 @@ small {
   inset: 0;
   padding: 30px;
   color: #c2d6a3;
-  font-size: 13px;
+  font-size: 14px;
 }
 .gallery-dialog-footer {
   display: flex;
@@ -1984,7 +1984,7 @@ small {
   background: #415b2a;
 }
 .gallery-counter {
-  font-size: 12px;
+  font-size: 14px;
   color: #d7e8c1;
 }
 .gallery-counter span {
@@ -2009,7 +2009,7 @@ small {
   justify-content: center;
   gap: 10px;
   padding: 20px 8px 23px;
-  font-size: 12px;
+  font-size: 14px;
   color: #a8b998;
   border-bottom: 3px solid transparent;
 }
@@ -2063,7 +2063,7 @@ small {
   letter-spacing: -0.6px;
 }
 .summary-heading > span {
-  font-size: 10px;
+  font-size: 14px;
   color: #a8b998;
 }
 .property-summary {
@@ -2089,13 +2089,13 @@ small {
   border-bottom: 0;
 }
 .property-summary dt {
-  font-size: 10px;
+  font-size: 14px;
   color: #acbd98;
   line-height: 1.6;
   margin-bottom: 8px;
 }
 .property-summary dd {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
   margin: 0;
   color: #e0eace;
@@ -2129,7 +2129,7 @@ small {
 }
 .property-costs > .muted,
 .property-costs > div > .muted {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.9;
 }
 .property-costs > div:first-child {
@@ -2199,7 +2199,7 @@ small {
   }
   .action-button {
     padding: 10px 12px;
-    font-size: 10px;
+    font-size: 14px;
     gap: 5px;
   }
   .property-actions {
@@ -2207,7 +2207,7 @@ small {
   }
   .action-manual-link input {
     width: 100%;
-    font-size: 10px;
+    font-size: 14px;
   }
   .gallery-mosaic {
     height: 370px;
@@ -2220,7 +2220,7 @@ small {
     grid-row: 1;
   }
   .gallery-tile-label {
-    font-size: 9px;
+    font-size: 14px;
     bottom: 10px;
     left: 10px;
     padding: 6px 10px;
@@ -2229,11 +2229,11 @@ small {
     align-items: start;
   }
   .gallery-note {
-    font-size: 9px;
+    font-size: 14px;
     max-width: 160px;
   }
   .gallery-open-button {
-    font-size: 10px;
+    font-size: 14px;
     padding: 10px 13px;
   }
   .property-section-nav a {
@@ -2241,7 +2241,7 @@ small {
     flex-direction: column;
     gap: 6px;
     padding: 12px 3px 18px;
-    font-size: 9px;
+    font-size: 14px;
   }
   .property-section-nav a svg {
     width: 19px;
@@ -2251,7 +2251,7 @@ small {
     font-size: 27px;
   }
   .listing-description {
-    font-size: 13px;
+    font-size: 14px;
   }
   .summary-heading {
     align-items: start;
@@ -2277,10 +2277,10 @@ small {
     border-bottom: 0;
   }
   .property-summary dt {
-    font-size: 9px;
+    font-size: 14px;
   }
   .property-summary dd {
-    font-size: 12px;
+    font-size: 14px;
   }
   .tour-section > .section-heading {
     align-items: start;
@@ -2317,7 +2317,7 @@ small {
     gap: 10px;
   }
   .gallery-counter {
-    font-size: 10px;
+    font-size: 14px;
   }
   .gallery-controls button {
     min-width: 44px;
@@ -2355,7 +2355,7 @@ small {
     text-align: center;
   }
   .property-summary dd {
-    font-size: 11px;
+    font-size: 14px;
   }
 }
 @media print {
@@ -2497,13 +2497,13 @@ small {
   gap: 8px;
   padding: 0 14px;
   border-radius: 25px;
-  font-size: 11px;
+  font-size: 14px;
 }
 .gallery-close span {
   font-size: 23px;
 }
 .gallery-controls button {
-  font-size: 11px;
+  font-size: 14px;
   padding: 10px 15px;
   display: flex;
   gap: 9px;
@@ -2568,7 +2568,7 @@ small {
   padding: 11px 17px;
   color: #b7c9a0;
   min-height: 44px;
-  font-size: 11px;
+  font-size: 14px;
 }
 .operation-tabs > button[aria-pressed="true"] {
   background: var(--accent);
@@ -2579,7 +2579,7 @@ small {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 11px;
+  font-size: 14px;
   margin-left: auto;
   color: #d4e9b5;
   padding: 12px;
@@ -2600,7 +2600,7 @@ small {
   margin-bottom: 18px;
 }
 .no-tour p {
-  font-size: 13px;
+  font-size: 14px;
   max-width: 700px;
   color: #b8c6a6;
 }
@@ -2637,7 +2637,7 @@ small {
   background: transparent;
   color: #d6e6be;
   border-radius: 20px;
-  font-size: 10px;
+  font-size: 14px;
   min-height: 34px;
 }
 .geo-region-buttons button[aria-pressed="true"] {
@@ -2679,7 +2679,7 @@ small {
   min-height: 36px;
   min-width: 85px;
   padding: 8px 13px;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
   box-shadow: 0 3px 14px #0006;
@@ -2706,7 +2706,7 @@ small {
   gap: 10px;
   background: #182414eb;
   padding: 10px 12px;
-  font-size: 8px;
+  font-size: 14px;
   color: #cfddbc;
   line-height: 1.6;
 }
@@ -2720,7 +2720,7 @@ small {
   left: 14px;
   right: 65px;
   z-index: 2;
-  font-size: 10px;
+  font-size: 14px;
   line-height: 1.6;
   border: 1px solid #657c43;
   border-radius: 8px;
@@ -2748,7 +2748,7 @@ small {
 .listing-heading > p:last-child {
   color: #b5c4a3;
   max-width: 730px;
-  font-size: 13px;
+  font-size: 14px;
 }
 .listing-workspace {
   max-width: 1040px;
@@ -2766,7 +2766,7 @@ small {
   color: #dbefb8;
 }
 .listing-local-notice p {
-  font-size: 12px;
+  font-size: 14px;
   margin-top: 8px;
   color: #bdcfaa;
   line-height: 1.8;
@@ -2801,7 +2801,7 @@ small {
   min-width: 0;
 }
 .listing-field > span:first-child {
-  font-size: 11px;
+  font-size: 14px;
   color: #c3d5aa;
 }
 .listing-field input,
@@ -2814,17 +2814,17 @@ small {
   border-radius: 7px;
   padding: 13px;
   min-height: 45px;
-  font-size: 13px;
+  font-size: 14px;
 }
 .listing-field input[type="file"] {
-  font-size: 11px;
+  font-size: 14px;
 }
 .listing-field textarea {
   resize: vertical;
   line-height: 1.8;
 }
 .listing-field small {
-  font-size: 10px;
+  font-size: 14px;
   color: #a7b995;
 }
 .listing-field input[aria-invalid="true"],
@@ -2837,14 +2837,14 @@ small {
   margin: 27px 0 13px;
 }
 .listing-help {
-  font-size: 11px;
+  font-size: 14px;
   color: #b8c8a6;
   line-height: 1.8;
   margin-bottom: 23px;
   max-width: 850px;
 }
 .listing-field-error {
-  font-size: 11px;
+  font-size: 14px;
   color: #f2cb76;
   line-height: 1.7;
 }
@@ -2853,7 +2853,7 @@ small {
   padding: 16px 20px;
   border-radius: 8px;
   margin: 18px 0;
-  font-size: 12px;
+  font-size: 14px;
 }
 .listing-error {
   border: 1px solid #ce9c42;
@@ -2871,7 +2871,7 @@ small {
   align-items: start;
   padding: 18px 0;
   color: #caddb2;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.7;
 }
 .listing-rights input {
@@ -2905,7 +2905,7 @@ small {
   margin-bottom: 14px;
 }
 .listing-empty {
-  font-size: 12px;
+  font-size: 14px;
   color: #a8ba94;
   padding: 30px;
   border: 1px dashed #687f47;
@@ -2926,7 +2926,7 @@ small {
   margin-bottom: 17px;
 }
 .draft-status {
-  font-size: 9px;
+  font-size: 14px;
   letter-spacing: 1px;
   color: #c3e58f;
 }
@@ -2935,7 +2935,7 @@ small {
   margin: 10px 0;
 }
 .draft-card p {
-  font-size: 12px;
+  font-size: 14px;
   color: #becfad;
 }
 .draft-actions {
@@ -2950,7 +2950,7 @@ small {
   border-radius: 24px;
   background: #334625;
   color: #d5edb6;
-  font-size: 10px;
+  font-size: 14px;
 }
 .draft-actions button:hover {
   background: #4b6733;
@@ -2964,7 +2964,7 @@ small {
   margin: 18px 0;
 }
 .draft-card .draft-no-tour {
-  font-size: 10px;
+  font-size: 14px;
   color: #d0dfba;
   padding-top: 15px;
   border-top: 1px solid #4c6035;
@@ -2988,7 +2988,7 @@ small {
     justify-content: flex-end;
   }
   .site-header nav a {
-    font-size: 11px;
+    font-size: 14px;
   }
   .site-header .demo-pill {
     display: none;
@@ -3006,17 +3006,17 @@ small {
   }
   .operation-tabs > button {
     padding: 10px 13px;
-    font-size: 10px;
+    font-size: 14px;
   }
   .operation-tabs > a {
     margin-left: 0;
-    font-size: 10px;
+    font-size: 14px;
   }
   .geo-map-footer {
     flex-direction: column;
     align-items: start;
     gap: 3px;
-    font-size: 8px;
+    font-size: 14px;
   }
   .geo-map-notice {
     bottom: 70px;
@@ -3035,7 +3035,7 @@ small {
     padding: 18px;
   }
   .listing-heading > p:last-child {
-    font-size: 12px;
+    font-size: 14px;
   }
   .geo-region-buttons {
     left: 10px;
@@ -3043,7 +3043,7 @@ small {
   }
   .geo-region-buttons button {
     padding: 7px 9px;
-    font-size: 9px;
+    font-size: 14px;
   }
   .geo-map-controls {
     right: 10px;
@@ -3065,7 +3065,7 @@ small {
     padding: 18px;
   }
   .geo-map-footer {
-    font-size: 7px;
+    font-size: 14px;
   }
   .site-header nav {
     width: 100%;
@@ -3079,7 +3079,7 @@ small {
     padding: 9px 11px;
   }
   .listing-form .button {
-    font-size: 11px;
+    font-size: 14px;
     padding: 14px 17px;
   }
   .gallery-mosaic-single .gallery-tile-main {
@@ -3113,11 +3113,11 @@ small {
   border-radius: 22px;
   background: #d4eab0;
   color: #233318;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 600;
 }
 .geo-map-recovery a {
-  font-size: 10px;
+  font-size: 14px;
   color: #e0ecb9;
   text-decoration: underline;
   padding: 8px 0;
@@ -3128,7 +3128,7 @@ small {
   background: #19271caa;
   padding: 3px 7px;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.4px;
   pointer-events: none;
@@ -3143,3 +3143,180 @@ small {
 .geo-map .maplibregl-marker.geo-marker.selected {
   z-index: 2;
 }
+
+/* Installable mobile pilot: storage remains local to this origin. */
+.pwa-install {
+  margin: 28px auto;
+  width: min(1100px, calc(100% - 40px));
+  padding: 20px 24px;
+  border: 1px solid #52653b;
+  border-radius: 18px;
+  background: #1d2419;
+  color: #e9eddf;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.pwa-install strong { color: #c5f53a; font-size: 15px; }
+.pwa-install p { margin: 6px 0; }
+.pwa-install details { max-width: 850px; }
+.pwa-install summary { cursor: pointer; color: #f4d34f; }
+.pwa-install button {
+  border: 0;
+  border-radius: 24px;
+  background: #c5f53a;
+  color: #141614;
+  padding: 14px 20px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pwa-install :is(button, summary):focus-visible { outline: 3px solid #f4d34f; outline-offset: 4px; }
+@media (max-width: 700px) {
+  .pwa-install { flex-direction: column; align-items: stretch; padding: 20px; }
+}
+@media print { .pwa-install { display: none; } }
+
+/* Pilot terms keep long labels readable on narrow mobile screens. */
+.card-cost-summary { color: var(--lime, #d2ee74); font-size: 14px; line-height: 1.5; margin-top: .7rem; }
+.draft-terms-preview { margin-block: 1.5rem; }
+.listing-form .cost-card { padding: clamp(1rem, 3vw, 2rem); }
+.listing-form .cost-card dl > div, .draft-card .cost-card dl > div { gap: 1rem; }
+.listing-form .cost-card dd, .draft-card .cost-card dd { overflow-wrap: anywhere; }
+.draft-card .cost-card { margin-block: 1.25rem; }
+.listing-local-notice button { margin-top: .75rem; padding: .5rem .8rem; border: 1px solid currentColor; border-radius: .4rem; }
+@media (max-width: 520px) {
+  .listing-form .cost-card dl > div, .draft-card .cost-card dl > div { flex-direction: column; align-items: flex-start; gap: .35rem; }
+}
+
+/* Operation terms have many conditions; keep them legible without oversized rows. */
+.cost-card.terms-card > dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 20px;
+}
+.cost-card.terms-card > dl > div {
+  min-width: 0;
+  padding: 10px 0;
+  border-top: 0;
+  border-bottom: 1px solid #455634;
+}
+.cost-card.terms-card > dl dt {
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+.cost-card.terms-card > dl dd,
+.property-costs .cost-card.terms-card > dl dd {
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.cost-card.terms-card > dl > .terms-price,
+.cost-card.terms-card > dl > .terms-total {
+  grid-column: 1 / -1;
+}
+.cost-card.terms-card > dl > .terms-price dd,
+.cost-card.terms-card > dl > .terms-total dd {
+  font-size: 22px;
+}
+@media (max-width: 600px) {
+  .cost-card.terms-card > dl { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Readable capture and property information on iPad and smaller screens. */
+@media screen {
+  body { line-height: 1.5; }
+  .hero-description,
+  .listing-description,
+  .listing-heading > p:last-child,
+  .listing-field input,
+  .listing-field input[type="file"],
+  .listing-field select,
+  .listing-field textarea,
+  .draft-card .draft-description,
+  .property-summary dd,
+  .search-bar input,
+  .search-bar select,
+  .button,
+  .listing-form .button { font-size: 16px; line-height: 1.5; }
+  .listing-description { line-height: 1.65; }
+  .listing-field { gap: 10px; margin-bottom: 24px; }
+  .listing-field > span:first-child,
+  .listing-help,
+  .listing-field small,
+  .demo-note,
+  .gallery-note,
+  .card-cost-summary,
+  .cost-card.terms-card > dl dt { line-height: 1.6; }
+  .card-title, .map-results .card-title { flex-wrap: wrap; align-items: start; }
+  .card-title > span, .map-results .card-title > span { font-size: 24px; white-space: normal; }
+  .card-title small { display: block; line-height: 1.5; }
+  .card-facts { flex-wrap: wrap; gap: 8px 16px; }
+  .cost-card.terms-card > dl > .terms-price dd,
+  .cost-card.terms-card > dl > .terms-total dd { font-size: 24px; }
+  .site-header nav a { display: inline-flex; align-items: center; min-height: 44px; }
+  .button, .search-reset, .view-toggle button, .draft-actions button,
+  .geo-region-buttons button, .geo-marker, .geo-map-recovery button,
+  .draft-scene-tabs button, .draft-scene-card button,
+  .draft-tour-editor fieldset > button, .pwa-install summary { min-height: 44px; }
+  .search-bar input, .search-bar select { min-height: 44px; }
+  .geo-map-controls button { width: 44px; height: 44px; }
+  .viewer-controls { flex-wrap: wrap; justify-content: center; }
+  .viewer-controls button { min-width: 44px; height: 44px; }
+  .room-tabs { flex-wrap: wrap; }
+  .room-tabs button { flex-basis: 140px; }
+  .viewer-top { align-items: start; }
+  .viewer-demo { max-width: 48%; line-height: 1.5; }
+  .map-results .image-label { max-width: calc(100% - 14px); white-space: normal; }
+  .selected-property { flex-wrap: wrap; }
+  .selected-property > div { min-width: 0; max-width: 100%; }
+  .selected-property strong { overflow-wrap: anywhere; }
+  .selected-property > .button { white-space: normal; }
+  .geo-region-buttons { max-width: calc(100% - 80px); flex-wrap: wrap; border-radius: 18px; }
+  .geo-map-footer { flex-wrap: wrap; }
+  .gallery-toolbar { flex-wrap: wrap; }
+}
+@media screen and (max-width: 1100px) {
+  .site-header { height: auto; min-height: 91px; flex-wrap: wrap; gap: 12px 24px; padding-block: 16px; }
+  .site-header nav { flex-wrap: wrap; gap: 8px 16px; }
+  .search-bar { flex-wrap: wrap; gap: 16px; padding: 18px; }
+  .search-bar .search-location { flex: 1 1 100%; border-right: 0; border-bottom: 1px solid #404934; padding: 0 0 12px; }
+  .search-bar label { flex: 1 1 calc(50% - 16px); padding: 0; border-right: 0; }
+  .search-reset { width: 100%; margin: 0; }
+}
+@media screen and (max-width: 850px) {
+  .selected-property > .button { width: 100%; justify-content: center; }
+  .geo-map-notice { bottom: 110px; }
+}
+@media screen and (max-width: 480px) {
+  .catalog-bar { flex-wrap: wrap; }
+  .view-toggle { flex-wrap: wrap; }
+  .selected-property > div:nth-child(2) { padding-left: 0; border-left: 0; }
+  .map-results .property-card { grid-template-columns: minmax(0, 1fr); }
+  .map-results .card-image { height: 170px; }
+  .map-results .image-label { max-width: calc(100% - 26px); }
+  .viewer-top { left: 12px; right: 12px; gap: 8px; }
+  .viewer-badge { padding: 7px 9px; }
+  .viewer-demo { letter-spacing: 0; padding: 7px; }
+}
+
+.language-switcher { display: flex; flex-direction: column; gap: 4px; color: #d5e3c2; font-size: 14px; }
+.language-switcher select { min-height: 44px; max-width: 100%; border: 1px solid #607841; border-radius: 10px; background: #202b19; color: #edf1e6; padding: 8px 12px; font-size: 16px; }
+@media screen and (max-width: 1300px) {
+  .site-header { height: auto; min-height: 91px; padding-block: 16px; flex-wrap: wrap; gap: 16px; }
+  .site-header nav { flex-wrap: wrap; gap: 8px 16px; }
+}
+
+/* Keep storage feedback next to Save; a successful save does not erase capture. */
+.draft-save-feedback { scroll-margin-block: 100px; }
+.draft-save-feedback .draft-actions { margin-bottom: 20px; }
+.draft-card:focus { outline: 3px solid var(--yellow); outline-offset: 5px; }
+
+.private-login { max-width: 600px; margin-inline: auto; }
+.private-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px; padding: 20px; border: 1px solid #607841; border-radius: 12px; }
+.private-toolbar p { max-width: 700px; }
+.draft-card [role="status"] a, .draft-card [role="alert"] a { color: var(--accent); text-decoration: underline; }

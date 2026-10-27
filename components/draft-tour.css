@@ -1,0 +1,71 @@
+.draft-tour-editor {
+  margin-block: 2rem;
+}
+.draft-tour-editor fieldset {
+  min-width: 0;
+}
+.draft-tour-legend {
+  font-size: 1rem;
+}
+.draft-scene-card {
+  border: 1px solid #536b37;
+  padding: 1rem;
+  border-radius: 1rem;
+  margin-block: 1rem;
+  background: #202b19;
+}
+.draft-connection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+  border-top: 1px solid #536b37;
+  padding-block: 1rem;
+}
+.draft-scene-card button,
+.draft-tour-editor fieldset > button,
+.draft-scene-tabs button {
+  background: #13271d;
+  color: #f3f6e9;
+  border: 0;
+  border-radius: 0.6rem;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+}
+.draft-tour-editor button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.draft-tour-preview {
+  min-width: 0;
+  margin-block: 1.5rem;
+}
+.draft-tour-preview .viewer-shell {
+  height: 430px;
+  min-height: 360px;
+}
+.draft-tour-preview .viewer-demo {
+  max-width: 48%;
+  text-align: right;
+}
+.draft-scene-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.draft-scene-tabs button[aria-pressed="true"] {
+  color: #13271d;
+  background: #d7f25f;
+}
+@media (max-width: 600px) {
+  .draft-connection {
+    grid-template-columns: 1fr;
+  }
+  .draft-tour-preview .viewer-shell {
+    height: 400px;
+  }
+  .draft-tour-preview .viewer-demo {
+    font-size: 14px;
+  }
+}

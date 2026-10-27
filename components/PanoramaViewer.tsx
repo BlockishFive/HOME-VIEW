@@ -1,19 +1,30 @@
 "use client";
+import { useI18n } from "./I18nProvider";
 import { useEffect, useRef, useState } from "react";
-import type { Room, RoomId } from "@/lib/properties";
+type PanoramaRoom<Id extends string> = {
+  id: Id;
+  name: string;
+  panorama: string;
+  hotspots: { target: Id; yaw: number; pitch: number }[];
+};
 
 type Controls = {
   move: (axis: "yaw" | "pitch" | "fov", delta: number) => void;
 };
-export function PanoramaViewer({
+export function PanoramaViewer<Id extends string>({
   rooms,
   current,
   onSelect,
+  label = "INTERIOR SINTÉTICO · DEMO",
+  translateRoomNames = false,
 }: {
-  rooms: Room[];
-  current: RoomId;
-  onSelect: (id: RoomId) => void;
+  rooms: PanoramaRoom<Id>[];
+  current: Id;
+  onSelect: (id: Id) => void;
+  label?: string;
+  translateRoomNames?: boolean;
 }) {
+  const { locale, t } = useI18n();
   const host = useRef<HTMLDivElement>(null);
   const shell = useRef<HTMLDivElement>(null);
   const controls = useRef<Controls | null>(null);
@@ -23,12 +34,14 @@ export function PanoramaViewer({
   );
   const [fullscreen, setFullscreen] = useState(false);
   select.current = onSelect;
-  const room = rooms.find((r) => r.id === current)!;
+  const roomName = (name: string) => (translateRoomNames ? t(name) : name);
+  const room = rooms.find((r) => r.id === current) ?? rooms[0];
   useEffect(() => {
     let cancelled = false;
     let destroy: (() => void) | undefined;
     let image: HTMLImageElement | undefined;
     setStatus("loading");
+    if (!room) return;
     async function initialize() {
       try {
         const { default: M } = await import("marzipano");
@@ -51,21 +64,25 @@ export function PanoramaViewer({
         );
         const scene = viewer.createScene({
           source: M.ImageUrlSource.fromString(room.panorama),
-          geometry: new M.EquirectGeometry([{ width: 2048 }]),
+          geometry: new M.EquirectGeometry([{ width: image.naturalWidth }]),
           view,
           pinFirstLevel: true,
         });
         room.hotspots.forEach((h) => {
-          const target = rooms.find((r) => r.id === h.target)!;
+          const target = rooms.find((r) => r.id === h.target);
+          if (!target) return;
           const button = document.createElement("button");
           button.className = "hotspot";
           button.type = "button";
-          button.setAttribute("aria-label", `Ir a ${target.name}`);
+          button.setAttribute(
+            "aria-label",
+            t("Ir a {name}", { name: roomName(target.name) }),
+          );
           const arrow = document.createElement("span");
           arrow.textContent = "↑";
           arrow.setAttribute("aria-hidden", "true");
           const label = document.createElement("span");
-          label.textContent = target.name;
+          label.textContent = roomName(target.name);
           button.append(arrow, label);
           button.onclick = () => select.current(h.target);
           scene
@@ -104,7 +121,7 @@ export function PanoramaViewer({
       controls.current = null;
       destroy?.();
     };
-  }, [room, rooms]);
+  }, [room, rooms, locale, translateRoomNames]);
   useEffect(() => {
     const update = () =>
       setFullscreen(document.fullscreenElement === shell.current);
@@ -119,43 +136,51 @@ export function PanoramaViewer({
       /* Browser may disallow fullscreen. The regular viewer remains available. */
     }
   }
+  if (!room) return <p>{t("No hay escenas disponibles.")}</p>;
   return (
     <div className="viewer-shell" ref={shell}>
       <div
         ref={host}
         className="panorama"
-        aria-label={`Panorama 360 de ${room.name}`}
+        aria-label={t("Panorama 360 de {name}", { name: roomName(room.name) })}
       />
       <div className="viewer-top">
         <span className="viewer-badge">
           <span className="live-dot" />
-          {room.name}
+          {roomName(room.name)}
         </span>
-        <span className="viewer-demo">INTERIOR SINTÉTICO · DEMO</span>
+        <span className="viewer-demo">{t(label)}</span>
       </div>
       {status === "loading" && (
         <div className="viewer-status" role="status">
-          Preparando tu recorrido…
+          {t("Preparando tu recorrido…")}
         </div>
       )}
       {status === "error" && (
         <div className="viewer-status" role="alert">
-          <strong>No se pudo iniciar el visor 360.</strong>
+          <strong>{t("No se pudo iniciar el visor 360.")}</strong>
           <p>
-            Comprueba tu conexión y que WebGL esté habilitado. Puedes cambiar de
-            habitación desde el plano o la lista.
+            {t(
+              "Comprueba tu conexión y que WebGL esté habilitado. Puedes cambiar de habitación desde el plano o la lista.",
+            )}
           </p>
-          <button className="button" onClick={() => window.location.reload()}>
-            Volver a intentar
+          <button
+            type="button"
+            className="button"
+            onClick={() => window.location.reload()}
+          >
+            {t("Volver a intentar")}
           </button>
         </div>
       )}
       <div className="viewer-bottom">
-        <span className="drag-hint">↔ Arrastra para mirar alrededor</span>
+        <span className="drag-hint">
+          {t("↔ Arrastra para mirar alrededor")}
+        </span>
         <div
           className="viewer-controls"
           role="group"
-          aria-label="Controles del panorama"
+          aria-label={t("Controles del panorama")}
         >
           {[
             ["Mirar a la izquierda", "←", "yaw", -0.3],
@@ -166,8 +191,9 @@ export function PanoramaViewer({
             ["Alejar", "−", "fov", 0.15],
           ].map(([label, symbol, axis, delta]) => (
             <button
+              type="button"
               key={label}
-              aria-label={String(label)}
+              aria-label={t(String(label))}
               disabled={status !== "ready"}
               onClick={() =>
                 controls.current?.move(
@@ -180,10 +206,11 @@ export function PanoramaViewer({
             </button>
           ))}
           <button
+            type="button"
             onClick={toggleFullscreen}
-            aria-label={
-              fullscreen ? "Salir de pantalla completa" : "Pantalla completa"
-            }
+            aria-label={t(
+              fullscreen ? "Salir de pantalla completa" : "Pantalla completa",
+            )}
           >
             ⛶
           </button>

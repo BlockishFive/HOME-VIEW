@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Map as VectorMap, Marker, StyleSpecification } from "maplibre-gl";
 import type { Protocol } from "pmtiles";
 import type { Property } from "@/lib/properties";
+import { useI18n } from "./I18nProvider";
+import { translate, type Locale } from "@/lib/i18n";
 
 const regions = {
   León: { center: [-101.686, 21.122] as [number, number], zoom: 12 },
@@ -187,9 +189,13 @@ function mapStyle(origin: string): StyleSpecification {
   return { version: 8, sources, layers };
 }
 
-function markerPrice(property: Property) {
+function markerPrice(property: Property, locale: Locale) {
   if (property.operation === "Renta")
-    return `${new Intl.NumberFormat("es-MX").format(property.priceValue)} / mes`;
+    return translate(locale, "{amount} / mes", {
+      amount: new Intl.NumberFormat(locale === "en" ? "en-US" : "es-MX").format(
+        property.priceValue,
+      ),
+    });
   return property.priceValue >= 1000000
     ? `${(property.priceValue / 1000000).toFixed(2)} M`
     : new Intl.NumberFormat("es-MX").format(property.priceValue);
@@ -204,6 +210,8 @@ export function PropertyMap({
   selected: string;
   onSelect: (slug: string) => void;
 }) {
+  const { locale, t } = useI18n();
+  const cityLabels = useRef<{ element: HTMLSpanElement; name: string }[]>([]);
   const host = useRef<HTMLDivElement>(null);
   const map = useRef<VectorMap | null>(null);
   const library = useRef<MapLibrary | null>(null);
@@ -310,7 +318,8 @@ export function PropertyMap({
         ] as const) {
           const label = document.createElement("span");
           label.className = "geo-city-label";
-          label.textContent = name;
+          label.textContent = t(name);
+          cityLabels.current.push({ element: label, name });
           label.setAttribute("aria-hidden", "true");
           cityMarkers.push(
             new M.Marker({ element: label, anchor: "top", offset: [0, 14] })
@@ -343,6 +352,7 @@ export function PropertyMap({
       for (const marker of propertyMarkers.current) marker.remove();
       propertyMarkers.current = [];
       for (const marker of cityMarkers) marker.remove();
+      cityLabels.current = [];
       instance?.remove();
       map.current = null;
       library.current = null;
@@ -365,9 +375,13 @@ export function PropertyMap({
       button.setAttribute("aria-pressed", String(selected === property.slug));
       button.setAttribute(
         "aria-label",
-        `Seleccionar ${property.title} en el mapa, ${property.price} MXN${property.operation === "Renta" ? " por mes" : ""}`,
+        t("Seleccionar {name} en el mapa, {price} MXN{period}", {
+          name: property.title,
+          price: property.price,
+          period: property.operation === "Renta" ? ` ${t("por mes")}` : "",
+        }),
       );
-      button.textContent = markerPrice(property);
+      button.textContent = markerPrice(property, locale);
       button.addEventListener("click", (event) => {
         event.stopPropagation();
         select.current(property.slug);
@@ -378,8 +392,11 @@ export function PropertyMap({
           .addTo(activeMap),
       );
     }
-  }, [properties, selected, initialized, generation]);
+  }, [properties, selected, initialized, generation, locale]);
 
+  const selectedPoint = properties.find(
+    (item) => item.slug === selected,
+  )?.coordinates;
   useEffect(() => {
     const property = properties.find((item) => item.slug === selected);
     if (!initialized || !map.current || !property) return;
@@ -388,7 +405,24 @@ export function PropertyMap({
       zoom: Math.max(12, map.current.getZoom()),
     });
     setRegion("León");
-  }, [selected, properties, initialized, generation]);
+  }, [
+    selected,
+    selectedPoint?.lat,
+    selectedPoint?.lng,
+    initialized,
+    generation,
+  ]);
+
+  useEffect(() => {
+    for (const label of cityLabels.current)
+      label.element.textContent = t(label.name);
+    host.current
+      ?.querySelector("canvas")
+      ?.setAttribute(
+        "aria-label",
+        t("Mapa vectorial de {region}", { region: t(region) }),
+      );
+  }, [locale, region, initialized]);
 
   function chooseRegion(next: Region) {
     setRegion(next);
@@ -410,12 +444,12 @@ export function PropertyMap({
         ref={host}
         className="geo-map-canvas"
         role="region"
-        aria-label={`Mapa vectorial de ${region}`}
+        aria-label={t("Mapa vectorial de {region}", { region: t(region) })}
       />
       <div
         className="geo-region-buttons"
         role="group"
-        aria-label="Alcance del mapa"
+        aria-label={t("Alcance del mapa")}
       >
         {(Object.keys(regions) as Region[]).map((name) => (
           <button
@@ -425,18 +459,18 @@ export function PropertyMap({
             aria-pressed={region === name}
             disabled={!initialized}
           >
-            {name}
+            {t(name)}
           </button>
         ))}
       </div>
       <div
         className="geo-map-controls"
         role="group"
-        aria-label="Controles del mapa"
+        aria-label={t("Controles del mapa")}
       >
         <button
           type="button"
-          aria-label="Acercar mapa"
+          aria-label={t("Acercar mapa")}
           disabled={!initialized || zoom >= 14}
           onClick={() => map.current?.zoomIn({ duration: 0 })}
         >
@@ -444,7 +478,7 @@ export function PropertyMap({
         </button>
         <button
           type="button"
-          aria-label="Alejar mapa"
+          aria-label={t("Alejar mapa")}
           disabled={!initialized || zoom <= 3}
           onClick={() => map.current?.zoomOut({ duration: 0 })}
         >
@@ -452,8 +486,8 @@ export function PropertyMap({
         </button>
         <button
           type="button"
-          aria-label="Actualizar cartografía"
-          title="Actualizar cartografía"
+          aria-label={t("Actualizar cartografía")}
+          title={t("Actualizar cartografía")}
           disabled={!initialized}
           onClick={retry}
         >
@@ -461,7 +495,7 @@ export function PropertyMap({
         </button>
         <button
           type="button"
-          aria-label="Restablecer mapa"
+          aria-label={t("Restablecer mapa")}
           disabled={!initialized}
           onClick={() => chooseRegion("León")}
         >
@@ -474,25 +508,29 @@ export function PropertyMap({
           aria-live="polite"
         >
           <p>
-            {tileState === "error"
-              ? initializationError
-                ? "No se pudo iniciar el visor vectorial. Comprueba que WebGL esté disponible."
-                : "No se pudo cargar el mapa local. La lista de propiedades sigue disponible."
-              : "Preparando el mapa de Home View…"}
+            {t(
+              tileState === "error"
+                ? initializationError
+                  ? "No se pudo iniciar el visor vectorial. Comprueba que WebGL esté disponible."
+                  : "No se pudo cargar el mapa local. La lista de propiedades sigue disponible."
+                : "Preparando el mapa de Home View…",
+            )}
           </p>
           {tileState === "error" && (
             <div className="geo-map-recovery">
               <button type="button" onClick={retry}>
-                Volver a cargar mapa
+                {t("Volver a cargar mapa")}
               </button>
             </div>
           )}
         </div>
       )}
       <div className="geo-map-footer">
-        <span>Mapa de referencia · Vías principales · Anuncios ficticios</span>
+        <span>
+          {t("Mapa de referencia · Vías principales · Anuncios ficticios")}
+        </span>
         <span className="geo-map-attribution">
-          Datos:{" "}
+          {t("Datos:")}{" "}
           <a
             href="https://www.naturalearthdata.com/about/terms-of-use/"
             target="_blank"
@@ -500,7 +538,7 @@ export function PropertyMap({
           >
             Natural Earth
           </a>{" "}
-          · Dominio público
+          {t("· Dominio público")}
         </span>
       </div>
     </div>

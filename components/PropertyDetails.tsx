@@ -1,5 +1,19 @@
-import { formatMXN, type Property } from "@/lib/properties";
-export function PropertyDetails({ property }: { property: Property }) {
+"use client";
+import { useI18n } from "./I18nProvider";
+import { localizeProperty } from "@/lib/localized-properties";
+import { type Property } from "@/lib/properties";
+import {
+  communityLabel,
+  formatMXN,
+  maintenanceLabel,
+} from "@/lib/property-terms";
+export function PropertyDetails({
+  property: sourceProperty,
+}: {
+  property: Property;
+}) {
+  const { locale, t } = useI18n();
+  const property = localizeProperty(sourceProperty, locale);
   const facts = [
     ["Tipo de inmueble", property.propertyType],
     ["Tipo de construcción", property.buildingType],
@@ -30,7 +44,16 @@ export function PropertyDetails({ property }: { property: Property }) {
         ? "No aplica"
         : String(property.builtYear),
     ],
-    ["Predial anual (demo)", `${formatMXN(property.annualTax)} MXN`],
+    ...(property.operation === "Venta"
+      ? [
+          [
+            "Predial anual (demo)",
+            property.sale.annualTax === null
+              ? "Por confirmar"
+              : `${formatMXN(property.sale.annualTax, locale)} MXN`,
+          ],
+        ]
+      : []),
     [
       "Estacionamientos",
       property.propertyType === "Terreno"
@@ -43,11 +66,19 @@ export function PropertyDetails({ property }: { property: Property }) {
         ? "No aplica"
         : `${property.beds} / ${property.baths}`,
     ],
-    ["Operación", `${property.operation} · Demostración`],
+    ["Operación", `${t(property.operation)} · ${t("Demostración")}`],
     ["Referencia del anuncio", property.reference],
     [
       "Mantenimiento (demo)",
-      `${formatMXN(property.monthlyMaintenance)} MXN / mes`,
+      maintenanceLabel(
+        property.maintenance,
+        property.operation === "Renta",
+        locale,
+      ),
+    ],
+    [
+      "Fraccionamiento o condominio",
+      communityLabel(property.community, locale),
     ],
     ["Estado del anuncio", "Prototipo · Sin oferta real"],
   ];
@@ -60,10 +91,10 @@ export function PropertyDetails({ property }: { property: Property }) {
     >
       <div className="section-heading">
         <div>
-          <p className="eyebrow">LA HISTORIA DETRÁS DEL ESPACIO</p>
-          <h2 id="description-title">Descripción del inmueble</h2>
+          <p className="eyebrow">{t("LA HISTORIA DETRÁS DEL ESPACIO")}</p>
+          <h2 id="description-title">{t("Descripción del inmueble")}</h2>
         </div>
-        <span className="demo-pill">Datos ficticios</span>
+        <span className="demo-pill">{t("Datos ficticios")}</span>
       </div>
       <p className="listing-description">{property.description}</p>
       <div className="feature-tags">
@@ -72,22 +103,21 @@ export function PropertyDetails({ property }: { property: Property }) {
         ))}
       </div>
       <div className="summary-heading">
-        <h3>Resumen del inmueble</h3>
-        <span>Todo lo esencial, en un vistazo.</span>
+        <h3>{t("Resumen del inmueble")}</h3>
+        <span>{t("Todo lo esencial, en un vistazo.")}</span>
       </div>
       <dl className="property-summary">
         {facts.map(([name, value]) => (
           <div key={name}>
-            <dt>{name}</dt>
-            <dd>{value}</dd>
+            <dt>{t(name)}</dt>
+            <dd>{t(value)}</dd>
           </div>
         ))}
       </dl>
       <p className="demo-note">
-        Ficha ilustrativa. Imágenes y plano compartidos entre inmuebles de
-        demostración; no representan sus superficies ni características. Los
-        regímenes indicados son ficticios y no acreditan titularidad o situación
-        jurídica.
+        {t(
+          "Ficha ilustrativa. Imágenes y plano compartidos entre inmuebles de demostración; no representan sus superficies ni características. Los regímenes indicados son ficticios y no acreditan titularidad o situación jurídica.",
+        )}
       </p>
     </section>
   );
