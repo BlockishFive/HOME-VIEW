@@ -273,6 +273,22 @@ export async function saveListingDraft(draft: ListingDraft): Promise<void> {
   if (!draft.photos.length || draft.photos.length > MAX_PHOTOS)
     throw new Error("Añade entre 1 y 8 fotografías.");
   await useStore("readwrite", (store) => store.put(draft));
+  // Confirm the committed record is readable before the interface reports success.
+  const stored = await useStore<ListingDraft | undefined>("readonly", (store) =>
+    store.get(draft.id),
+  );
+  if (
+    !stored ||
+    stored.id !== draft.id ||
+    stored.updatedAt !== draft.updatedAt ||
+    stored.title !== draft.title ||
+    stored.photos.length !== draft.photos.length ||
+    stored.scenes.length !== draft.scenes.length
+  ) {
+    throw new Error(
+      "No se pudo verificar el borrador guardado. Conservamos la captura; revisa Mis borradores antes de volver a intentarlo.",
+    );
+  }
 }
 export async function deleteListingDraft(id: string): Promise<void> {
   await useStore("readwrite", (store) => store.delete(id));

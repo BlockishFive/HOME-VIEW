@@ -1,5 +1,13 @@
 /** English UI messages for local listing capture and media. Draft content is never translated. */
 export const listingMessages: Record<string, string> = {
+  "Un borrador creado aquí no aparecerá en tu otro dispositivo. La sincronización todavía no está disponible.": "A draft created here will not appear on your other device. Synchronization is not available yet.",
+  "La captura permanece en el formulario. Intenta guardar otra vez sin borrar los datos del sitio.":
+    "Your information remains in the form. Try saving again without clearing site data.",
+  "Ver el borrador guardado": "View saved draft",
+  "Crear otro borrador": "Create another draft",
+  "No se pudo verificar el borrador guardado. Conservamos la captura; revisa Mis borradores antes de volver a intentarlo.":
+    "The saved draft could not be verified. Your information is preserved; check My drafts before trying again.",
+
   Renta: "Rent",
   Venta: "Sale",
   Casa: "House",
@@ -24,7 +32,8 @@ export const listingMessages: Record<string, string> = {
   "Plazo mínimo (meses)": "Minimum lease (months)",
   "Relación entre aval y póliza jurídica":
     "Guarantor and legal protection policy requirements",
-  "Aval o póliza (alternativas)": "Guarantor or legal protection policy (alternatives)",
+  "Aval o póliza (alternativas)":
+    "Guarantor or legal protection policy (alternatives)",
   "Requisitos independientes": "Independent requirements",
   Aval: "Guarantor",
   "Póliza jurídica": "Legal protection policy",

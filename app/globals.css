@@ -3310,3 +3310,8 @@ small {
   .site-header { height: auto; min-height: 91px; padding-block: 16px; flex-wrap: wrap; gap: 16px; }
   .site-header nav { flex-wrap: wrap; gap: 8px 16px; }
 }
+
+/* Keep storage feedback next to Save; a successful save does not erase capture. */
+.draft-save-feedback { scroll-margin-block: 100px; }
+.draft-save-feedback .draft-actions { margin-bottom: 20px; }
+.draft-card:focus { outline: 3px solid var(--yellow); outline-offset: 5px; }

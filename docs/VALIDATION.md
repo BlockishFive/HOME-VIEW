@@ -43,3 +43,11 @@ La rama incorpora textos secundarios de al menos 14 px, campos y descripciones d
 Después de esta ampliación pasan TypeScript, compilación de producción y 32 pruebas unitarias. La suite de navegador tiene 33 casos: 31 pasaron en la ejecución conjunta; se corrigió una aserción que confundía el verbo inglés «Describe» con texto español y se repitió ese caso correctamente. La inicialización WebGL del recorrido excedió el límite de cinco segundos en esa ejecución concurrente y se comprobó además de forma aislada. Los nuevos casos cubren preferencia persistente, formulario sin pérdida de datos, valores canónicos, validación, moneda, manifest inglés y aviso offline bilingüe.
 
 La prueba automatizada no acredita funcionamiento en un iPad físico ni elimina el pendiente de revisar Safari y lectores de pantalla. [Idiomas y límites de renderizado](I18N.md).
+
+## Confirmación y conservación de la captura local
+
+Se comprobó el guardado sin vaciar el formulario, confirmación visible junto al botón, enlace y foco al borrador guardado, actualización sobre un único ID y limpieza solo mediante acción explícita. Se añadió lectura de verificación posterior a la transacción. Los fallos simulados de escritura o lectura no borran campos ni fotografías; el reintento conserva la identidad.
+
+La compilación de producción y TypeScript pasan, y las 32 pruebas unitarias siguen aprobadas. Una selección de 22 pruebas de navegador pasó: cuatro regresiones nuevas de guardado, más captura, idioma, migración, persistencia, exportación y escenas. La prueba con HTML modificado mediante atributos `__gcruniqueid` también permite guardar y recargar el registro; no identifica qué herramienta externa añadió los atributos en el navegador del usuario. No se ocultan avisos de hidratación con `suppressHydrationWarning`.
+
+La ausencia de borradores de un iPad en una PC corresponde al almacenamiento local del piloto; no se implementó sincronización. No borrar datos del sitio para tratar de recuperar un borrador. Usar el mismo navegador, perfil y origen donde se capturó.

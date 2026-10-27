@@ -95,3 +95,7 @@ Pruebas nuevas: reglas de cantidades/mantenimiento/garantías, migración y norm
 `I18nProvider` conserva locale cliente sin cambiar ruta/origen ni esquema de IndexedDB. Los diccionarios explícitos de `lib/i18n/` traducen la interfaz y el catálogo ficticio; se preserva el contenido escrito por el propietario. Los helpers de costos admiten locale opcional sin cambiar las cantidades ni cálculos. Las vistas cliente de inicio, alta y propiedad dejan en servidor la resolución de rutas, 404 y parámetros estáticos. Los componentes de mapa actualizan etiquetas conservando vista y filtros.
 
 Los dos manifests comparten identidad PWA; el aviso offline usa la misma preferencia y el worker v2 mantiene la caché limitada. El HTML estático inicial sigue en español y `noindex`, con traducción al hidratar. No es una implementación de SEO multilingüe en servidor. Véase [I18N.md](I18N.md) para límites y tipografía.
+
+## Confirmación de guardado local
+
+Después de confirmar la transacción IndexedDB, `saveListingDraft` verifica que el registro se puede leer con el mismo ID, actualización y medios. El formulario conserva texto, condiciones, fotos y escenas, y vincula las siguientes escrituras al mismo ID. Una lectura de verificación fallida no descarta la captura ni cambia el ID al reintentar. El aviso de éxito/error aparece junto al botón; la limpieza requiere una acción explícita. Esto mejora la confirmación local, sin agregar sincronización ni almacenamiento compartido.

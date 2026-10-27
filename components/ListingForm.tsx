@@ -188,6 +188,9 @@ export function ListingForm() {
   const [scenes, setScenes] = useState<DraftScene[]>([]);
   const [editing, setEditing] = useState<ListingDraft | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const feedbackRef = useRef<HTMLDivElement>(null);
+  const identity = useRef<{ id: string; createdAt: string } | null>(null);
+  const [savedId, setSavedId] = useState<string | null>(null);
   const [photos, setPhotos] = useState<DraftPhoto[]>([]);
   const [drafts, setDrafts] = useState<ListingDraft[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -248,6 +251,7 @@ export function ListingForm() {
   }
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy) return;
     const form = event.currentTarget;
     setMessage("");
     const input: DraftInput = {
@@ -295,11 +299,15 @@ export function ListingForm() {
     }
     setBusy(true);
     try {
+      identity.current ??= {
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+      };
       const draft: ListingDraft = {
         ...normalizeDraftInput(input),
         schemaVersion: 2,
-        id: editing?.id ?? crypto.randomUUID(),
-        createdAt: editing?.createdAt ?? new Date().toISOString(),
+        id: identity.current.id,
+        createdAt: identity.current.createdAt,
         updatedAt: new Date().toISOString(),
         photos,
         scenes: values.propertyType === "Terreno" ? [] : scenes,
@@ -309,8 +317,8 @@ export function ListingForm() {
         draft,
         ...previous.filter((item) => item.id !== draft.id),
       ]);
-      resetEditor();
-      if (fileInput.current) fileInput.current.value = "";
+      setEditing(draft);
+      setSavedId(draft.id);
       setStorageError("");
       setMessage(
         "Borrador guardado solo en este navegador. No se ha publicado ni enviado a un servidor.",
@@ -319,9 +327,15 @@ export function ListingForm() {
       setStorageError(storageMessage(error));
     } finally {
       setBusy(false);
+      window.requestAnimationFrame(() =>
+        feedbackRef.current?.scrollIntoView({ block: "center" }),
+      );
     }
   }
   function resetEditor() {
+    identity.current = null;
+    setSavedId(null);
+    setMessage("");
     setValues(initial);
     setRental(defaultRentalTerms());
     setSale({ purchasePrice: null, annualTax: null });
@@ -334,6 +348,8 @@ export function ListingForm() {
     if (fileInput.current) fileInput.current.value = "";
   }
   function edit(draft: ListingDraft) {
+    identity.current = { id: draft.id, createdAt: draft.createdAt };
+    setSavedId(null);
     setEditing(draft);
     setValues({
       ...initial,
@@ -439,18 +455,18 @@ export function ListingForm() {
             "Se guardan solo en este navegador y dispositivo. No aparecen en el catálogo público ni se comparten con otras personas. Al borrar los datos del navegador puedes perderlos; descarga un respaldo para conservarlos.",
           )}
         </p>
+        <p>{t("Un borrador creado aquí no aparecerá en tu otro dispositivo. La sincronización todavía no está disponible.")}</p>
       </div>
-      {storageError && (
-        <p className="listing-error" role="alert">
-          {localizeMessage(storageError)}
-        </p>
-      )}
-      {message && (
-        <p className="listing-success" role="status">
-          {localizeMessage(message)}
-        </p>
-      )}
-      <form ref={formRef} className="listing-form" onSubmit={submit} noValidate>
+      <form
+        ref={formRef}
+        className="listing-form"
+        onSubmit={submit}
+        onChange={() => {
+          setMessage("");
+          setSavedId(null);
+        }}
+        noValidate
+      >
         {editing && (
           <div className="listing-local-notice">
             <strong>{t("Editando: {title}", { title: editing.title })}</strong>
@@ -692,6 +708,43 @@ export function ListingForm() {
               {localizeMessage(errors.imageRights)}
             </p>
           )}
+          <div
+            ref={feedbackRef}
+            className="draft-save-feedback"
+            aria-live="polite"
+          >
+            {storageError && (
+              <p className="listing-error" role="alert">
+                {localizeMessage(storageError)}{" "}
+                {t(
+                  "La captura permanece en el formulario. Intenta guardar otra vez sin borrar los datos del sitio.",
+                )}
+              </p>
+            )}
+            {message && (
+              <p className="listing-success" role="status">
+                {localizeMessage(message)}
+              </p>
+            )}
+            {savedId && (
+              <div className="draft-actions">
+                <a
+                  className="button button-dark"
+                  href={`#draft-${savedId}`}
+                  onClick={() =>
+                    window.requestAnimationFrame(() =>
+                      document.getElementById(`draft-${savedId}`)?.focus(),
+                    )
+                  }
+                >
+                  {t("Ver el borrador guardado")}
+                </a>
+                <button type="button" disabled={busy} onClick={resetEditor}>
+                  {t("Crear otro borrador")}
+                </button>
+              </div>
+            )}
+          </div>
           <button type="submit" className="button button-dark">
             {busy
               ? t("Preparando…")
@@ -716,7 +769,12 @@ export function ListingForm() {
           </p>
         ) : (
           drafts.map((draft) => (
-            <article key={draft.id} className="draft-card">
+            <article
+              key={draft.id}
+              id={`draft-${draft.id}`}
+              tabIndex={-1}
+              className="draft-card"
+            >
               <div className="draft-card-heading">
                 <div>
                   <span className="draft-status">
