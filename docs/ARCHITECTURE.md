@@ -54,7 +54,7 @@ Los datos de titularidad y referencia son ficticios; no son certificados ni comp
 
 `Property.operation` diferencia Venta/Renta; el precio de una renta es mensual y se etiqueta en tarjetas, marcadores y ficha. `/venta`, `/renta` y `/terrenos` reutilizan `CatalogPage` y `PropertyExplorer` con filtros iniciales. `hasTour` exige una vivienda y escenas: ningún terreno renderiza visor, hotspots, mini plano o acceso a 360. La casa en renta incluida es una demo con fotos convencionales.
 
-`ListingForm` y `lib/listing-drafts.ts` no dependen del catálogo estático ni de un backend. Validan datos, permisos sobre imágenes, cantidad, tipo y tamaño; las fotos se decodifican y reencodan con canvas antes de guardar blobs en IndexedDB. Las transacciones se confirman antes de anunciar éxito. Se revocan las ObjectURL de previsualización y se maneja almacenamiento denegado/cuota. El respaldo JSON incluye las fotos; no hay todavía importación ni sincronización.
+`ListingForm` usa IndexedDB en modo local y API autenticada en modo compartido, independientes del catálogo público estático. `lib/listing-drafts.ts` conserva el repositorio local. Validan datos, permisos sobre imágenes, cantidad, tipo y tamaño; las fotos se decodifican y reencodan con canvas antes de guardar blobs en IndexedDB. Las transacciones se confirman antes de anunciar éxito. Se revocan las ObjectURL de previsualización y se maneja almacenamiento denegado/cuota. El respaldo JSON incluye las fotos; no hay todavía importación ni sincronización.
 
 Los datos del formulario no se insertan en `lib/properties.ts` ni se publican en rutas del servidor. Para un catálogo compartido se necesita una capa persistente con autorización, validación en servidor y moderación. Las pruebas de navegador cubren persistencia, exportación y eliminación de borradores y leen el archivo PMTiles local real; el mapa ya no requiere acceso a un proveedor externo.
 
@@ -86,7 +86,7 @@ El esquema de registro es `schemaVersion: 2`; la base IndexedDB conserva su vers
 
 ## Piloto móvil y límites
 
-Véase [PWA](PWA.md) para instalación, worker y límites offline. No se cambian el mapa ni sus datos/licencias. No hay pagos ni registro público. El panel local no es un área privada autenticada: almacenamiento compartido, URLs de medios con autorización, usuarios privados, validación en servidor y política de backups requieren otra fase.
+Véase [PWA](PWA.md) para instalación, worker y límites offline. No se cambian el mapa ni sus datos/licencias. No hay pagos ni registro público. El panel local continúa sin autenticación; `/privado` añade cuenta privada, API y medios autorizados, validación en servidor y un comando de respaldo. Identidades múltiples, alojamiento estable y backups externos automatizados siguen pendientes.
 
 Pruebas nuevas: reglas de cantidades/mantenimiento/garantías, migración y normalización v1/v2, límites/grafo 360 y regresiones de navegador de separación por operación, mantenimiento, edición, persistencia, respaldo, escenas manuales, manifest y aviso offline. Los archivos `tests/browser/*` usan medios procedurales del repositorio, no material de terceros.
 
@@ -99,3 +99,11 @@ Los dos manifests comparten identidad PWA; el aviso offline usa la misma prefere
 ## Confirmación de guardado local
 
 Después de confirmar la transacción IndexedDB, `saveListingDraft` verifica que el registro se puede leer con el mismo ID, actualización y medios. El formulario conserva texto, condiciones, fotos y escenas, y vincula las siguientes escrituras al mismo ID. Una lectura de verificación fallida no descarta la captura ni cambia el ID al reintentar. El aviso de éxito/error aparece junto al botón; la limpieza requiere una acción explícita. Esto mejora la confirmación local, sin agregar sincronización ni almacenamiento compartido.
+
+## Backend privado y dispositivos
+
+`/privado` monta `PrivateWorkspace`, comprueba sesión y reutiliza `ListingForm` con storage=shared. `lib/shared-drafts.ts` serializa fotos/escenas a multipart e hidrata medios autenticados como blobs. La revisión que se está editando se conserva separada de una actualización de lista; una captura antigua devuelve 409. La copia explícita desde la tarjeta local conserva el original IndexedDB.
+
+`/api/private/[...segments]` usa runtime Node.js y no-store. `private-http` comprueba origen, sesión, límites, contrato por operación y decodificación Sharp antes de escribir. `private-store` usa node:sqlite con transacciones WAL y revisión optimista: registro y blobs se reemplazan atómicamente. Un único propietario del piloto se configura por CLI con scrypt; tokens aleatorios tienen hash en DB, cookie HttpOnly/SameSite y expiración. No existe endpoint de alta pública.
+
+Los medios se sirven bajo sesión por ID validado; no están en public, en URLs firmadas permanentes ni en el catálogo. El directorio persistente por defecto es .home-view (ignorado). Un volumen externo se selecciona con HOME_VIEW_DATA_DIR; los orígenes de un proxy propio pueden fijarse con HOME_VIEW_PUBLIC_ORIGIN. Respaldos consistentes con VACUUM INTO y credenciales/cambios por terminal. Véase [PRIVATE_PILOT.md](PRIVATE_PILOT.md).

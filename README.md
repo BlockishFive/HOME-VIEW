@@ -4,7 +4,7 @@
 
 Prototipo en español para venta y renta de casas, departamentos y terrenos. Incluye cinco fichas ficticias, mapa vectorial propio MapLibre/PMTiles con vistas de referencia de México, Guanajuato y León, galería ampliable, costos separados para venta y renta, compartir e imprimir. Las tres viviendas originales tienen recorridos 360 con Marzipano. La casa en renta de demostración utiliza una galería convencional; los terrenos no ofrecen 360.
 
-`/alta` permite preparar una ficha con tus propias fotos autorizadas y guardarla como borrador solo en este navegador. No hay cuentas, pagos, envío de contactos ni publicación de los borradores en un catálogo compartido.
+`/alta` conserva borradores locales en el navegador. `/privado` añade captura compartida entre iPad y PC con una cuenta privada configurada por terminal y almacenamiento en el servidor. Ninguno publica automáticamente en el catálogo. No hay registro público, pagos ni envío de contactos.
 
 ## Ejecutar localmente
 
@@ -24,7 +24,7 @@ NEXT_TELEMETRY_DISABLED=1 npm run build  # compilación de producción
 npm run start           # servir la compilación en puerto 3000
 ```
 
-Pruebas de navegador (compilar antes; se puede reutilizar un servidor de producción en puerto 3000):
+Pruebas de navegador (compilar antes y dejar libre el puerto 3000; el servidor usa una base temporal y cuenta ficticia aisladas):
 
 ```sh
 npx playwright install chromium
@@ -34,6 +34,23 @@ npx playwright test
 Si Chromium ya está instalado, puedes evitar la descarga con `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npx playwright test` (comando verificado en este entorno).
 
 En Linux, Playwright puede requerir sus dependencias del sistema (`npx playwright install --with-deps chromium`). En la nube usa `PLAYWRIGHT_BROWSERS_PATH=/workspace/.cache/ms-playwright` al instalar y ejecutar si el directorio personal no es escribible.
+
+## Activar el área privada en el piloto
+
+Con el servidor detenido, después de actualizar la rama e instalar dependencias:
+
+```sh
+npm run setup:private
+NEXT_TELEMETRY_DISABLED=1 npm run dev
+```
+
+El primer comando pide un usuario y una contraseña de al menos 14 caracteres, sin mostrarla. No la envíes al chat ni la guardes en GitHub. En el iPad y la PC abre la **misma dirección HTTPS** del sitio y entra en **Área privada** (`/privado`). Guarda desde allí y usa **Actualizar lista privada** en el otro dispositivo.
+
+Para la casa ya capturada en el iPad: conserva un respaldo, inicia sesión en el área privada en otra pestaña y pulsa **Copiar al área privada** en la tarjeta de **Borradores locales**. El original permanece local; no se suben todos los borradores automáticamente.
+
+El servidor guarda datos y medios en `.home-view/private.sqlite`, excluido de Git. Funciona entre dispositivos mientras ese servidor esté activo; Codespaces todavía puede suspenderse y no es alojamiento permanente. Antes de eliminar el Codespace, crea un respaldo con `npm run backup:private` y conserva una copia privada fuera de él. Para cambiar la contraseña conservando datos: `npm run setup:private -- --reset`.
+
+Consulta [configuración, copias, límites y restauración](docs/PRIVATE_PILOT.md). No desplegar esta base en funciones efímeras o instancias sin disco persistente.
 
 ## Uso
 
@@ -61,15 +78,15 @@ Los JPEG locales son ilustraciones originales generadas mediante trazado de rayo
 6. Opcional para viviendas: en **Panoramas 360 y escenas**, confirma que son capturas equirectangulares completas autorizadas. Añade hasta 8 imágenes 2:1 de al menos 1024×512 y hasta 12 MB cada una; se reencodan a un máximo de 4096 px, sin recortar la esfera. Nombra escenas y crea conexiones de un solo sentido con destino y ángulos manuales. Añade la conexión de regreso si hace falta. **Abrir vista previa 360** reutiliza Marzipano; una foto convencional no se transforma en 360. Los terrenos conservan galería, sin recorrido.
 7. Confirma que tienes autorización para usar las imágenes y guarda el borrador. Sigue siendo local, no publicado y accesible a quien use ese navegador. Usa **Descargar respaldo** para conservar una copia JSON con fotos; la importación de respaldos aún está pendiente.
 
-Desde **Mis borradores** (`/alta#saved-title`) puedes revisar costos y condiciones, editar, guardar sobre el mismo borrador, descargar respaldo o eliminar. Las escenas guardadas se abren bajo demanda. El respaldo JSON v2 incluye fotos y panoramas; la importación sigue pendiente. **Cancelar edición** descarta los cambios aún no guardados. Al guardar se confirma que el registro se puede volver a leer y la captura permanece en el formulario. **Ver el borrador guardado** abre su tarjeta; **Crear otro borrador** limpia el formulario explícitamente. Guardar otra vez actualiza el mismo registro.
+Desde **Borradores locales** (`/alta#saved-title`) puedes revisar costos y condiciones, editar, guardar sobre el mismo borrador, descargar respaldo o eliminar. Las escenas guardadas se abren bajo demanda. El respaldo JSON v2 incluye fotos y panoramas; la importación sigue pendiente. **Cancelar edición** descarta los cambios aún no guardados. Al guardar se confirma que el registro se puede volver a leer y la captura permanece en el formulario. **Ver el borrador guardado** abre su tarjeta; **Crear otro borrador** limpia el formulario explícitamente. Guardar otra vez actualiza el mismo registro.
 
 Los borradores v1 se adaptan al leerlos sin sobreescribir el original: el precio pasa al bloque de la operación, el predial solo a venta y una cuota positiva conserva su importe con inclusión por confirmar. Una cuota anterior vacía o cero requiere revisión; no demuestra «No aplica». Los requisitos, servicios y pertenencia a conjunto quedan por confirmar. La edición y guardado explícitos escriben el esquema v2.
 
-Los borradores se almacenan en IndexedDB, no se suben al servidor y no aparecen en otros dispositivos ni en el catálogo público. Pueden perderse al borrar datos del navegador o cambiar de dirección/origen del sitio. Antes de publicar inmuebles reales se necesita backend, control de acceso y almacenamiento compartido.
+Los borradores de `/alta` se almacenan en IndexedDB y no aparecen en otros dispositivos hasta copiarlos explícitamente al área privada. Pueden perderse al borrar datos del navegador o cambiar de dirección/origen del sitio. Los borradores de `/privado` y sus medios se guardan en el servidor tras iniciar sesión. Ambos flujos conservan la separación venta/renta y no publican anuncios en el catálogo.
 
 ## Piloto móvil PWA
 
-La aplicación tiene manifest, iconos originales y base instalable en HTTPS (o localhost). Usa **Instalar Home View** cuando el navegador lo ofrezca, o su menú de instalación; en iPhone, Compartir → Añadir a pantalla de inicio. Instalar no crea una cuenta ni protección privada. Los borradores siguen vinculados al navegador, perfil y origen; no pasan a otros dispositivos.
+La aplicación tiene manifest, iconos originales y base instalable en HTTPS (o localhost). Usa **Instalar Home View** cuando el navegador lo ofrezca, o su menú de instalación; en iPhone, Compartir → Añadir a pantalla de inicio. La PWA abre `/privado`, que requiere la cuenta creada por terminal. Los borradores locales siguen vinculados al navegador, perfil y origen; los privados se consultan en el servidor desde ambos dispositivos.
 
 El piloto necesita conexión para abrir sus pantallas. El service worker solo conserva un aviso sin conexión e iconos públicos, sin cachear páginas, medios del usuario ni rangos del mapa. La edición offline completa y la comprobación en teléfonos físicos siguen pendientes. Véase [PWA y alcance offline](docs/PWA.md).
 
@@ -87,6 +104,7 @@ Las pruebas de navegador usan el archivo PMTiles real, comprueban HTTP206/Range 
 
 ## Documentación
 
+- [Área privada y captura compartida](docs/PRIVATE_PILOT.md)
 - [Arquitectura y decisiones](docs/ARCHITECTURE.md)
 - [Validación del piloto y comprobaciones pendientes](docs/VALIDATION.md)
 - [Piloto móvil PWA](docs/PWA.md)

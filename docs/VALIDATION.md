@@ -51,3 +51,15 @@ Se comprobó el guardado sin vaciar el formulario, confirmación visible junto a
 La compilación de producción y TypeScript pasan, y las 32 pruebas unitarias siguen aprobadas. Una selección de 22 pruebas de navegador pasó: cuatro regresiones nuevas de guardado, más captura, idioma, migración, persistencia, exportación y escenas. La prueba con HTML modificado mediante atributos `__gcruniqueid` también permite guardar y recargar el registro; no identifica qué herramienta externa añadió los atributos en el navegador del usuario. No se ocultan avisos de hidratación con `suppressHydrationWarning`.
 
 La ausencia de borradores de un iPad en una PC corresponde al almacenamiento local del piloto; no se implementó sincronización. No borrar datos del sitio para tratar de recuperar un borrador. Usar el mismo navegador, perfil y origen donde se capturó.
+
+## Área privada y captura compartida
+
+La rama añade una cuenta privada creada por terminal, API autenticada, SQLite persistente con medios en transacciones, copia explícita desde IndexedDB, revisión optimista, validación Sharp y respaldo consistente. No crea una cuenta real por defecto ni publica registros en el catálogo.
+
+Comprobaciones finales: **38 unitarias aprobadas**, **41 pruebas de navegador aprobadas con un worker**, TypeScript y build de producción correctos; `npm audit` reporta 0 vulnerabilidades conocidas. Se amplió después la prueba de dos dispositivos para confirmar edición desde la PC, actualización de lista en el iPad y rechazo de su captura antigua; esa prueba focalizada también pasó.
+
+La cobertura nueva verifica sesiones revocables/expiración y contraseñas con hash; límites de intentos; origen exacto, proxy de Codespaces y rechazo de forwarded-host arbitrario; bloqueo de API y medios sin sesión; cookies HttpOnly/SameSite; no-store; imágenes malformadas; registros/medios atómicos; revisiones antiguas y eliminación; copia local conservando original; fotos y panorama privados accesibles desde otra sesión; ausencia de datos privados en catálogo público. Los respaldos se comprobaron en una conexión SQLite separada. Se ejecutaron manualmente setup:private y backup:private con una cuenta y directorio ficticios aislados, confirmando contraseña sin eco.
+
+Las regresiones ajustadas esperan confirmación de guardado/eliminación antes de recargar. El recorrido con varias cargas WebGL tiene un presupuesto total de 60 segundos. El manifest se renderiza desde React para evitar duplicados al cambiar idioma durante navegación; se conserva su URL. Las pruebas usan bases temporales y no reutilizan un servidor de datos reales.
+
+Pendiente: Safari/iPad físicos, auditoría independiente, restauración operativa con backups externos y alojamiento Node.js permanente con disco persistente. La implementación funciona en un servidor único activo; no elimina la suspensión de Codespaces. Véase [configuración privada](PRIVATE_PILOT.md).
