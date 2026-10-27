@@ -1,3 +1,4 @@
+import { translate, type Locale } from "./i18n";
 /** Explicit operation terms. Unknown values are never interpreted as zero or consent. */
 export type Maintenance = {
   status: "yes" | "no" | "unknown";
@@ -44,10 +45,11 @@ export function defaultRentalTerms(): RentalTerms {
     },
   };
 }
-export function formatMXN(value: number) {
-  return new Intl.NumberFormat("es-MX", {
+export function formatMXN(value: number, locale: Locale = "es") {
+  return new Intl.NumberFormat(locale === "en" ? "en-US" : "es-MX", {
     style: "currency",
     currency: "MXN",
+    currencyDisplay: "narrowSymbol",
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(value);
@@ -57,14 +59,17 @@ const knownAmount = (value: number | null): value is number =>
 export function maintenanceLabel(
   maintenance: Maintenance,
   rental = false,
+  locale: Locale = "es",
 ): string {
-  if (maintenance.status === "no") return "No aplica";
-  if (maintenance.status === "unknown") return "Por confirmar";
+  const t = (message: string, params?: Record<string, string | number>) =>
+    translate(locale, message, params);
+  if (maintenance.status === "no") return t("No aplica");
+  if (maintenance.status === "unknown") return t("Por confirmar");
   const amount = knownAmount(maintenance.amount)
-    ? `${formatMXN(maintenance.amount)} MXN/mes`
-    : "Monto por confirmar";
+    ? t("{amount} MXN/mes", { amount: formatMXN(maintenance.amount, locale) })
+    : t("Monto por confirmar");
   if (!rental) return amount;
-  return `${amount} · ${maintenance.included === "yes" ? "Incluido en la renta" : maintenance.included === "no" ? "Adicional a la renta" : "Inclusión en renta por confirmar"}`;
+  return `${amount} · ${t(maintenance.included === "yes" ? "Incluido en la renta" : maintenance.included === "no" ? "Adicional a la renta" : "Inclusión en renta por confirmar")}`;
 }
 /** Only sum a confirmed separate fee; an included fee must not be counted twice. */
 export function rentalMonthlyTotal(
@@ -87,84 +92,113 @@ export function rentalMonthlyTotal(
 export function rentalSummary(
   rental: RentalTerms,
   maintenance: Maintenance,
+  locale: Locale = "es",
 ): string {
+  const t = (message: string, params?: Record<string, string | number>) =>
+    translate(locale, message, params);
   const rent = knownAmount(rental.monthlyRent)
-    ? `${formatMXN(rental.monthlyRent)} MXN/mes`
-    : "Renta por confirmar";
-  if (maintenance.status === "no") return `${rent} · Mantenimiento no aplica.`;
+    ? t("{amount} MXN/mes", { amount: formatMXN(rental.monthlyRent, locale) })
+    : t("Renta por confirmar");
+  if (maintenance.status === "no")
+    return t("{rent} · Mantenimiento no aplica.", { rent });
   if (maintenance.status === "unknown")
-    return `${rent} · Mantenimiento por confirmar.`;
+    return t("{rent} · Mantenimiento por confirmar.", { rent });
   if (maintenance.included === "yes")
-    return `${rent} · Mantenimiento incluido.`;
+    return t("{rent} · Mantenimiento incluido.", { rent });
   if (
     maintenance.included === "no" &&
     knownAmount(maintenance.amount) &&
     knownAmount(rental.monthlyRent)
   )
-    return `${formatMXN(rental.monthlyRent)} de renta + ${formatMXN(maintenance.amount)} de mantenimiento.`;
-  return `${rent} · Mantenimiento: ${maintenanceLabel(maintenance, true)}.`;
+    return t("{rent} de renta + {maintenance} de mantenimiento.", {
+      rent: formatMXN(rental.monthlyRent, locale),
+      maintenance: formatMXN(maintenance.amount, locale),
+    });
+  return t("{rent} · Mantenimiento: {maintenance}.", {
+    rent,
+    maintenance: maintenanceLabel(maintenance, true, locale),
+  });
 }
-export function communityLabel(community: Community): string {
-  return {
-    condominium: "Condominio",
-    gated: "Fraccionamiento",
-    neither: "No pertenece a fraccionamiento ni condominio",
-    unknown: "Por confirmar",
-  }[community];
-}
-export function rentalFacts(rental: RentalTerms): [string, string][] {
-  const requirement = (value: RentalTerms["guarantor"]) =>
-    ({
-      required: "Requerido",
-      "not-required": "No requerido",
+export function communityLabel(
+  community: Community,
+  locale: Locale = "es",
+): string {
+  return translate(
+    locale,
+    {
+      condominium: "Condominio",
+      gated: "Fraccionamiento",
+      neither: "No pertenece a fraccionamiento ni condominio",
       unknown: "Por confirmar",
-    })[value];
+    }[community],
+  );
+}
+export function rentalFacts(
+  rental: RentalTerms,
+  locale: Locale = "es",
+): [string, string][] {
+  const t = (message: string, params?: Record<string, string | number>) =>
+    translate(locale, message, params);
+  const requirement = (value: RentalTerms["guarantor"]) =>
+    t(
+      {
+        required: "Requerido",
+        "not-required": "No requerido",
+        unknown: "Por confirmar",
+      }[value],
+    );
   const facts: [string, string][] = [
     [
-      "Depósito",
+      t("Depósito"),
       knownAmount(rental.deposit)
-        ? `${formatMXN(rental.deposit)} MXN`
-        : "Por confirmar",
+        ? `${formatMXN(rental.deposit, locale)} MXN`
+        : t("Por confirmar"),
     ],
     [
-      "Plazo mínimo",
+      t("Plazo mínimo"),
       rental.minimumMonths === null
-        ? "Por confirmar"
-        : `${rental.minimumMonths} meses`,
+        ? t("Por confirmar")
+        : t("{count} meses", { count: rental.minimumMonths }),
     ],
   ];
   if (rental.guarantee === "either")
-    facts.push(["Garantía", "Aval o póliza jurídica (alternativas)"]);
+    facts.push([t("Garantía"), t("Aval o póliza jurídica (alternativas)")]);
   else {
     facts.push([
-      "Requisitos",
-      rental.guarantee === "independent"
-        ? "Independientes"
-        : "Relación entre requisitos por confirmar",
+      t("Requisitos"),
+      t(
+        rental.guarantee === "independent"
+          ? "Independientes"
+          : "Relación entre requisitos por confirmar",
+      ),
     ]);
     facts.push(
-      ["Aval", requirement(rental.guarantor)],
-      ["Póliza jurídica", requirement(rental.legalPolicy)],
+      [t("Aval"), requirement(rental.guarantor)],
+      [t("Póliza jurídica"), requirement(rental.legalPolicy)],
     );
   }
   facts.push(
     [
-      "Mascotas",
-      {
-        yes: "Permitidas",
-        no: "No permitidas",
-        conditional: "Sujetas a condiciones",
-        unknown: "Por confirmar",
-      }[rental.pets],
+      t("Mascotas"),
+      t(
+        {
+          yes: "Permitidas",
+          no: "No permitidas",
+          conditional: "Sujetas a condiciones",
+          unknown: "Por confirmar",
+        }[rental.pets],
+      ),
     ],
     [
-      "Amueblado",
-      {
-        yes: "Sí",
-        no: "No",
-        partial: "Parcialmente",
-        unknown: "Por confirmar",
-      }[rental.furnished],
+      t("Amueblado"),
+      t(
+        {
+          yes: "Sí",
+          no: "No",
+          partial: "Parcialmente",
+          unknown: "Por confirmar",
+        }[rental.furnished],
+      ),
     ],
   );
   const serviceLabels = {
@@ -177,12 +211,14 @@ export function rentalFacts(rental: RentalTerms): [string, string][] {
     serviceLabels,
   ) as (keyof RentalTerms["services"])[]) {
     facts.push([
-      serviceLabels[key],
-      {
-        included: "Incluido en la renta",
-        excluded: "No incluido en la renta",
-        unknown: "Por confirmar",
-      }[rental.services[key]],
+      t(serviceLabels[key]),
+      t(
+        {
+          included: "Incluido en la renta",
+          excluded: "No incluido en la renta",
+          unknown: "Por confirmar",
+        }[rental.services[key]],
+      ),
     ]);
   }
   return facts;

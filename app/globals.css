@@ -3303,3 +3303,10 @@ small {
   .viewer-badge { padding: 7px 9px; }
   .viewer-demo { letter-spacing: 0; padding: 7px; }
 }
+
+.language-switcher { display: flex; flex-direction: column; gap: 4px; color: #d5e3c2; font-size: 14px; }
+.language-switcher select { min-height: 44px; max-width: 100%; border: 1px solid #607841; border-radius: 10px; background: #202b19; color: #edf1e6; padding: 8px 12px; font-size: 16px; }
+@media screen and (max-width: 1300px) {
+  .site-header { height: auto; min-height: 91px; padding-block: 16px; flex-wrap: wrap; gap: 16px; }
+  .site-header nav { flex-wrap: wrap; gap: 8px 16px; }
+}

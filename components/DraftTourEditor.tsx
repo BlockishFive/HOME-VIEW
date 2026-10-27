@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/components/I18nProvider";
 import { useEffect, useId, useState } from "react";
 import { PanoramaViewer } from "./PanoramaViewer";
 import {
@@ -50,6 +51,7 @@ async function preparePanorama(file: File): Promise<Blob> {
 }
 
 export function DraftTourPreview({ scenes }: { scenes: DraftScene[] }) {
+  const { t } = useI18n();
   const [rooms, setRooms] = useState<
     {
       id: string;
@@ -62,35 +64,36 @@ export function DraftTourPreview({ scenes }: { scenes: DraftScene[] }) {
   useEffect(() => {
     const nextRooms = scenes.map((scene) => ({
       id: scene.id,
-      name: scene.name || "Escena sin nombre",
+      name: scene.name || t("Escena sin nombre"),
       panorama: URL.createObjectURL(scene.blob),
       hotspots: scene.hotspots,
     }));
     setRooms(nextRooms);
     return () =>
       nextRooms.forEach((room) => URL.revokeObjectURL(room.panorama));
-  }, [scenes]);
+  }, [scenes, t]);
   const selected = rooms.some((room) => room.id === current)
     ? current
     : rooms[0]?.id;
   if (!selected) return null;
   return (
     <div className="draft-tour-preview">
-      <h3>Vista previa 360 local</h3>
+      <h3>{t("Vista previa 360 local")}</h3>
       <p>
-        Solo en este dispositivo. Las conexiones son manuales y no se crean
-        automáticamente.
+        {t(
+          "Solo en este dispositivo. Las conexiones son manuales y no se crean automáticamente.",
+        )}
       </p>
       <PanoramaViewer
         rooms={rooms}
         current={selected}
         onSelect={setCurrent}
-        label="VISTA PREVIA LOCAL · NO PUBLICADA"
+        label={t("VISTA PREVIA LOCAL · NO PUBLICADA")}
       />
       <div
         className="draft-scene-tabs"
         role="group"
-        aria-label="Escenas del borrador"
+        aria-label={t("Escenas del borrador")}
       >
         {rooms.map((room) => (
           <button
@@ -109,6 +112,7 @@ export function DraftTourPreview({ scenes }: { scenes: DraftScene[] }) {
 
 /** Saved drafts do not allocate WebGL viewers until explicitly opened. */
 export function DraftTourSavedPreview({ scenes }: { scenes: DraftScene[] }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   if (!scenes.length) return null;
   return (
@@ -118,9 +122,11 @@ export function DraftTourSavedPreview({ scenes }: { scenes: DraftScene[] }) {
         className="button button-dark"
         onClick={() => setOpen((previous) => !previous)}
       >
-        {open
-          ? "Cerrar recorrido 360 del borrador"
-          : "Ver recorrido 360 del borrador"}
+        {t(
+          open
+            ? "Cerrar recorrido 360 del borrador"
+            : "Ver recorrido 360 del borrador",
+        )}
       </button>
       {open && <DraftTourPreview scenes={scenes} />}
     </div>
@@ -138,6 +144,7 @@ export function DraftTourEditor({
   disabled?: boolean;
   onBusyChange?: (busy: boolean) => void;
 }) {
+  const { t } = useI18n();
   const inputId = useId();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -164,7 +171,9 @@ export function DraftTourEditor({
       for (const file of Array.from(files)) {
         added.push({
           id: crypto.randomUUID(),
-          name: `Escena ${scenes.length + added.length + 1}`,
+          name: t("Escena {number}", {
+            number: scenes.length + added.length + 1,
+          }),
           blob: await preparePanorama(file),
           hotspots: [],
         });
@@ -181,17 +190,16 @@ export function DraftTourEditor({
   }
   return (
     <section className="draft-tour-editor" aria-labelledby={`${inputId}-title`}>
-      <h2 id={`${inputId}-title`}>Panoramas 360 y escenas</h2>
+      <h2 id={`${inputId}-title`}>{t("Panoramas 360 y escenas")}</h2>
       <p className="listing-help">
-        Opcional. Separados de las fotografías normales. Añade hasta{" "}
-        {MAX_SCENES} capturas equirectangulares 360 de proporción exacta 2:1
-        (mínimo 1024 × 512 px), de hasta 12 MB cada una. Se reducen a 4096 px y
-        se retiran metadatos. La proporción por sí sola no acredita que la
-        captura cubra toda la esfera.
+        {t(
+          "Opcional. Separados de las fotografías normales. Añade hasta {count} capturas equirectangulares 360 de proporción exacta 2:1 (mínimo 1024 × 512 px), de hasta 12 MB cada una. Se reducen a 4096 px y se retiran metadatos. La proporción por sí sola no acredita que la captura cubra toda la esfera.",
+          { count: MAX_SCENES },
+        )}
       </p>
       <fieldset disabled={disabled || busy}>
         <legend className="draft-tour-legend">
-          Preparación local del recorrido
+          {t("Preparación local del recorrido")}
         </legend>
         <label className="listing-rights">
           <input
@@ -200,12 +208,13 @@ export function DraftTourEditor({
             onChange={(event) => setConfirmed(event.target.checked)}
           />
           <span>
-            Confirmo que son capturas 360 equirectangulares completas y que
-            tengo autorización para usarlas.
+            {t(
+              "Confirmo que son capturas 360 equirectangulares completas y que tengo autorización para usarlas.",
+            )}
           </span>
         </label>
         <label className="listing-field" htmlFor={inputId}>
-          <span>Añadir panoramas 360</span>
+          <span>{t("Añadir panoramas 360")}</span>
           <input
             id={inputId}
             type="file"
@@ -218,16 +227,18 @@ export function DraftTourEditor({
             }}
           />
         </label>
-        {busy && <p role="status">Preparando panoramas…</p>}
+        {busy && <p role="status">{t("Preparando panoramas…")}</p>}
         {error && (
           <p className="listing-error" role="alert">
-            {error}
+            {t(error)}
           </p>
         )}
         {scenes.map((scene, sceneIndex) => (
           <div key={scene.id} className="draft-scene-card">
             <label className="listing-field">
-              <span>Nombre de escena {sceneIndex + 1}</span>
+              <span>
+                {t("Nombre de escena {number}", { number: sceneIndex + 1 })}
+              </span>
               <input
                 value={scene.name}
                 maxLength={80}
@@ -240,11 +251,17 @@ export function DraftTourEditor({
               type="button"
               onClick={() => onChange(removeDraftScene(scenes, scene.id))}
             >
-              Eliminar escena {sceneIndex + 1}
+              {t("Eliminar escena {number}", { number: sceneIndex + 1 })}
             </button>
             <p>
-              Conexiones desde {scene.name || `escena ${sceneIndex + 1}`} · un
-              solo sentido. Añade el regreso en la otra escena si lo necesitas.
+              {t(
+                "Conexiones desde {name} · un solo sentido. Añade el regreso en la otra escena si lo necesitas.",
+                {
+                  name:
+                    scene.name ||
+                    t("Escena {number}", { number: sceneIndex + 1 }),
+                },
+              )}
             </p>
             {scene.hotspots.map((hotspot, index) => {
               function setConnection(
@@ -260,7 +277,9 @@ export function DraftTourEditor({
                 <div key={index} className="draft-connection">
                   <label className="listing-field">
                     <span>
-                      Destino {sceneIndex + 1}.{index + 1}
+                      {t("Destino {number}", {
+                        number: `${sceneIndex + 1}.${index + 1}`,
+                      })}
                     </span>
                     <select
                       value={hotspot.target}
@@ -278,14 +297,16 @@ export function DraftTourEditor({
                               (h, i) => i !== index && h.target === target.id,
                             )}
                           >
-                            {target.name || "Sin nombre"}
+                            {target.name || t("Sin nombre")}
                           </option>
                         ))}
                     </select>
                   </label>
                   <label className="listing-field">
                     <span>
-                      Ángulo horizontal {sceneIndex + 1}.{index + 1} (°)
+                      {t("Ángulo horizontal {number} (°)", {
+                        number: `${sceneIndex + 1}.${index + 1}`,
+                      })}
                     </span>
                     <input
                       type="number"
@@ -302,7 +323,9 @@ export function DraftTourEditor({
                   </label>
                   <label className="listing-field">
                     <span>
-                      Ángulo vertical {sceneIndex + 1}.{index + 1} (°)
+                      {t("Ángulo vertical {number} (°)", {
+                        number: `${sceneIndex + 1}.${index + 1}`,
+                      })}
                     </span>
                     <input
                       type="number"
@@ -325,7 +348,9 @@ export function DraftTourEditor({
                       })
                     }
                   >
-                    Quitar conexión {sceneIndex + 1}.{index + 1}
+                    {t("Quitar conexión {number}", {
+                      number: `${sceneIndex + 1}.${index + 1}`,
+                    })}
                   </button>
                 </div>
               );
@@ -354,7 +379,9 @@ export function DraftTourEditor({
                   });
               }}
             >
-              Añadir conexión desde escena {sceneIndex + 1}
+              {t("Añadir conexión desde escena {number}", {
+                number: sceneIndex + 1,
+              })}
             </button>
           </div>
         ))}
@@ -363,7 +390,7 @@ export function DraftTourEditor({
             type="button"
             onClick={() => setPreview((previous) => !previous)}
           >
-            {preview ? "Cerrar vista previa 360" : "Abrir vista previa 360"}
+            {t(preview ? "Cerrar vista previa 360" : "Abrir vista previa 360")}
           </button>
         )}
       </fieldset>

@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/components/I18nProvider";
 import type {
   Community,
   Maintenance,
@@ -30,6 +31,7 @@ export function ListingTermsFields({
   onCommunity: (value: Community) => void;
   errors: Record<string, string>;
 }) {
+  const { t } = useI18n();
   function select<T extends string>(
     key: string,
     label: string,
@@ -39,7 +41,7 @@ export function ListingTermsFields({
   ) {
     return (
       <label className="listing-field">
-        <span id={`${fieldId(key)}-label`}>{label}</span>
+        <span id={`${fieldId(key)}-label`}>{t(label)}</span>
         <select
           id={fieldId(key)}
           name={key}
@@ -51,13 +53,13 @@ export function ListingTermsFields({
         >
           {options.map(([v, text]) => (
             <option key={v} value={v}>
-              {text}
+              {t(text)}
             </option>
           ))}
         </select>
         {errors[key] && (
           <small id={`${fieldId(key)}-error`} className="listing-field-error">
-            {errors[key]}
+            {t(errors[key])}
           </small>
         )}
       </label>
@@ -71,7 +73,7 @@ export function ListingTermsFields({
   ) {
     return (
       <label className="listing-field">
-        <span id={`${fieldId(key)}-label`}>{label}</span>
+        <span id={`${fieldId(key)}-label`}>{t(label)}</span>
         <input
           id={fieldId(key)}
           name={key}
@@ -80,7 +82,7 @@ export function ListingTermsFields({
           min={key === "minimumMonths" ? 1 : 0}
           step={key === "minimumMonths" ? 1 : "0.01"}
           value={value ?? ""}
-          placeholder="Por confirmar"
+          placeholder={t("Por confirmar")}
           aria-invalid={!!errors[key]}
           aria-describedby={errors[key] ? `${fieldId(key)}-error` : undefined}
           onChange={(e) =>
@@ -89,7 +91,7 @@ export function ListingTermsFields({
         />
         {errors[key] && (
           <small id={`${fieldId(key)}-error`} className="listing-field-error">
-            {errors[key]}
+            {t(errors[key])}
           </small>
         )}
       </label>
@@ -108,13 +110,16 @@ export function ListingTermsFields({
   return (
     <>
       <h2>
-        {operation === "Renta"
-          ? "Condiciones de renta"
-          : "Condiciones de venta"}
+        {t(
+          operation === "Renta"
+            ? "Condiciones de renta"
+            : "Condiciones de venta",
+        )}
       </h2>
       <p className="listing-help">
-        Deja por confirmar lo que aún no conozcas. Ningún dato pendiente se
-        interpreta como cero o como una autorización.
+        {t(
+          "Deja por confirmar lo que aún no conozcas. Ningún dato pendiente se interpreta como cero o como una autorización.",
+        )}
       </p>
       <div className="listing-field-grid">
         {operation === "Venta" ? (
@@ -217,7 +222,7 @@ export function ListingTermsFields({
           </>
         )}
       </div>
-      <h2>Mantenimiento y conjunto</h2>
+      <h2>{t("Mantenimiento y conjunto")}</h2>
       <div className="listing-field-grid">
         {select(
           "community",
@@ -262,9 +267,9 @@ export function ListingTermsFields({
         )}
       </div>
       <p className="listing-help">
-        La suma mensual solo considera renta y una cuota conocida. Excluye
-        servicios, depósito y póliza jurídica. Una cuota incluida nunca se suma
-        dos veces.
+        {t(
+          "La suma mensual solo considera renta y una cuota conocida. Excluye servicios, depósito y póliza jurídica. Una cuota incluida nunca se suma dos veces.",
+        )}
       </p>
     </>
   );

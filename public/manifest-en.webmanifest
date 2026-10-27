@@ -1,0 +1,32 @@
+{
+  "id": "/",
+  "name": "Home View · Local pilot",
+  "short_name": "Home View",
+  "description": "Fictional catalog and property drafts stored only on this device.",
+  "lang": "en",
+  "start_url": "/alta#saved-title",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#141614",
+  "theme_color": "#141614",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

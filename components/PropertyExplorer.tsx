@@ -11,6 +11,8 @@ import {
 import { rentalSummary } from "@/lib/property-terms";
 import { PropertyMap } from "./PropertyMap";
 import { PropertyCard } from "./PropertyCard";
+import { localizeProperty } from "@/lib/localized-properties";
+import { useI18n } from "./I18nProvider";
 export function PropertyExplorer({
   properties,
   initialOperation = "Todas",
@@ -20,16 +22,41 @@ export function PropertyExplorer({
   initialOperation?: string;
   initialType?: string;
 }) {
+  const { locale, t } = useI18n();
+  const localizedItems = useMemo(
+    () => properties.map((property) => localizeProperty(property, locale)),
+    [properties, locale],
+  );
   const [operation, setOperation] = useState(initialOperation);
   const [query, setQuery] = useState("");
   const [type, setType] = useState(initialType);
   const [maxPrice, setMaxPrice] = useState(Number.POSITIVE_INFINITY);
   const [mode, setMode] = useState<"cards" | "map">("map");
   const [selection, setSelection] = useState(properties[0].slug);
-  const filtered = useMemo(
-    () => filterProperties(properties, query, type, maxPrice, operation),
-    [properties, query, type, maxPrice, operation],
+  // Search both catalog languages so changing language does not invalidate a typed query.
+  const englishItems = useMemo(
+    () => properties.map((property) => localizeProperty(property, "en")),
+    [properties],
   );
+  const filtered = useMemo(() => {
+    const matchingSlugs = new Set(
+      [
+        ...filterProperties(properties, query, type, maxPrice, operation),
+        ...filterProperties(englishItems, query, type, maxPrice, operation),
+      ].map((property) => property.slug),
+    );
+    return localizedItems.filter((property) =>
+      matchingSlugs.has(property.slug),
+    );
+  }, [
+    properties,
+    englishItems,
+    localizedItems,
+    query,
+    type,
+    maxPrice,
+    operation,
+  ]);
   const selected = filtered.find((p) => p.slug === selection) ?? filtered[0];
   function clear() {
     setQuery("");
@@ -42,7 +69,7 @@ export function PropertyExplorer({
       <div
         className="operation-tabs"
         role="group"
-        aria-label="Operación del catálogo"
+        aria-label={t("Operación del catálogo")}
       >
         {["Todas", "Venta", "Renta"].map((value) => (
           <button
@@ -54,94 +81,98 @@ export function PropertyExplorer({
               setMaxPrice(Number.POSITIVE_INFINITY);
             }}
           >
-            {value === "Todas"
-              ? "Todas las propiedades"
-              : value === "Venta"
-                ? "En venta"
-                : "En renta"}
+            {t(
+              value === "Todas"
+                ? "Todas las propiedades"
+                : value === "Venta"
+                  ? "En venta"
+                  : "En renta",
+            )}
           </button>
         ))}
         <Link href="/alta">
-          Preparar mi anuncio <ArrowIcon />
+          {t("Preparar mi anuncio")} <ArrowIcon />
         </Link>
       </div>
       <form
         className="search-bar"
         onSubmit={(event) => event.preventDefault()}
         role="search"
-        aria-label="Buscar propiedades de demostración"
+        aria-label={t("Buscar propiedades de demostración")}
       >
         <label className="search-location">
-          <span>UBICACIÓN O PROPIEDAD</span>
+          <span>{t("UBICACIÓN O PROPIEDAD")}</span>
           <input
-            placeholder="¿Dónde comienza tu próxima historia?"
+            placeholder={t("¿Dónde comienza tu próxima historia?")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
         </label>
         <label>
-          <span>TIPO DE INMUEBLE</span>
+          <span>{t("TIPO DE INMUEBLE")}</span>
           <select
             value={type}
             onChange={(event) => setType(event.target.value)}
           >
-            <option>Todos</option>
-            <option value="Casa">Casas</option>
-            <option value="Departamento">Departamentos</option>
-            <option value="Terreno">Terrenos</option>
+            <option value="Todos">{t("Todos")}</option>
+            <option value="Casa">{t("Casas")}</option>
+            <option value="Departamento">{t("Departamentos")}</option>
+            <option value="Terreno">{t("Terrenos")}</option>
           </select>
         </label>
         <label>
-          <span>PRESUPUESTO MÁXIMO</span>
+          <span>{t("PRESUPUESTO MÁXIMO")}</span>
           <select
             value={maxPrice}
             onChange={(event) => setMaxPrice(Number(event.target.value))}
           >
-            <option value={Number.POSITIVE_INFINITY}>Cualquier precio</option>
+            <option value={Number.POSITIVE_INFINITY}>
+              {t("Cualquier precio")}
+            </option>
             {operation === "Renta" && (
               <>
-                <option value={15000}>Hasta $15,000 / mes</option>
-                <option value={20000}>Hasta $20,000 / mes</option>
-                <option value={30000}>Hasta $30,000 / mes</option>
+                <option value={15000}>{t("Hasta $15,000 / mes")}</option>
+                <option value={20000}>{t("Hasta $20,000 / mes")}</option>
+                <option value={30000}>{t("Hasta $30,000 / mes")}</option>
               </>
             )}
-            <option value={3000000}>Hasta $3 millones</option>
-            <option value={5000000}>Hasta $5 millones</option>
-            <option value={7000000}>Hasta $7 millones</option>
+            <option value={3000000}>{t("Hasta $3 millones")}</option>
+            <option value={5000000}>{t("Hasta $5 millones")}</option>
+            <option value={7000000}>{t("Hasta $7 millones")}</option>
           </select>
         </label>
         <button type="button" className="search-reset" onClick={clear}>
-          Limpiar filtros ↺
+          {t("Limpiar filtros ↺")}
         </button>
       </form>
       <div className="catalog-bar">
         <span role="status">
           <strong>{String(filtered.length).padStart(2, "0")}</strong>{" "}
-          propiedades para explorar
+          {t("propiedades para explorar")}
         </span>
         <div
           className="view-toggle"
           role="group"
-          aria-label="Vista de resultados"
+          aria-label={t("Vista de resultados")}
         >
           <button onClick={() => setMode("map")} aria-pressed={mode === "map"}>
-            ⌖ Mapa + lista
+            {t("⌖ Mapa + lista")}
           </button>
           <button
             onClick={() => setMode("cards")}
             aria-pressed={mode === "cards"}
           >
-            ▦ Tarjetas
+            {t("▦ Tarjetas")}
           </button>
         </div>
       </div>
       {filtered.length === 0 ? (
         <div className="empty-results">
           <span>⌕</span>
-          <h3>No encontramos espacios con esos filtros.</h3>
-          <p>Prueba otra ubicación o amplía tu presupuesto.</p>
+          <h3>{t("No encontramos espacios con esos filtros.")}</h3>
+          <p>{t("Prueba otra ubicación o amplía tu presupuesto.")}</p>
           <button className="button button-dark" onClick={clear}>
-            Ver todas las propiedades <ArrowIcon />
+            {t("Ver todas las propiedades")} <ArrowIcon />
           </button>
         </div>
       ) : mode === "cards" ? (
@@ -160,26 +191,40 @@ export function PropertyExplorer({
             />
             <div className="selected-property" aria-live="polite">
               <div>
-                <span className="eyebrow">SELECCIONADA EN EL MAPA</span>
+                <span className="eyebrow">{t("SELECCIONADA EN EL MAPA")}</span>
                 <strong>
                   {selected.title}
                   <span>{selected.location}</span>
                 </strong>
               </div>
               <div>
-                {selected.operation === "Renta" ? <>
-                  <small>Renta mensual</small>
-                  <strong>{rentalSummary(selected.rental, selected.maintenance)}</strong>
-                </> : <>
-                  <small>Predial anual (demo)</small>
-                  <strong>{selected.sale.annualTax === null ? "Por confirmar" : `${formatMXN(selected.sale.annualTax)} MXN`}</strong>
-                </>}
+                {selected.operation === "Renta" ? (
+                  <>
+                    <small>{t("Renta mensual")}</small>
+                    <strong>
+                      {rentalSummary(
+                        selected.rental,
+                        selected.maintenance,
+                        locale,
+                      )}
+                    </strong>
+                  </>
+                ) : (
+                  <>
+                    <small>{t("Predial anual (demo)")}</small>
+                    <strong>
+                      {selected.sale.annualTax === null
+                        ? t("Por confirmar")
+                        : `${formatMXN(selected.sale.annualTax, locale)} MXN`}
+                    </strong>
+                  </>
+                )}
               </div>
               <Link
                 className="button button-dark"
                 href={`/propiedades/${selected.slug}`}
               >
-                {hasTour(selected) ? "Explorar en 360°" : "Ver inmueble"}{" "}
+                {t(hasTour(selected) ? "Explorar en 360°" : "Ver inmueble")}{" "}
                 <ArrowIcon />
               </Link>
             </div>
@@ -198,8 +243,8 @@ export function PropertyExplorer({
                 >
                   ⌖{" "}
                   {selected.slug === property.slug
-                    ? "Seleccionada en el mapa"
-                    : `Ubicar ${property.title} en el mapa`}
+                    ? t("Seleccionada en el mapa")
+                    : t("Ubicar {name} en el mapa", { name: property.title })}
                 </button>
               </div>
             ))}
@@ -207,9 +252,9 @@ export function PropertyExplorer({
         </div>
       )}
       <p className="demo-note">
-        Mapa vectorial propio de referencia · Anuncios, precios y posiciones de
-        demostración ficticios. La renta se expresa por mes. Las galerías
-        comparten ilustraciones; no representan domicilios reales.
+        {t(
+          "Mapa vectorial propio de referencia · Anuncios, precios y posiciones de demostración ficticios. La renta se expresa por mes. Las galerías comparten ilustraciones; no representan domicilios reales.",
+        )}
       </p>
     </>
   );

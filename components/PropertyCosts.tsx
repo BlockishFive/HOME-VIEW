@@ -1,3 +1,5 @@
+"use client";
+import { useI18n } from "./I18nProvider";
 import { type Property } from "@/lib/properties";
 import {
   communityLabel,
@@ -24,6 +26,7 @@ export function TermsDetails({
   terms: Terms;
   demo?: boolean;
 }) {
+  const { locale, t } = useI18n();
   const facts: [string, string][] =
     terms.operation === "Renta"
       ? [
@@ -31,29 +34,36 @@ export function TermsDetails({
             "Renta mensual",
             terms.rental.monthlyRent === null
               ? "Por confirmar"
-              : `${formatMXN(terms.rental.monthlyRent)} MXN/mes`,
+              : t("{amount} MXN/mes", {
+                  amount: formatMXN(terms.rental.monthlyRent, locale),
+                }),
           ],
-          ...rentalFacts(terms.rental),
+          ...rentalFacts(terms.rental, locale),
         ]
       : [
           [
             "Precio de compra",
             terms.sale.purchasePrice === null
               ? "Por confirmar"
-              : `${formatMXN(terms.sale.purchasePrice)} MXN`,
+              : `${formatMXN(terms.sale.purchasePrice, locale)} MXN`,
           ],
           [
             "Predial anual estimado",
             terms.sale.annualTax === null
               ? "Por confirmar"
-              : `${formatMXN(terms.sale.annualTax)} MXN / año`,
+              : t("{amount} MXN / año", {
+                  amount: formatMXN(terms.sale.annualTax, locale),
+                }),
           ],
         ];
   facts.push([
     "Mantenimiento mensual",
-    maintenanceLabel(terms.maintenance, terms.operation === "Renta"),
+    maintenanceLabel(terms.maintenance, terms.operation === "Renta", locale),
   ]);
-  facts.push(["Fraccionamiento o condominio", communityLabel(terms.community)]);
+  facts.push([
+    "Fraccionamiento o condominio",
+    communityLabel(terms.community, locale),
+  ]);
   const monthlyTotal =
     terms.operation === "Renta"
       ? rentalMonthlyTotal(terms.rental, terms.maintenance)
@@ -65,36 +75,44 @@ export function TermsDetails({
       </span>
       <h3>
         {terms.operation === "Renta"
-          ? "Renta, condiciones y servicios"
-          : "Compra y gastos recurrentes"}
+          ? t("Renta, condiciones y servicios")
+          : t("Compra y gastos recurrentes")}
       </h3>
       {terms.operation === "Renta" && (
-        <p>{rentalSummary(terms.rental, terms.maintenance)}</p>
+        <p>{rentalSummary(terms.rental, terms.maintenance, locale)}</p>
       )}
       <dl>
         {facts.map(([label, value], index) => (
           <div key={label} className={index === 0 ? "terms-price" : undefined}>
-            <dt>{label}</dt>
-            <dd>{value}</dd>
+            <dt>{t(label)}</dt>
+            <dd>{t(value)}</dd>
           </div>
         ))}
         {monthlyTotal !== null && (
           <div className="terms-total">
-            <dt>Renta y mantenimiento</dt>
-            <dd>{formatMXN(monthlyTotal)}/mes</dd>
+            <dt>{t("Renta y mantenimiento")}</dt>
+            <dd>
+              {formatMXN(monthlyTotal, locale)}
+              {t("/mes")}
+            </dd>
           </div>
         )}
       </dl>
       <p className="cost-note">
-        {demo && "Cifras ficticias, sin validez fiscal. "}
+        {demo && `${t("Cifras ficticias, sin validez fiscal.")} `}
         {terms.operation === "Renta"
-          ? "La suma de renta y mantenimiento excluye servicios, depósito y póliza. Confirma las condiciones en el contrato. Los datos por confirmar no se consideran cero."
-          : "Confirma cuotas con la administración, predial y adeudos con la autoridad municipal. No incluye gastos notariales ni impuestos de adquisición."}
+          ? t(
+              "La suma de renta y mantenimiento excluye servicios, depósito y póliza. Confirma las condiciones en el contrato. Los datos por confirmar no se consideran cero.",
+            )
+          : t(
+              "Confirma cuotas con la administración, predial y adeudos con la autoridad municipal. No incluye gastos notariales ni impuestos de adquisición.",
+            )}
       </p>
     </div>
   );
 }
 export function PropertyCosts({ property }: { property: Property }) {
+  const { locale, t } = useI18n();
   return (
     <section
       id="costos"
@@ -103,20 +121,25 @@ export function PropertyCosts({ property }: { property: Property }) {
       tabIndex={-1}
     >
       <div>
-        <p className="eyebrow">INFORMACIÓN PARA TOMAR PERSPECTIVA</p>
+        <p className="eyebrow">{t("INFORMACIÓN PARA TOMAR PERSPECTIVA")}</p>
         <h2 id="costs-title">
           {property.operation === "Renta"
-            ? "Tu renta, con claridad."
-            : "Más allá del precio."}
+            ? t("Tu renta, con claridad.")
+            : t("Más allá del precio.")}
         </h2>
         <p className="muted">
           {property.operation === "Renta"
-            ? "Consulta la mensualidad, los requisitos y los servicios antes de dar el siguiente paso."
-            : "Conoce los gastos recurrentes de este inmueble de demostración antes de dar el siguiente paso."}
+            ? t(
+                "Consulta la mensualidad, los requisitos y los servicios antes de dar el siguiente paso.",
+              )
+            : t(
+                "Conoce los gastos recurrentes de este inmueble de demostración antes de dar el siguiente paso.",
+              )}
         </p>
         <p className="demo-note">
-          Importes ficticios en pesos mexicanos, sin validez fiscal. Este
-          prototipo no calcula créditos ni recibe pagos.
+          {t(
+            "Importes ficticios en pesos mexicanos, sin validez fiscal. Este prototipo no calcula créditos ni recibe pagos.",
+          )}
         </p>
       </div>
       <TermsDetails terms={property} demo />

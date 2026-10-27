@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/components/I18nProvider";
 import { useEffect, useId, useRef, useState } from "react";
 import {
   deleteListingDraft,
@@ -163,6 +164,16 @@ async function exportDraft(draft: ListingDraft) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 export function ListingForm() {
+  const { t } = useI18n();
+  function localizeMessage(message: string) {
+    const photoError = message.match(/^No se pudo leer (.+): (.*)$/);
+    return photoError
+      ? t("No se pudo leer {name}: {reason}", {
+          name: photoError[1],
+          reason: t(photoError[2]),
+        })
+      : t(message);
+  }
   const formId = useId();
   const fieldId = (name: string) => `${formId}-${name}`;
   const [values, setValues] = useState(initial);
@@ -391,7 +402,7 @@ export function ListingForm() {
   ) {
     return (
       <label className="listing-field">
-        <span id={`${fieldId(name)}-label`}>{label}</span>
+        <span id={`${fieldId(name)}-label`}>{t(label)}</span>
         <input
           id={fieldId(name)}
           aria-labelledby={`${fieldId(name)}-label`}
@@ -410,10 +421,10 @@ export function ListingForm() {
               .join(" ") || undefined
           }
         />
-        {hint && <small id={`${fieldId(name)}-hint`}>{hint}</small>}
+        {hint && <small id={`${fieldId(name)}-hint`}>{t(hint)}</small>}
         {errors[name] && (
           <span className="listing-field-error" id={`error-${name}`}>
-            {errors[name]}
+            {localizeMessage(errors[name])}
           </span>
         )}
       </label>
@@ -422,36 +433,35 @@ export function ListingForm() {
   return (
     <div className="listing-workspace">
       <div className="listing-local-notice">
-        <strong>Borradores locales · No publicados</strong>
+        <strong>{t("Borradores locales · No publicados")}</strong>
         <p>
-          Se guardan solo en este navegador y dispositivo. No aparecen en el
-          catálogo público ni se comparten con otras personas. Al borrar los
-          datos del navegador puedes perderlos; descarga un respaldo para
-          conservarlos.
+          {t(
+            "Se guardan solo en este navegador y dispositivo. No aparecen en el catálogo público ni se comparten con otras personas. Al borrar los datos del navegador puedes perderlos; descarga un respaldo para conservarlos.",
+          )}
         </p>
       </div>
       {storageError && (
         <p className="listing-error" role="alert">
-          {storageError}
+          {localizeMessage(storageError)}
         </p>
       )}
       {message && (
         <p className="listing-success" role="status">
-          {message}
+          {localizeMessage(message)}
         </p>
       )}
       <form ref={formRef} className="listing-form" onSubmit={submit} noValidate>
         {editing && (
           <div className="listing-local-notice">
-            <strong>Editando: {editing.title}</strong>
+            <strong>{t("Editando: {title}", { title: editing.title })}</strong>
             <button type="button" disabled={busy} onClick={resetEditor}>
-              Cancelar edición
+              {t("Cancelar edición")}
             </button>
           </div>
         )}
         {Object.values(errors).some(Boolean) && (
           <div className="listing-error" role="alert" aria-atomic="true">
-            <strong>Revisa la información del borrador.</strong>
+            <strong>{t("Revisa la información del borrador.")}</strong>
             <ul>
               {Object.entries(errors)
                 .filter(([, error]) => Boolean(error))
@@ -464,7 +474,7 @@ export function ListingForm() {
                         document.getElementById(fieldId(name))?.focus();
                       }}
                     >
-                      {error}
+                      {localizeMessage(error)}
                     </a>
                   </li>
                 ))}
@@ -472,10 +482,10 @@ export function ListingForm() {
           </div>
         )}
         <fieldset disabled={busy || !loaded}>
-          <legend>Datos del inmueble</legend>
+          <legend>{t("Datos del inmueble")}</legend>
           <div className="listing-field-grid">
             <label className="listing-field">
-              <span id={`${fieldId("operation")}-label`}>Operación</span>
+              <span id={`${fieldId("operation")}-label`}>{t("Operación")}</span>
               <select
                 id={fieldId("operation")}
                 aria-labelledby={`${fieldId("operation")}-label`}
@@ -483,13 +493,13 @@ export function ListingForm() {
                 value={values.operation}
                 onChange={(event) => change("operation", event.target.value)}
               >
-                <option>Renta</option>
-                <option>Venta</option>
+                <option value="Renta">{t("Renta")}</option>
+                <option value="Venta">{t("Venta")}</option>
               </select>
             </label>
             <label className="listing-field">
               <span id={`${fieldId("propertyType")}-label`}>
-                Tipo de inmueble
+                {t("Tipo de inmueble")}
               </span>
               <select
                 id={fieldId("propertyType")}
@@ -498,9 +508,9 @@ export function ListingForm() {
                 value={values.propertyType}
                 onChange={(event) => change("propertyType", event.target.value)}
               >
-                <option>Casa</option>
-                <option>Departamento</option>
-                <option>Terreno</option>
+                <option value="Casa">{t("Casa")}</option>
+                <option value="Departamento">{t("Departamento")}</option>
+                <option value="Terreno">{t("Terreno")}</option>
               </select>
             </label>
             {field("title", "Título del anuncio")}
@@ -540,7 +550,7 @@ export function ListingForm() {
           />
           <div
             className="draft-terms-preview"
-            aria-label="Vista previa de costos"
+            aria-label={t("Vista previa de costos")}
           >
             <TermsDetails
               terms={
@@ -571,7 +581,9 @@ export function ListingForm() {
             />
           </div>
           <label className="listing-field">
-            <span id={`${fieldId("description")}-label`}>Descripción</span>
+            <span id={`${fieldId("description")}-label`}>
+              {t("Descripción")}
+            </span>
             <textarea
               id={fieldId("description")}
               aria-labelledby={`${fieldId("description")}-label`}
@@ -585,15 +597,15 @@ export function ListingForm() {
             />
             {errors.description && (
               <span className="listing-field-error" id="error-description">
-                {errors.description}
+                {localizeMessage(errors.description)}
               </span>
             )}
           </label>
-          <h2>Ubicación aproximada</h2>
+          <h2>{t("Ubicación aproximada")}</h2>
           <p className="listing-help">
-            Usa una referencia de la zona, sin dirección exacta ni datos de
-            contacto. Las coordenadas iniciales son el centro de León y debes
-            ajustarlas a la ubicación aproximada de tu inmueble.
+            {t(
+              "Usa una referencia de la zona, sin dirección exacta ni datos de contacto. Las coordenadas iniciales son el centro de León y debes ajustarlas a la ubicación aproximada de tu inmueble.",
+            )}
           </p>
           <div className="listing-field-grid">
             {field("state", "Estado")}
@@ -602,16 +614,16 @@ export function ListingForm() {
             {field("latitude", "Latitud aproximada", "number")}
             {field("longitude", "Longitud aproximada", "number")}
           </div>
-          <h2>Fotografías autorizadas</h2>
+          <h2>{t("Fotografías autorizadas")}</h2>
           <p className="listing-help">
-            Hasta {MAX_PHOTOS} fotos JPEG, PNG o WebP de 5 MB cada una. Se
-            reducen de tamaño y se retiran los metadatos al prepararlas. Evita
-            rostros, documentos y otros datos privados. Las fotos normales se
-            muestran en galería; no se convierten en recorridos 360.
+            {t(
+              "Hasta {count} fotos JPEG, PNG o WebP de 5 MB cada una. Se reducen de tamaño y se retiran los metadatos al prepararlas. Evita rostros, documentos y otros datos privados. Las fotos normales se muestran en galería; no se convierten en recorridos 360.",
+              { count: MAX_PHOTOS },
+            )}
           </p>
           <label className="listing-field">
             <span id={`${fieldId("photos")}-label`}>
-              Seleccionar fotografías
+              {t("Seleccionar fotografías")}
             </span>
             <input
               id={fieldId("photos")}
@@ -627,7 +639,7 @@ export function ListingForm() {
           </label>
           {errors.photos && (
             <p className="listing-field-error" id="error-photos">
-              {errors.photos}
+              {localizeMessage(errors.photos)}
             </p>
           )}
           <div className="listing-photo-preview">
@@ -635,13 +647,13 @@ export function ListingForm() {
               <PhotoPreview
                 key={photo.id}
                 photo={photo}
-                label={`Foto seleccionada ${i + 1}`}
+                label={t("Foto seleccionada {number}", { number: i + 1 })}
               />
             ))}
           </div>
           {errors.scenes && (
             <p id="error-scenes" className="listing-error" role="alert">
-              {errors.scenes}
+              {localizeMessage(errors.scenes)}
             </p>
           )}
           {values.propertyType !== "Terreno" && (
@@ -670,35 +682,37 @@ export function ListingForm() {
               aria-describedby={errors.imageRights ? "error-rights" : undefined}
             />
             <span id={`${fieldId("imageRights")}-label`}>
-              Tomé estas fotos y panoramas o tengo autorización para
-              utilizarlos.
+              {t(
+                "Tomé estas fotos y panoramas o tengo autorización para utilizarlos.",
+              )}
             </span>
           </label>
           {errors.imageRights && (
             <p className="listing-field-error" id="error-rights">
-              {errors.imageRights}
+              {localizeMessage(errors.imageRights)}
             </p>
           )}
           <button type="submit" className="button button-dark">
             {busy
-              ? "Preparando…"
+              ? t("Preparando…")
               : editing
-                ? "Guardar cambios del borrador"
-                : "Guardar borrador en este navegador"}
+                ? t("Guardar cambios del borrador")
+                : t("Guardar borrador en este navegador")}
           </button>
         </fieldset>
       </form>
       <section className="listing-saved" aria-labelledby="saved-title">
-        <h2 id="saved-title">Mis borradores locales</h2>
+        <h2 id="saved-title">{t("Mis borradores locales")}</h2>
         <p className="listing-help">
-          Estos anuncios no están publicados. Quien use este navegador en este
-          dispositivo podría acceder a ellos.
+          {t(
+            "Estos anuncios no están publicados. Quien use este navegador en este dispositivo podría acceder a ellos.",
+          )}
         </p>
         {!loaded ? (
-          <p role="status">Leyendo borradores…</p>
+          <p role="status">{t("Leyendo borradores…")}</p>
         ) : drafts.length === 0 ? (
           <p className="listing-empty">
-            Todavía no has guardado borradores en este navegador.
+            {t("Todavía no has guardado borradores en este navegador.")}
           </p>
         ) : (
           drafts.map((draft) => (
@@ -706,14 +720,14 @@ export function ListingForm() {
               <div className="draft-card-heading">
                 <div>
                   <span className="draft-status">
-                    Borrador local · No publicado
+                    {t("Borrador local · No publicado")}
                   </span>
                   <h3>{draft.title}</h3>
                   <p>
-                    {draft.propertyType} · {draft.operation} ·{" "}
+                    {t(draft.propertyType)} · {t(draft.operation)} ·{" "}
                     {draft.operation === "Renta"
-                      ? "Renta mensual"
-                      : "Precio de compra"}
+                      ? t("Renta mensual")
+                      : t("Precio de compra")}
                   </p>
                 </div>
                 <div className="draft-actions">
@@ -722,7 +736,7 @@ export function ListingForm() {
                     disabled={busy}
                     onClick={() => edit(draft)}
                   >
-                    Editar borrador
+                    {t("Editar borrador")}
                   </button>
                   <button
                     type="button"
@@ -733,14 +747,14 @@ export function ListingForm() {
                       )
                     }
                   >
-                    Descargar respaldo
+                    {t("Descargar respaldo")}
                   </button>
                   <button
                     type="button"
                     disabled={busy}
                     onClick={() => void remove(draft.id)}
                   >
-                    Eliminar borrador
+                    {t("Eliminar borrador")}
                   </button>
                 </div>
               </div>
@@ -748,7 +762,7 @@ export function ListingForm() {
                 {draft.city}, {draft.state} · {draft.neighborhood}
               </p>
               {draft.migrationNote && (
-                <p className="listing-help">{draft.migrationNote}</p>
+                <p className="listing-help">{t(draft.migrationNote)}</p>
               )}
               <p className="draft-description">{draft.description}</p>
               <TermsDetails terms={draft} />
@@ -758,7 +772,10 @@ export function ListingForm() {
                   <PhotoPreview
                     key={photo.id}
                     photo={photo}
-                    label={`Fotografía ${i + 1} de ${draft.title}`}
+                    label={t("Fotografía {number} de {title}", {
+                      number: i + 1,
+                      title: draft.title,
+                    })}
                   />
                 ))}
               </div>
@@ -767,10 +784,14 @@ export function ListingForm() {
               )}
               <p className="draft-no-tour">
                 {draft.propertyType === "Terreno"
-                  ? "Terreno: ficha y fotografías, sin recorrido 360."
+                  ? t("Terreno: ficha y fotografías, sin recorrido 360.")
                   : draft.scenes.length
-                    ? "Recorrido 360 local con conexiones manuales; no publicado."
-                    : "Galería de fotos normales. Este borrador no tiene recorrido 360."}
+                    ? t(
+                        "Recorrido 360 local con conexiones manuales; no publicado.",
+                      )
+                    : t(
+                        "Galería de fotos normales. Este borrador no tiene recorrido 360.",
+                      )}
               </p>
             </article>
           ))

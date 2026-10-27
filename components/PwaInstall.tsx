@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "./I18nProvider";
 import { useEffect, useState } from "react";
 
 type InstallEvent = Event & {
@@ -7,6 +8,7 @@ type InstallEvent = Event & {
 };
 
 export function PwaInstall() {
+  const { t } = useI18n();
   const [prompt, setPrompt] = useState<InstallEvent | null>(null);
   const [standalone, setStandalone] = useState(false);
   const [error, setError] = useState("");
@@ -26,9 +28,18 @@ export function PwaInstall() {
     };
     window.addEventListener("beforeinstallprompt", capturePrompt);
     window.addEventListener("appinstalled", installed);
-    if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator && window.isSecureContext) {
-      navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" })
-        .catch(() => setError("No se pudo activar el aviso sin conexión. Puedes seguir usando el sitio con conexión."));
+    if (
+      process.env.NODE_ENV === "production" &&
+      "serviceWorker" in navigator &&
+      window.isSecureContext
+    ) {
+      navigator.serviceWorker
+        .register("/sw.js", { scope: "/", updateViaCache: "none" })
+        .catch(() =>
+          setError(
+            "No se pudo activar el aviso sin conexión. Puedes seguir usando el sitio con conexión.",
+          ),
+        );
     }
     return () => {
       display.removeEventListener("change", updateDisplay);
@@ -51,18 +62,34 @@ export function PwaInstall() {
 
   if (standalone) return null;
   return (
-    <aside className="pwa-install" aria-label="Instalar Home View">
+    <aside className="pwa-install" aria-label={t("Instalar Home View")}>
       <div>
-        <strong>Home View en tu móvil</strong>
-        <p>Instala el piloto desde el navegador. Los borradores siguen solo en este dispositivo.</p>
+        <strong>{t("Home View en tu móvil")}</strong>
+        <p>
+          {t(
+            "Instala el piloto desde el navegador. Los borradores siguen solo en este dispositivo.",
+          )}
+        </p>
         <details>
-          <summary>Cómo instalar y usar sin conexión</summary>
-          <p>En Android o escritorio, abre el menú del navegador y elige Instalar aplicación. En Safari de iPhone o iPad, usa Compartir → Añadir a pantalla de inicio. La opción depende del navegador y requiere HTTPS (o localhost).</p>
-          <p>Este piloto necesita conexión para abrir sus pantallas. Sin conexión muestra un aviso; los borradores guardados no se borran. No hay sincronización ni acceso privado.</p>
+          <summary>{t("Cómo instalar y usar sin conexión")}</summary>
+          <p>
+            {t(
+              "En Android o escritorio, abre el menú del navegador y elige Instalar aplicación. En Safari de iPhone o iPad, usa Compartir → Añadir a pantalla de inicio. La opción depende del navegador y requiere HTTPS (o localhost).",
+            )}
+          </p>
+          <p>
+            {t(
+              "Este piloto necesita conexión para abrir sus pantallas. Sin conexión muestra un aviso; los borradores guardados no se borran. No hay sincronización ni acceso privado.",
+            )}
+          </p>
         </details>
-        {error && <p role="status">{error}</p>}
+        {error && <p role="status">{t(error)}</p>}
       </div>
-      {prompt && <button type="button" onClick={() => void install()}>Instalar Home View</button>}
+      {prompt && (
+        <button type="button" onClick={() => void install()}>
+          {t("Instalar Home View")}
+        </button>
+      )}
     </aside>
   );
 }
