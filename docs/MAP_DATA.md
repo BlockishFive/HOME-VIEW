@@ -1,6 +1,6 @@
 # Mapa vectorial propio de Home View
 
-Este documento describe el **archivo local de respaldo**, que se conserva sin cambios. La aplicación ahora ofrece además calles raster de OpenStreetMap bajo activación explícita y búsqueda Photon en el formulario privado. Esas capas requieren internet y tienen sus propias condiciones/atribución; véase [captura y proveedores](LOCATION_CAPTURE.md). No se incorporaron ni inventaron nuevas calles dentro del PMTiles.
+Este documento describe el **archivo local de respaldo**, que se conserva sin cambios. La aplicación ahora ofrece además calles vectoriales de OpenFreeMap con estilo propio bajo activación explícita y búsqueda Photon en el formulario privado. Esas capas requieren internet y tienen sus propias condiciones/atribución; véase [captura y proveedores](LOCATION_CAPTURE.md). No se incorporaron ni inventaron nuevas calles dentro del PMTiles.
 
 
 MapLibre dibuja el estilo oscuro y PMTiles lee fragmentos del archivo estático del mismo sitio. No se consultan servicios de teselas, geocodificación, fuentes o sprites externos. No hay claves de API.
@@ -49,3 +49,11 @@ Las pruebas verifican hash, encabezado PMTiles v3, tipo vectorial, geometría en
 MapLibre necesita un worker local de 519,372 bytes sin comprimir, además de su biblioteca principal y CSS. `predev`, `prebuild` y `prestart` ejecutan `scripts/prepare-map-worker.mjs`, que copia el worker y su licencia BSD desde la versión exacta instalada por npm. Conserva el archivo original y no descarga código de un CDN. Estos archivos generados no se guardan en Git: aparecen al ejecutar los scripts documentados. Usar `npm run dev/build/start`; invocar `next` directamente omite esa preparación.
 
 El worker se comparte y se limita a uno para este mapa pequeño. La atribución de los datos Natural Earth es independiente de la licencia del motor MapLibre. Las cifras de 304 KB corresponden solo a datos geográficos; medir el total del visor por separado al planear presupuestos de transferencia.
+
+## Calles detalladas de Home View
+
+`lib/street-map-style.ts` es un estilo original para el esquema OpenMapTiles. Utiliza el TileJSON oficial de OpenFreeMap y dibuja calles, nombres, edificios, parques, agua y referencias urbanas. Colores/anchos/etiquetas se definen en código de la app y no provienen de capturas de otro mapa. Los nombres usan Arial/fallback del dispositivo; MapLibre 6 los rasteriza localmente cuando no hay URL de glyphs. No se descargan fuentes ni sprites externos.
+
+Se verificó el contrato de fuente/capas contra el repositorio oficial https://github.com/hyperknot/openfreemap-styles (commit 006ea5796803ba2df4330888836cb0a8f17473b4), sin copiar sus estilos ni geometrías a la aplicación. La atribución de datos se muestra como OpenFreeMap · © OpenMapTiles · © OpenStreetMap contributors. Se mantiene el PMTiles anterior para respaldo; no se rellenaron sus calles con trazos inventados.
+
+Las pruebas usan MVT ficticios, fuente vectorial, estilo válido según MapLibre, texto local y escenarios de bloqueo. La conectividad real al TileJSON está bloqueada por la red de este entorno (403); verificar en el navegador del Codespace habitual. No se garantiza cobertura de Marroka ni exactitud catastral.

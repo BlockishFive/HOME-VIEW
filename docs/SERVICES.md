@@ -6,7 +6,7 @@ No se ha contratado alojamiento ni activado APIs de pago. El piloto requiere un 
 | --- | --- | --- |
 | Next.js, React, Tailwind, Marzipano, MapLibre, PMTiles | Bibliotecas de código abierto | Conservar licencias; ejecutar el servidor consume recursos. |
 | Mapa local | PMTiles/Natural Earth incluido | Referencia general sin calles completas; consume transferencia del sitio. |
-| Calles online opcionales | OpenStreetMap raster, tras pulsar Activar calles | Internet, atribución, caché HTTP y uso interactivo moderado; sin SLA ni descarga offline. |
+| Calles online opcionales | OpenFreeMap vectorial, tras pulsar Calles detalladas | Internet y atribución; instancia pública actualmente sin clave ni cuenta. Sin SLA; sin descarga offline implementada. |
 | Búsqueda de lugares | Photon/Komoot bajo sesión y a petición | Uso moderado, caché privada y límite global; puede fallar o ser limitado por el proveedor. |
 | GPS del iPad | Geolocalización del navegador con permiso | HTTPS, precisión variable; no es identificación automática del inmueble. |
 | Borradores locales | IndexedDB y exportación JSON | Solo en ese navegador/origen; importación todavía pendiente. |
@@ -19,7 +19,7 @@ Consulta [captura de ubicación y proveedores](LOCATION_CAPTURE.md), [acceso y r
 
 ## Condiciones cartográficas
 
-- [Política de teselas de OpenStreetMap](https://operations.osmfoundation.org/policies/tiles/): solo el viewport activo, atribución visible, identificador/Referer y caché HTTP normal. No hacer prefetch, scraping ni descarga de ciudades. El navegador no conecta hasta elegir esta capa. La red del sitio recibe solicitudes locales; OSM recibe IP/área consultada al activar calles.
+- [OpenFreeMap](https://openfreemap.org/) y su [guía de integración](https://openfreemap.org/quick_start/): servicio público actualmente gratuito, sin cuenta ni clave, con datos OSM y esquema OpenMapTiles; requiere atribución y no tiene SLA. Home View usa estilo propio y fuentes del dispositivo. Solo conecta al elegir la capa; no descarga áreas offline. El proveedor recibe IP/área consultada. No se usa el servidor raster público de OpenStreetMap.
 - [Photon/Komoot](https://photon.komoot.io/) permite proyectos con volumen razonable y puede limitar solicitudes. Home View busca solo al pulsar el botón, bajo sesión, con caché y protección global. No enviar información confidencial. El endpoint Photon-compatible puede cambiarse por configuración administrativa.
 - [Natural Earth](https://www.naturalearthdata.com/about/terms-of-use/) es dominio público; el archivo local y su generación se conservan.
 

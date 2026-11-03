@@ -88,7 +88,7 @@ Los borradores de `/alta` se almacenan en IndexedDB y no aparecen en otros dispo
 
 ## Capturar ubicación en el iPad
 
-El formulario permite buscar una referencia pública, usar GPS con permiso y ajustar el marcador con un toque o arrastrándolo. **Activar calles · OpenStreetMap** añade calles online; el mapa local se conserva como respaldo. La búsqueda usa Photon/Komoot bajo sesión privada, sin autocomplete.
+El formulario permite buscar una referencia pública, usar GPS con permiso y ajustar el marcador con un toque o arrastrándolo. **Calles detalladas · OpenFreeMap** añade calles y edificios vectoriales con nuestro estilo oscuro; el mapa local se conserva como respaldo. La búsqueda usa Photon/Komoot bajo sesión privada, sin autocomplete.
 
 Se guarda el punto privado por separado de la precisión pública: **Zona aproximada** es el valor inicial; **Punto exacto** requiere elección y revisión explícitas. Revisa y guarda antes de publicar. No se garantiza la cobertura completa de Marroka ni precisión catastral. Véase [uso, proveedores, privacidad y comprobaciones pendientes](docs/LOCATION_CAPTURE.md).
 
@@ -131,4 +131,4 @@ La cobertura es progresiva: México en niveles 3–7, Guanajuato en 8–10 y la 
 
 Para regenerar o ampliar el paquete consulta [datos y generación](docs/MAP_DATA.md). El archivo ya viene incluido: no necesitas Python para ejecutar Home View. El alojamiento debe respetar solicitudes HTTP Range y responder 206 para descargar fragmentos. Next.js lo hace en la configuración probada.
 
-Si el mapa no carga, usa **Actualizar cartografía**. Ante un fallo del archivo o de WebGL se muestra un aviso y la lista continúa disponible. En Codespaces reinicia el servidor después de cambiar la configuración y recarga la pestaña. Ya no se solicitan imágenes al servidor público de OpenStreetMap.
+Si el mapa no carga, usa **Actualizar cartografía**. Ante un fallo del archivo o de WebGL se muestra un aviso y la lista continúa disponible. En Codespaces reinicia el servidor después de cambiar la configuración y recarga la pestaña. La versión actual no solicita imágenes al servidor público de OpenStreetMap: las calles detalladas usan vectores de OpenFreeMap y el estilo de Home View. Si ese proveedor está bloqueado, el aviso permite volver al respaldo.
