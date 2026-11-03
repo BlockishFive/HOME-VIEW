@@ -111,3 +111,11 @@ Los medios privados se sirven bajo sesión por ID validado; no están en public 
 ## Publicación explícita del piloto
 
 `lib/server/publications.ts` transforma la versión guardada a `Property` mediante una lista explícita de campos. `publications` y `publication_assets` conservan un snapshot transaccional separado del borrador. Editar un borrador usa UPSERT (no REPLACE, que borraría la publicación por cascade) y no cambia lo publicado. Publicar/actualizar/retirar requieren sesión, origen válido y revisión vigente. El catálogo de inicio, renta, venta, terrenos y fichas se renderiza dinámicamente con demos + snapshots; se mantienen los mapas locales. `/api/public/media/[id]/[asset]` solo entrega medios publicados, sin autenticación, con no-store y sin optimizador de imágenes. Retirar o eliminar revoca esas rutas; no puede recuperar descargas previas. Los campos no capturados permanecen desconocidos y no se reutiliza el plano demo para escenas del usuario.
+
+## Captura de ubicación y cartografía online opcional
+
+`LocationPicker` integra búsqueda explícita autenticada, GPS a petición, selección por clic/arrastre y revisión de precisión. `PropertyMap` mantiene PMTiles como fuente inicial y añade raster OpenStreetMap opt-in con atribución y recuperación al mapa local. El cambio de fuente no escribe coordenadas. La UI conserva el punto privado y calcula un preview público; `lib/location.ts` implementa cobertura, celda aproximada y normalización de resultados Photon.
+
+DraftInput añade publicLocation/locationReviewed opcionales para lectura compatible de v1/v2, con valores predeterminados seguros al guardar. `publicProperty` exige revisión y publica únicamente el punto derivado de la precisión elegida. `publishedProperties` aproxima snapshots antiguos sin precisión declarada antes de serializarlos. No se incluyen el punto privado ni campos de revisión en el DTO público.
+
+POST /api/private/geocode mantiene las comprobaciones de sesión/origen/tamaño, y delega en geocoding.ts. El endpoint Photon es fijo o definido por el administrador. SQLite guarda un gate entre procesos y una caché con clave hash, TTL y límite; no se crea un proxy de URLs arbitrarias. Errores y denegaciones no borran la captura. Detalles y restricciones de proveedores en LOCATION_CAPTURE.md.

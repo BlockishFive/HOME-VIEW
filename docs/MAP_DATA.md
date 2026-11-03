@@ -1,5 +1,8 @@
 # Mapa vectorial propio de Home View
 
+Este documento describe el **archivo local de respaldo**, que se conserva sin cambios. La aplicación ahora ofrece además calles raster de OpenStreetMap bajo activación explícita y búsqueda Photon en el formulario privado. Esas capas requieren internet y tienen sus propias condiciones/atribución; véase [captura y proveedores](LOCATION_CAPTURE.md). No se incorporaron ni inventaron nuevas calles dentro del PMTiles.
+
+
 MapLibre dibuja el estilo oscuro y PMTiles lee fragmentos del archivo estático del mismo sitio. No se consultan servicios de teselas, geocodificación, fuentes o sprites externos. No hay claves de API.
 
 ## Tamaño y cobertura medidos

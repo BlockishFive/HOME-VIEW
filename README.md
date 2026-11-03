@@ -86,6 +86,12 @@ Los borradores v1 se adaptan al leerlos sin sobreescribir el original: el precio
 
 Los borradores de `/alta` se almacenan en IndexedDB y no aparecen en otros dispositivos hasta copiarlos explícitamente al área privada. Pueden perderse al borrar datos del navegador o cambiar de dirección/origen del sitio. Los borradores de `/privado` y sus medios se guardan en el servidor tras iniciar sesión. Ambos flujos conservan la separación venta/renta. Guardar no publica: en el área privada puedes publicar explícitamente la versión guardada, actualizarla o retirarla. Véase [publicación del piloto](docs/PUBLISHING.md).
 
+## Capturar ubicación en el iPad
+
+El formulario permite buscar una referencia pública, usar GPS con permiso y ajustar el marcador con un toque o arrastrándolo. **Activar calles · OpenStreetMap** añade calles online; el mapa local se conserva como respaldo. La búsqueda usa Photon/Komoot bajo sesión privada, sin autocomplete.
+
+Se guarda el punto privado por separado de la precisión pública: **Zona aproximada** es el valor inicial; **Punto exacto** requiere elección y revisión explícitas. Revisa y guarda antes de publicar. No se garantiza la cobertura completa de Marroka ni precisión catastral. Véase [uso, proveedores, privacidad y comprobaciones pendientes](docs/LOCATION_CAPTURE.md).
+
 ## Piloto móvil PWA
 
 La aplicación tiene manifest, iconos originales y base instalable en HTTPS (o localhost). Usa **Instalar Home View** cuando el navegador lo ofrezca, o su menú de instalación; en iPhone, Compartir → Añadir a pantalla de inicio. La PWA abre `/privado`, que requiere la cuenta creada por terminal. Los borradores locales siguen vinculados al navegador, perfil y origen; los privados se consultan en el servidor desde ambos dispositivos.

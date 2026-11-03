@@ -1,7 +1,7 @@
 # Publicar una propiedad durante el piloto
 
 1. Abre `/privado`, inicia sesión y guarda o copia tu propiedad. En otro dispositivo pulsa **Actualizar lista privada**.
-2. Revisa la tarjeta guardada completa: operación, importes, condiciones, ubicación, fotos y panoramas. No se publican ediciones que aún estén en el formulario sin guardar.
+2. Elige la precisión pública, marca que revisaste la ubicación y guarda. Revisa la tarjeta guardada completa: operación, importes, condiciones, ubicación, fotos y panoramas. No se publican ediciones que aún estén en el formulario sin guardar.
 3. Pulsa **Publicar propiedad** y confirma que tienes autorización y que el contenido no contiene datos personales. La ubicación capturada también se hará pública: usa un punto aproximado autorizado si no quieres divulgar el domicilio.
 4. Abre **Ver publicación**. Aparecerá también en Inicio y en Renta/Venta/Terrenos según corresponda. Actualiza el catálogo de otros dispositivos; no hay sincronización en tiempo real.
 5. Guardar cambios conserva la publicación anterior. Pulsa **Actualizar publicación** para reemplazarla con la versión guardada revisada. Un aviso indica cambios pendientes; una revisión obsoleta devuelve conflicto.
@@ -23,4 +23,4 @@ La app acepta JPEG/PNG/WebP de hasta 12 MiB por panorama, mínimo 1024×512 y re
 
 El mapa actual conserva Natural Earth/PMTiles local: sirve de referencia general y no tiene calles completas ni direcciones actualizadas. No confundir un marcador manual con geocodificación ni precisión catastral.
 
-Para la siguiente entrega se propone MapLibre con cartografía vectorial basada en OpenStreetMap mediante un proveedor con actualizaciones, cobertura comprobada en León/Marroka, atribución visible y uso compatible con su licencia. Antes de integrar: elegir proveedor y presupuesto/cuotas, restringir claves al dominio, verificar búsqueda de direcciones y ajuste manual del pin en iPad, mostrar precisión aproximada/pública elegida por el administrador y controlar qué consultas de ubicación salen del dispositivo. No usar servidores públicos gratuitos de OSM como infraestructura ilimitada ni prometer datos en tiempo real. Mantener una alternativa local con aviso de cobertura cuando falle la red. Las calles, búsqueda, selección táctil de ubicación y proveedor actualizado siguen pendientes; esta entrega no cambia el mapa base.
+Ya hay una capa de calles raster de OpenStreetMap opcional y un buscador Photon bajo sesión, con selección manual y GPS. La ubicación privada se separa de la precisión pública. Véase [captura de ubicación](LOCATION_CAPTURE.md) para flujo, límites, permisos, atribución y validaciones pendientes. Se mantiene el mapa local de referencia; no garantiza cobertura completa de Marroka, ni numeración o precisión catastral. Un proveedor con SLA/cobertura verificada y las rutas siguen pendientes para un uso mayor.
