@@ -1,3 +1,4 @@
+import { searchPlaces } from "./geocoding";
 import { setPublication } from "./publications";
 import { assertPrivateOrigin } from "./private-origin";
 import { NextRequest, NextResponse } from "next/server";
@@ -329,6 +330,12 @@ export async function privateHandler(
       if (!data || !Number.isInteger(data.revision) || data.revision < 1 || typeof data.publish !== "boolean") throw new PrivateError("invalid");
       setPublication(segments[1], data.revision, data.publish);
       return json({ ok: true });
+    }
+    if (path === "geocode" && method === "POST") {
+      let data;
+      try { data = JSON.parse((await bounded(request, 2048)).toString("utf8")); } catch { throw new PrivateError("invalid"); }
+      if (typeof data?.query !== "string") throw new PrivateError("invalid");
+      return json({results: await searchPlaces(data.query, data.locale === "en" ? "en" : "es")});
     }
     if (path === "drafts" && method === "GET")
       return json({ drafts: listDrafts() });

@@ -12,6 +12,7 @@ export type Room = {
 };
 type PropertyBase = {
   published?: boolean;
+  locationPrecision?: "approximate" | "exact";
   slug: string;
   title: string;
   location: string;

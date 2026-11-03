@@ -12,6 +12,8 @@ import {
 } from "./property-terms";
 import { validateDraftScenes, type DraftScene } from "./draft-tour";
 export type DraftInput = {
+  publicLocation?: "approximate" | "exact";
+  locationReviewed?: boolean;
   title: string;
   propertyType: ListingKind;
   description: string;
@@ -139,6 +141,8 @@ export function validateDraftInput(input: DraftInput): Record<string, string> {
         errors[field] =
           "Usa un número entero de 0 a 100, o deja el campo vacío.";
     }
+  if (input.publicLocation !== undefined && !["approximate", "exact"].includes(input.publicLocation)) errors.publicLocation = "Selecciona una precisión pública válida.";
+  if (input.locationReviewed !== undefined && typeof input.locationReviewed !== "boolean") errors.locationReviewed = "Revisa la ubicación antes de publicar.";
   Object.assign(errors, validateTerms(input));
   if (
     !Number.isFinite(input.latitude) ||
@@ -171,6 +175,8 @@ export function normalizeDraftInput(input: DraftInput): DraftInput {
     area: input.area,
     beds: input.propertyType === "Terreno" ? null : input.beds,
     baths: input.propertyType === "Terreno" ? null : input.baths,
+    publicLocation: input.publicLocation ?? "approximate",
+    locationReviewed: input.locationReviewed === true,
     latitude: input.latitude,
     longitude: input.longitude,
     imageRights: input.imageRights,

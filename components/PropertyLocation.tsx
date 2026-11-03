@@ -27,6 +27,7 @@ export function PropertyLocation({
             property.published ? "Ubicación proporcionada por la administración. El mapa es de referencia y no acredita límites del inmueble." : "Cartografía vectorial de referencia de Natural Earth. El marcador de esta ficha es una ubicación aproximada ficticia en León, Guanajuato; no identifica una propiedad real ni sus límites.",
           )}
         </p>
+      {property.published && <p className="listing-local-notice">{t(property.locationPrecision === "exact" ? "Punto exacto autorizado por la administración." : "Zona aproximada. El marcador no identifica el domicilio exacto.")}</p>}
       </div>
       <PropertyMap
         properties={[property]}

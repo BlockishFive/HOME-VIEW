@@ -33,6 +33,7 @@ async function fill(page: Page, title: string) {
     .getByLabel("Seleccionar fotografías", { exact: true })
     .setInputFiles("public/panoramas/sala-cover.jpg");
   await expect(page.locator(".listing-photo-preview img")).toHaveCount(1);
+  await page.getByRole("checkbox", {name:"Revisé la ubicación y autorizo la precisión pública seleccionada.",exact:true}).check();
   await page
     .getByRole("checkbox", {
       name: "Tomé estas fotos y panoramas o tengo autorización para utilizarlos.",

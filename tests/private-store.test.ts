@@ -136,12 +136,12 @@ test.after(() => {
 });
 
 test("publication snapshots exclude private fields, survive private edits and reject stale publishing", async () => {
-  const {setPublication, publishedProperties, publishedAsset} = await import("../lib/server/publications");
+  const {setPublication, publishedProperties, publishedAsset, publicProperty} = await import("../lib/server/publications");
   const id = randomUUID(), photo = randomUUID();
   const metadata = {
     id, sharedRevision:0, title:"Fictional published house", description:"Authorized fictional description",
     operation:"Venta", sale:{purchasePrice:2000000,annualTax:null},
-    propertyType:"Casa", area:120, beds:null, baths:null,
+    propertyType:"Casa", area:120, beds:null, baths:null, locationReviewed:true,
     city:"León",state:"Guanajuato",neighborhood:"Fictional zone",latitude:21.12,longitude:-101.68,
     maintenance:{status:"unknown",amount:null,included:"unknown"},community:"unknown",imageRights:true,
     photos:[{id:photo,name:"private-filename.jpg"}],scenes:[],secret:"never public",createdAt:"2026-01-01"
@@ -153,6 +153,10 @@ test("publication snapshots exclude private fields, survive private edits and re
   assert.equal(snapshot.title,metadata.title);
   assert.equal(snapshot.beds,null);
   assert.equal(snapshot.builtYear,null);
+  assert.equal(snapshot.locationPrecision,"approximate");
+  assert.deepEqual(publicProperty({...metadata, publicLocation:"exact"} as never).coordinates,{lat:metadata.latitude,lng:metadata.longitude});
+  assert.notEqual(snapshot.coordinates.lat,metadata.latitude);
+  assert.notEqual(snapshot.coordinates.lng,metadata.longitude);
   assert.equal("secret" in snapshot,false);
   assert.equal("imageRights" in snapshot,false);
   assert.equal("rental" in snapshot,false);
@@ -171,4 +175,32 @@ test("publication snapshots exclude private fields, survive private edits and re
   removeDraft(id,2);
   assert.equal(publishedProperties().some(p=>p.slug===snapshot.slug),false);
   assert.equal(publishedAsset(id,photo),undefined);
+});
+
+test("legacy public snapshots redact exact points and unreviewed locations cannot publish", async()=>{
+  const {publicProperty, publishedProperties} = await import("../lib/server/publications");
+  const id=randomUUID();
+  assert.throws(()=>publicProperty({id} as never),e=>e instanceof PrivateError && e.code==="location_review");
+  putDraft({id,sharedRevision:0},[],0);
+  db().prepare("INSERT INTO publications VALUES (?,?,?)").run(id,1,JSON.stringify({slug:`anuncio-${id}`,published:true,coordinates:{lat:21.123456,lng:-101.654321}}));
+  const snapshot=publishedProperties().find(p=>p.slug===`anuncio-${id}`)!;
+  assert.equal(snapshot.locationPrecision,"approximate");
+  assert.deepEqual(snapshot.coordinates,{lat:21.125,lng:-101.655});
+});
+test("geocoding caches identical queries, gates requests across workers and recovers without leaking errors",async()=>{
+  const {searchPlaces}=await import("../lib/server/geocoding");
+  let calls=0;
+  const request=(async(url:URL,init:RequestInit)=>{
+    calls++;
+    assert.equal(url.origin,"https://photon.komoot.io");
+    assert.equal(url.searchParams.get("q"),"Zona ficticia León");
+    assert.ok(String((init.headers as Record<string,string>)["User-Agent"]).includes("HomeView"));
+    return Response.json({features:[{geometry:{type:"Point",coordinates:[-101.68,21.12]},properties:{name:"Zona ficticia",countrycode:"MX"}}]});
+  }) as typeof fetch;
+  const first=await searchPlaces("Zona ficticia León","es",request);
+  assert.deepEqual(await searchPlaces("Zona ficticia León","es",request),first);
+  assert.equal(calls,1);
+  await assert.rejects(()=>searchPlaces("otra dirección","es",request),e=>e instanceof PrivateError && e.status===429);
+  db().exec("UPDATE geocoder_gate SET until_time=0");
+  await assert.rejects(()=>searchPlaces("fallo ficticio","es",(async()=>{throw new Error("sensitive upstream detail");}) as typeof fetch),e=>e instanceof PrivateError && e.code==="geocoder" && !e.message.includes("sensitive"));
 });

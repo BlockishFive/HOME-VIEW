@@ -6,6 +6,9 @@ export class SharedAccessError extends Error {
   }
 }
 const messages: Record<string, string> = {
+  geocoder: "La búsqueda no está disponible. Ajusta el punto en el mapa o escribe las coordenadas; tu captura se conserva.",
+  search_limited: "Espera unos segundos antes de buscar otra dirección.",
+  location_review: "Revisa y guarda la ubicación del borrador antes de publicar.",
   unauthorized:
     "Tu sesión privada expiró. Inicia sesión en otra pestaña y vuelve a guardar; la captura permanece aquí.",
   not_configured: "El área privada aún no está configurada.",

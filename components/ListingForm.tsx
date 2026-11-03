@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import { LocationPicker } from "./LocationPicker";
+import type { PublicLocation } from "@/lib/location";
 import {
   getSharedDrafts,
   saveSharedDraft,
@@ -199,6 +201,8 @@ export function ListingForm({
   const formId = useId();
   const fieldId = (name: string) => `${formId}-${name}`;
   const [values, setValues] = useState(initial);
+  const [publicLocation,setPublicLocation] = useState<PublicLocation>("approximate");
+  const [locationReviewed,setLocationReviewed] = useState(false);
   const [rental, setRental] = useState<RentalTerms>(defaultRentalTerms);
   const [sale, setSale] = useState<SaleTerms>({
     purchasePrice: null,
@@ -238,6 +242,7 @@ export function ListingForm({
     };
   }, [shared]);
   function change(name: keyof typeof initial, value: string | boolean) {
+    if (name === "latitude" || name === "longitude") setLocationReviewed(false);
     setValues((previous) => ({ ...previous, [name]: value }));
     if (name === "propertyType" && value === "Terreno")
       setErrors((previous) => {
@@ -296,6 +301,7 @@ export function ListingForm({
       maintenance,
       community,
       area: Number(values.area),
+      publicLocation, locationReviewed,
       latitude: Number(values.latitude),
       longitude: Number(values.longitude),
       beds: numberOrNull(values.beds),
@@ -366,6 +372,7 @@ export function ListingForm({
     setSavedId(null);
     setMessage("");
     setValues(initial);
+    setPublicLocation("approximate");setLocationReviewed(false);
     setRental(defaultRentalTerms());
     setSale({ purchasePrice: null, annualTax: null });
     setMaintenance(defaultMaintenance());
@@ -377,6 +384,7 @@ export function ListingForm({
     if (fileInput.current) fileInput.current.value = "";
   }
   function edit(draft: ListingDraft) {
+    setPublicLocation(draft.publicLocation ?? "approximate");setLocationReviewed(draft.locationReviewed === true);
     sharedRevision.current = revisionOf(draft);
     identity.current = { id: draft.id, createdAt: draft.createdAt };
     setSavedId(null);
@@ -730,19 +738,23 @@ export function ListingForm({
               </span>
             )}
           </label>
-          <h2>{t("Ubicación aproximada")}</h2>
+          <h2>{t("Ubicación privada y pública")}</h2>
           <p className="listing-help">
             {t(
-              "Usa una referencia de la zona, sin dirección exacta ni datos de contacto. Las coordenadas iniciales son el centro de León y debes ajustarlas a la ubicación aproximada de tu inmueble.",
+              "El punto inicial es el centro de León: ajústalo a tu inmueble. Guarda el punto privado y elige por separado qué precisión tendrá el anuncio público. Usa solo referencias autorizadas en la colonia y la descripción.",
             )}
           </p>
           <div className="listing-field-grid">
             {field("state", "Estado")}
             {field("city", "Ciudad / municipio")}
             {field("neighborhood", "Colonia / zona")}
-            {field("latitude", "Latitud aproximada", "number")}
-            {field("longitude", "Longitud aproximada", "number")}
+            {field("latitude", "Latitud del punto privado", "number")}
+            {field("longitude", "Longitud del punto privado", "number")}
           </div>
+          <LocationPicker point={{lat:Number(values.latitude),lng:Number(values.longitude)}}
+            onChange={point=>{setValues(previous=>({...previous,latitude:String(point.lat),longitude:String(point.lng)}));setLocationReviewed(false);setMessage("");setSavedId(null);}}
+            precision={publicLocation} onPrecision={value=>{setPublicLocation(value);setLocationReviewed(false);setMessage("");setSavedId(null);}}
+            reviewed={locationReviewed} onReviewed={value=>{setLocationReviewed(value);setMessage("");setSavedId(null);}}/>
           <h2>{t("Fotografías autorizadas")}</h2>
           <p className="listing-help">
             {t(

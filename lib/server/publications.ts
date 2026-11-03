@@ -1,9 +1,11 @@
 /** Public snapshots are explicit allowlists, never raw private metadata. */
+import { publicPoint } from "../location";
 import { db, PrivateError } from "./private-store";
 import type { ListingDraft } from "../listing-drafts";
 import type { Property } from "../properties";
 import { formatMXN } from "../property-terms";
 export function publicProperty(draft: ListingDraft): Property {
+  if (!draft.locationReviewed) throw new PrivateError("location_review");
   const slug = `anuncio-${draft.id}`;
   const media = (id: string) => `/api/public/media/${draft.id}/${id}`;
   const price = draft.operation === "Renta" ? draft.rental.monthlyRent : draft.sale.purchasePrice;
@@ -15,7 +17,8 @@ export function publicProperty(draft: ListingDraft): Property {
     ...(draft.operation === "Renta" ? { rental: draft.rental } : { sale: draft.sale }),
     price: formatMXN(price), priceValue: price,
     location: `${draft.city}, ${draft.state}`, address: draft.neighborhood,
-    neighborhood: draft.neighborhood, coordinates: { lat: draft.latitude, lng: draft.longitude },
+    neighborhood: draft.neighborhood, coordinates: publicPoint({ lat: draft.latitude, lng: draft.longitude }, draft.publicLocation),
+    locationPrecision: draft.publicLocation ?? "approximate",
     area: draft.area, beds: draft.beds, baths: draft.baths, propertyType: draft.propertyType,
     maintenance: draft.maintenance, community: draft.community,
     tag: draft.operation, cover: media(draft.photos[0].id),
@@ -43,7 +46,11 @@ export function setPublication(id: string, revision: number, publish: boolean) {
   } catch (error) { store.exec("ROLLBACK"); throw error; }
 }
 export function publishedProperties(): Property[] {
-  return (db().prepare("SELECT metadata FROM publications ORDER BY rowid DESC").all() as {metadata:string}[]).map(row => JSON.parse(row.metadata));
+  return (db().prepare("SELECT metadata FROM publications ORDER BY rowid DESC").all() as {metadata:string}[]).map(row => {
+    const property = JSON.parse(row.metadata) as Property;
+    // Older snapshots predate precision controls. Redact their points on read.
+    return property.locationPrecision ? property : { ...property, coordinates: publicPoint(property.coordinates), locationPrecision: "approximate" as const };
+  });
 }
 export function publishedAsset(id: string, asset: string) {
   return (db().prepare("SELECT content FROM publication_assets WHERE draft_id=? AND id=?").get(id, asset) as {content:Uint8Array}|undefined)?.content;
