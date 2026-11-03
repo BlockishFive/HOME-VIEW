@@ -211,7 +211,7 @@ export function PropertyExplorer({
                   </>
                 ) : (
                   <>
-                    <small>{t("Predial anual (demo)")}</small>
+                    <small>{t(selected.published ? "Predial anual" : "Predial anual (demo)")}</small>
                     <strong>
                       {selected.sale.annualTax === null
                         ? t("Por confirmar")
@@ -253,7 +253,7 @@ export function PropertyExplorer({
       )}
       <p className="demo-note">
         {t(
-          "Mapa vectorial propio de referencia · Anuncios, precios y posiciones de demostración ficticios. La renta se expresa por mes. Las galerías comparten ilustraciones; no representan domicilios reales.",
+          "Mapa de referencia. Los anuncios de demostración son ficticios; las propiedades publicadas muestran información proporcionada por la administración. La renta se expresa por mes.",
         )}
       </p>
     </>

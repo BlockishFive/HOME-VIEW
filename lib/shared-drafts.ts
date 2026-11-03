@@ -110,3 +110,7 @@ export async function deleteSharedDraft(id: string, revision: number) {
     method: "DELETE",
   });
 }
+
+export async function publishSharedDraft(id: string, revision: number, publish: boolean) {
+  await privateRequest(`publication/${id}`, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({revision, publish})});
+}

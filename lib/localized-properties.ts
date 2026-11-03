@@ -2,7 +2,7 @@ import type { Property } from "./properties";
 import { translate, type Locale } from "./i18n";
 /** Only use for the bundled demo catalog; never translate user-authored draft content. */
 export function localizeProperty(property: Property, locale: Locale): Property {
-  if (locale === "es") return property;
+  if (property.published || locale === "es") return property;
   const t = (value: string) => translate(locale, value);
   const media = (path: string) => path === "/illustrations/terreno.svg" ? "/illustrations/terreno-en.svg" : path;
   return {

@@ -76,13 +76,13 @@ export function Text({
   const { t } = useI18n();
   return <>{t(children, values)}</>;
 }
-export function usePageTitle(title: string, description?: string) {
+export function usePageTitle(title: string, description?: string, verbatim = false) {
   const { t } = useI18n();
   useEffect(() => {
-    document.title = t(title);
+    document.title = verbatim ? title : t(title);
     if (description)
       document
         .querySelector('meta[name="description"]')
-        ?.setAttribute("content", t(description));
-  }, [title, description, t]);
+        ?.setAttribute("content", verbatim ? description : t(description));
+  }, [title, description, verbatim, t]);
 }

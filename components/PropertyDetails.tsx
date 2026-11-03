@@ -14,6 +14,19 @@ export function PropertyDetails({
 }) {
   const { locale, t } = useI18n();
   const property = localizeProperty(sourceProperty, locale);
+  if (property.published) return (
+    <section id="resumen" className="property-details" tabIndex={-1}>
+      <h2>{t("Descripción del inmueble")}</h2>
+      <p className="listing-description">{property.description}</p>
+      <dl className="property-summary">
+        <div><dt>{t("Tipo de inmueble")}</dt><dd>{t(property.propertyType)}</dd></div>
+        <div><dt>{t("Superficie anunciada")}</dt><dd>{property.area} m²</dd></div>
+        <div><dt>{t("Recámaras / baños")}</dt><dd>{property.beds ?? t("Por confirmar")} / {property.baths ?? t("Por confirmar")}</dd></div>
+        <div><dt>{t("Localidad")}</dt><dd>{property.location}</dd></div>
+        <div><dt>{t("Colonia / barrio")}</dt><dd>{property.neighborhood}</dd></div>
+      </dl>
+    </section>
+  );
   const facts = [
     ["Tipo de inmueble", property.propertyType],
     ["Tipo de construcción", property.buildingType],

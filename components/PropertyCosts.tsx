@@ -133,16 +133,16 @@ export function PropertyCosts({ property }: { property: Property }) {
                 "Consulta la mensualidad, los requisitos y los servicios antes de dar el siguiente paso.",
               )
             : t(
-                "Conoce los gastos recurrentes de este inmueble de demostración antes de dar el siguiente paso.",
+                property.published ? "Consulta los importes y condiciones anunciados." : "Conoce los gastos recurrentes de este inmueble de demostración antes de dar el siguiente paso.",
               )}
         </p>
         <p className="demo-note">
           {t(
-            "Importes ficticios en pesos mexicanos, sin validez fiscal. Este prototipo no calcula créditos ni recibe pagos.",
+            property.published ? "Importes proporcionados por la administración en pesos mexicanos. Confirma las condiciones antes de contratar. No se reciben pagos en este sitio." : "Importes ficticios en pesos mexicanos, sin validez fiscal. Este prototipo no calcula créditos ni recibe pagos.",
           )}
         </p>
       </div>
-      <TermsDetails terms={property} demo />
+      <TermsDetails terms={property} demo={!property.published} />
     </section>
   );
 }

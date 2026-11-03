@@ -14,7 +14,7 @@ import { localizeProperty } from "@/lib/localized-properties";
 export function PropertyPageView({ property: source }: { property: Property }) {
   const { locale, t } = useI18n();
   const property = localizeProperty(source, locale);
-  usePageTitle(`${property.title} · Home View`, property.description);
+  usePageTitle(`${property.title} · Home View`, property.description, !!property.published);
   return (
     <>
       <Header />
@@ -26,7 +26,7 @@ export function PropertyPageView({ property: source }: { property: Property }) {
           <div>
             <p className="eyebrow">
               {t(property.operation).toUpperCase()}{" "}
-              {t("· PROPIEDAD DE DEMOSTRACIÓN")}
+              {t(property.published ? "· PROPIEDAD PUBLICADA" : "· PROPIEDAD DE DEMOSTRACIÓN")}
             </p>
             <h1>{property.title}</h1>
             <p className="muted">
@@ -42,10 +42,10 @@ export function PropertyPageView({ property: source }: { property: Property }) {
             {property.propertyType !== "Terreno" && (
               <>
                 <span>
-                  <strong>{property.beds}</strong> {t("recámaras")}
+                  <strong>{property.beds ?? t("Por confirmar")}</strong> {t("recámaras")}
                 </span>
                 <span>
-                  <strong>{property.baths}</strong> {t("baños")}
+                  <strong>{property.baths ?? t("Por confirmar")}</strong> {t("baños")}
                 </span>
               </>
             )}
@@ -59,7 +59,7 @@ export function PropertyPageView({ property: source }: { property: Property }) {
                   ? "RENTA MENSUAL"
                   : "PRECIO DE VENTA",
               )}{" "}
-              {t("· DEMO")}
+              {!property.published && t("· DEMO")}
             </span>
             <strong>
               {property.price}
@@ -86,7 +86,7 @@ export function PropertyPageView({ property: source }: { property: Property }) {
               {t(
                 property.propertyType === "Terreno"
                   ? "Este terreno se presenta con imágenes y ubicación; no tiene recorrido 360."
-                  : "Esta casa en renta utiliza fotos convencionales. Un recorrido 360 requiere capturas panorámicas específicas.",
+                  : "Este inmueble se presenta con fotografías. El recorrido 360 aún no está disponible.",
               )}
             </p>
           </section>
@@ -99,7 +99,7 @@ export function PropertyPageView({ property: source }: { property: Property }) {
           {t("homeview.")}
         </Link>
         <span>{t("Explora sin prisa. Imagina sin límites.")}</span>
-        <span>{t("Datos e imágenes ficticias · Demo")}</span>
+        <span>{t(property.published ? "Propiedad publicada por la administración" : "Datos e imágenes ficticias · Demo")}</span>
       </footer>
     </>
   );

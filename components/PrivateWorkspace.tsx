@@ -89,7 +89,7 @@ export function PrivateWorkspace() {
           <h1>{t("Tus propiedades, en tus dispositivos.")}</h1>
           <p>
             {t(
-              "Inicia sesión desde la misma dirección del sitio en el iPad y la PC. Los borradores privados y sus imágenes se guardan en el servidor y no se publican en el catálogo.",
+              "Inicia sesión desde la misma dirección del sitio en el iPad y la PC. Los borradores privados y sus imágenes se guardan en el servidor. Solo aparecen en el catálogo cuando eliges Publicar propiedad.",
             )}
           </p>
         </div>

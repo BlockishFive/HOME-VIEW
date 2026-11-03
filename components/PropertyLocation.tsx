@@ -24,7 +24,7 @@ export function PropertyLocation({
         <strong>{property.location}</strong>
         <p className="demo-note">
           {t(
-            "Cartografía vectorial de referencia de Natural Earth. El marcador de esta ficha es una ubicación aproximada ficticia en León, Guanajuato; no identifica una propiedad real ni sus límites.",
+            property.published ? "Ubicación proporcionada por la administración. El mapa es de referencia y no acredita límites del inmueble." : "Cartografía vectorial de referencia de Natural Earth. El marcador de esta ficha es una ubicación aproximada ficticia en León, Guanajuato; no identifica una propiedad real ni sus límites.",
           )}
         </p>
       </div>

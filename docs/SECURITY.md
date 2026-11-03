@@ -57,3 +57,9 @@ Véase [PRIVATE_PILOT.md](PRIVATE_PILOT.md) para modelo de cuenta única, sesion
 Las escrituras aceptan el origen exacto de la petición, un origen público fijado por HOME_VIEW_PUBLIC_ORIGIN o el hostname HTTPS exacto del Codespace derivado de su configuración validada. No se confía en un x-forwarded-host arbitrario. Configurar HOME_VIEW_PUBLIC_ORIGIN en un proxy/hosting propio. No hay CORS abierto.
 
 No usar en funciones efímeras o varias instancias sin almacenamiento persistente/consistencia compartida. Proteger el volumen y las copias; el contenido no tiene cifrado de aplicación en reposo. Instalar HTTPS y restringir acceso a la infraestructura. Aún no se ha validado con una auditoría independiente ni móviles físicos.
+
+## Publicaciones del piloto
+
+Publicar requiere sesión, origen validado, revisión actual y confirmación explícita en UI. El endpoint usa una lista pública de campos; medios privados y publicados están separados. Solo los IDs presentes en publication_assets son públicos. Eliminar/retirar revoca lecturas futuras de medios y ficha, pero no borra descargas, capturas ni pestañas ya abiertas. No hay moderación automática de imágenes/datos personales: revisar caras, placas, documentos, reflejos y precisión de coordenadas antes de confirmar. Se retiran metadatos por Sharp, no contenido visual sensible. La cuenta única tiene todos los permisos; roles múltiples, auditoría de publicaciones, moderación, controles de abuso de lecturas públicas y hosting permanente quedan pendientes. No convertir una ruta pública a proxy de archivos o URLs arbitrarias.
+
+El optimizador Next Image solo acepta las rutas estáticas de demo `/panoramas/**` y `/illustrations/**`, sin query. Las rutas `/api/private` y `/api/public` no pueden entrar a su caché persistente; los medios publicados se sirven directamente con no-store.

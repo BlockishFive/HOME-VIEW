@@ -63,3 +63,12 @@ La cobertura nueva verifica sesiones revocables/expiración y contraseñas con h
 Las regresiones ajustadas esperan confirmación de guardado/eliminación antes de recargar. El recorrido con varias cargas WebGL tiene un presupuesto total de 60 segundos. El manifest se renderiza desde React para evitar duplicados al cambiar idioma durante navegación; se conserva su URL. Las pruebas usan bases temporales y no reutilizan un servidor de datos reales.
 
 Pendiente: Safari/iPad físicos, auditoría independiente, restauración operativa con backups externos y alojamiento Node.js permanente con disco persistente. La implementación funciona en un servidor único activo; no elimina la suspensión de Codespaces. Véase [configuración privada](PRIVATE_PILOT.md).
+
+## Publicación explícita y panoramas del piloto
+
+- `npm test`: 39 pruebas aprobadas, incluida publicación por lista de campos, aislamiento de medios, snapshot estable tras editar, revisión obsoleta y retirada/eliminación.
+- Suite completa Playwright: 42 pruebas aprobadas (3 minutos), sobre base temporal y medios ficticios autorizados. Incluye publicar/cancelar/actualizar/retirar, catálogo de renta sin sesión, ficha con foto y Marzipano 360, borrador conservado, rechazo de acceso privado anónimo y mutaciones cross-origin/obsoletas.
+- Compilación de producción y TypeScript aprobados. El catálogo y las fichas pasan a renderizado dinámico para reflejar las publicaciones. No se publica ni inspecciona material real del propietario durante las pruebas.
+- Tras esa suite se restringe además el optimizador de imágenes a las dos carpetas estáticas de demo: evita una copia persistente alternativa de medios retirados. Se recompila y se vuelven a comprobar los recorridos, galerías y el flujo privado/publicación, incluida petición directa al optimizador y cambio de idioma sin traducir el título del anunciante.
+- Los navegadores automatizados usan Chromium con dos contextos separados y tamaños de iPad/PC. Siguen pendientes Safari/iPad físico, transferencia desde una cámara real y auditoría independiente. La cámara debe exportar primero un JPEG equirectangular completo; no se implementa SDK/conexión directa.
+- Los mapas conservan el archivo local actual: calles detalladas, búsqueda de direcciones y proveedor actualizado quedan pendientes, con criterios de integración en PUBLISHING.md. No se configura alojamiento permanente ni cuentas reales en este entorno.

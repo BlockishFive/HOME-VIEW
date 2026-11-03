@@ -2,14 +2,16 @@
 import Link from "next/link";
 import { Header } from "./Header";
 import { PropertyExplorer } from "./PropertyExplorer";
-import { properties } from "@/lib/properties";
+import type { Property } from "@/lib/properties";
 import { useI18n, usePageTitle } from "./I18nProvider";
 export function CatalogPage({
+  properties,
   title,
   description,
   operation = "Todas",
   type = "Todos",
 }: {
+  properties: Property[];
   title: string;
   description: string;
   operation?: string;
@@ -40,7 +42,7 @@ export function CatalogPage({
       </main>
       <footer className="site-footer">
         <span className="brand">homeview.</span>
-        <span>{t("Propiedades de demostración · Sin ofertas reales")}</span>
+        <span>{t("Catálogo piloto · Incluye propiedades de demostración")}</span>
       </footer>
     </>
   );

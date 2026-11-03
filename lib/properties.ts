@@ -1,6 +1,6 @@
 import { defaultRentalTerms, type Maintenance, type RentalTerms, type SaleTerms, type Community } from "./property-terms";
 export { formatMXN } from "./property-terms";
-export type RoomId = "sala" | "cocina" | "recamara";
+export type RoomId = string;
 export type Hotspot = { target: RoomId; yaw: number; pitch: number };
 export type Room = {
   id: RoomId;
@@ -11,13 +11,14 @@ export type Room = {
   hotspots: Hotspot[];
 };
 type PropertyBase = {
+  published?: boolean;
   slug: string;
   title: string;
   location: string;
   price: string;
   area: number;
-  beds: number;
-  baths: number;
+  beds: number | null;
+  baths: number | null;
   tag: string;
   description: string;
   cover: string;
@@ -29,12 +30,12 @@ type PropertyBase = {
   maintenance: Maintenance;
   community: Community;
   plotArea: number | null;
-  builtYear: number;
-  parking: number;
+  builtYear: number | null;
+  parking: number | null;
   features: string[];
   gallery: { src: string; alt: string; label: string }[];
   buildingType: string;
-  levels: number;
+  levels: number | null;
   ownership: string;
   neighborhood: string;
   reference: string;

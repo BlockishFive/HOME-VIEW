@@ -45,6 +45,8 @@ export function db() {
     CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, expires INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS login_attempts (id INTEGER PRIMARY KEY CHECK(id=1), failures INTEGER NOT NULL, until_time INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS drafts (id TEXT PRIMARY KEY, revision INTEGER NOT NULL, metadata TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS publications (id TEXT PRIMARY KEY REFERENCES drafts(id) ON DELETE CASCADE, revision INTEGER NOT NULL, metadata TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS publication_assets (id TEXT NOT NULL, draft_id TEXT NOT NULL REFERENCES publications(id) ON DELETE CASCADE, content BLOB NOT NULL, PRIMARY KEY(draft_id,id));
     CREATE TABLE IF NOT EXISTS assets (id TEXT NOT NULL, draft_id TEXT NOT NULL REFERENCES drafts(id) ON DELETE CASCADE, content BLOB NOT NULL, PRIMARY KEY(draft_id,id));`);
   return database;
 }
@@ -152,6 +154,7 @@ export function listDrafts(): PrivateMetadata[] {
   ).map((row) => ({
     ...JSON.parse(row.metadata),
     sharedRevision: row.revision,
+    publishedRevision: (db().prepare("SELECT revision FROM publications WHERE id=?").get(JSON.parse(row.metadata).id) as { revision: number } | undefined)?.revision ?? null,
   }));
 }
 export function putDraft(
@@ -192,10 +195,13 @@ export function putDraft(
       300 * 1024 * 1024
     )
       throw new PrivateError("quota", 413);
+    const publicBytes = Number((store.prepare("SELECT coalesce(sum(length(content)),0) AS size FROM publication_assets").get() as {size:number}).size);
+    if (used + publicBytes + assets.reduce((sum, asset) => sum + asset.content.length, 0) > 600 * 1024 * 1024)
+      throw new PrivateError("quota", 413);
     const revision = (existing?.revision ?? 0) + 1;
     metadata = { ...metadata, sharedRevision: revision };
     store
-      .prepare("INSERT OR REPLACE INTO drafts VALUES (?,?,?)")
+      .prepare("INSERT INTO drafts VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision, metadata=excluded.metadata")
       .run(metadata.id, revision, JSON.stringify(metadata));
     store.prepare("DELETE FROM assets WHERE draft_id=?").run(metadata.id);
     const insert = store.prepare("INSERT INTO assets VALUES (?,?,?)");

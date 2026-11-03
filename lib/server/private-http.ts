@@ -1,3 +1,4 @@
+import { setPublication } from "./publications";
 import { assertPrivateOrigin } from "./private-origin";
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
@@ -321,6 +322,13 @@ export async function privateHandler(
         maxAge: 0,
       });
       return response;
+    }
+    if (segments[0] === "publication" && segments.length === 2 && method === "POST") {
+      checkId(segments[1]);
+      const data = JSON.parse((await bounded(request, 4096)).toString("utf8"));
+      if (!data || !Number.isInteger(data.revision) || data.revision < 1 || typeof data.publish !== "boolean") throw new PrivateError("invalid");
+      setPublication(segments[1], data.revision, data.publish);
+      return json({ ok: true });
     }
     if (path === "drafts" && method === "GET")
       return json({ drafts: listDrafts() });

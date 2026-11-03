@@ -4,6 +4,7 @@ import {
   getSharedDrafts,
   saveSharedDraft,
   deleteSharedDraft,
+  publishSharedDraft,
 } from "@/lib/shared-drafts";
 import { useI18n } from "@/components/I18nProvider";
 import { useEffect, useId, useRef, useState } from "react";
@@ -339,7 +340,7 @@ export function ListingForm({
         Object.assign(draft, { sharedRevision: revision });
       } else await saveListingDraft(draft);
       setDrafts((previous) => [
-        draft,
+        Object.assign(draft, { publishedRevision: (previous.find(item => item.id === draft.id) as ListingDraft & {publishedRevision?: number})?.publishedRevision }),
         ...previous.filter((item) => item.id !== draft.id),
       ]);
       setEditing(draft);
@@ -459,6 +460,19 @@ export function ListingForm({
       setBusy(false);
     }
   }
+  async function publish(draft: ListingDraft, enabled: boolean) {
+    if (!window.confirm(t(enabled
+      ? "Se publicará la versión guardada: descripción, precios, condiciones, ubicación, fotos y panoramas serán visibles para cualquiera con acceso al sitio. Confirma que tienes autorización y que no contienen datos personales. Los cambios sin guardar no se publican. ¿Publicar?"
+      : "¿Retirar esta propiedad del catálogo público? El borrador privado se conservará."))) return;
+    setBusy(true);
+    setStorageError("");
+    try {
+      await publishSharedDraft(draft.id, revisionOf(draft), enabled);
+      setDrafts(await getSharedDrafts());
+      setMessage(enabled ? "Propiedad publicada. Abre el catálogo para verla." : "Propiedad retirada. Se conserva el borrador privado.");
+    } catch (error) { setStorageError(storageMessage(error)); }
+    finally { setBusy(false); }
+  }
   async function copyToPrivate(draft: ListingDraft) {
     setBusy(true);
     setCopyError(null);
@@ -524,7 +538,7 @@ export function ListingForm({
         <p>
           {t(
             shared
-              ? "Estos borradores e imágenes se comparten entre tus dispositivos al iniciar sesión en esta misma dirección. No aparecen en el catálogo público. Conserva respaldos del servidor."
+              ? "Estos borradores e imágenes se comparten entre tus dispositivos al iniciar sesión en esta misma dirección. Solo aparecen en el catálogo si publicas una propiedad. Conserva respaldos del servidor."
               : "Se guardan solo en este navegador y dispositivo. No aparecen en el catálogo público ni se comparten con otras personas. Al borrar los datos del navegador puedes perderlos; descarga un respaldo para conservarlos.",
           )}
         </p>
@@ -865,7 +879,7 @@ export function ListingForm({
         <p className="listing-help">
           {t(
             shared
-              ? "Estos anuncios no están publicados. Solo están disponibles con el acceso privado del piloto."
+              ? "Guardar no publica. Usa Publicar propiedad para compartir una versión en el catálogo; puedes retirarla cuando quieras."
               : "Estos anuncios no están publicados. Quien use este navegador en este dispositivo podría acceder a ellos.",
           )}
         </p>
@@ -892,7 +906,7 @@ export function ListingForm({
                   <span className="draft-status">
                     {t(
                       shared
-                        ? "Borrador privado · No publicado"
+                        ? ("publishedRevision" in draft && draft.publishedRevision ? (draft.publishedRevision === revisionOf(draft) ? "Publicado" : "Publicado · Cambios pendientes de publicar") : "Borrador privado · No publicado")
                         : "Borrador local · No publicado",
                     )}
                   </span>
@@ -905,6 +919,13 @@ export function ListingForm({
                   </p>
                 </div>
                 <div className="draft-actions">
+                  {shared && <>
+                    <button type="button" disabled={busy} onClick={() => void publish(draft, true)}>{t("publishedRevision" in draft && draft.publishedRevision ? "Actualizar publicación" : "Publicar propiedad")}</button>
+                    {"publishedRevision" in draft && !!draft.publishedRevision && <>
+                      <Link href={`/propiedades/anuncio-${draft.id}`} target="_blank" rel="noopener">{t("Ver publicación")}</Link>
+                      <button type="button" disabled={busy} onClick={() => void publish(draft, false)}>{t("Retirar publicación")}</button>
+                    </>}
+                  </>}
                   {!shared && (
                     <button
                       type="button"
@@ -986,7 +1007,7 @@ export function ListingForm({
                   ? t("Terreno: ficha y fotografías, sin recorrido 360.")
                   : draft.scenes.length
                     ? t(
-                        "Recorrido 360 local con conexiones manuales; no publicado.",
+                        shared ? "Vista del recorrido guardado. Publica o actualiza la publicación para compartirlo." : "Recorrido 360 local con conexiones manuales; no publicado.",
                       )
                     : t(
                         "Galería de fotos normales. Este borrador no tiene recorrido 360.",

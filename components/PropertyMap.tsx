@@ -527,7 +527,7 @@ export function PropertyMap({
       )}
       <div className="geo-map-footer">
         <span>
-          {t("Mapa de referencia · Vías principales · Anuncios ficticios")}
+          {t("Mapa de referencia · Vías principales")}
         </span>
         <span className="geo-map-attribution">
           {t("Datos:")}{" "}

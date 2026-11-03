@@ -14,7 +14,8 @@ export function PropertyCard({ property: source }: { property: Property }) {
       <div className="card-image">
         <Image
           src={property.cover}
-          alt={t("Ilustración sintética de {name}", { name: property.title })}
+          unoptimized={property.published}
+          alt={property.published ? property.title : t("Ilustración sintética de {name}", { name: property.title })}
           fill
           sizes="(max-width: 700px) 100vw, 33vw"
         />
@@ -53,8 +54,8 @@ export function PropertyCard({ property: source }: { property: Property }) {
             </span>
           ) : (
             <>
-              <span>{t("{count} recámaras", { count: property.beds })}</span>
-              <span>{t("{count} baños", { count: property.baths })}</span>
+              <span>{t("{count} recámaras", { count: property.beds ?? t("Por confirmar") })}</span>
+              <span>{t("{count} baños", { count: property.baths ?? t("Por confirmar") })}</span>
             </>
           )}
         </div>

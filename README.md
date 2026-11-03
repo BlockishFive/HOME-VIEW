@@ -2,9 +2,9 @@
 
 > HOME-VIEW · Project Design for Real Estate Services
 
-Prototipo en español para venta y renta de casas, departamentos y terrenos. Incluye cinco fichas ficticias, mapa vectorial propio MapLibre/PMTiles con vistas de referencia de México, Guanajuato y León, galería ampliable, costos separados para venta y renta, compartir e imprimir. Las tres viviendas originales tienen recorridos 360 con Marzipano. La casa en renta de demostración utiliza una galería convencional; los terrenos no ofrecen 360.
+Prototipo en español e inglés para venta y renta de casas, departamentos y terrenos. Incluye cinco fichas ficticias, mapa vectorial propio MapLibre/PMTiles con vistas de referencia de México, Guanajuato y León, galería ampliable, costos separados para venta y renta, compartir e imprimir. Las tres viviendas originales tienen recorridos 360 con Marzipano. La casa en renta de demostración utiliza una galería convencional; los terrenos no ofrecen 360.
 
-`/alta` conserva borradores locales en el navegador. `/privado` añade captura compartida entre iPad y PC con una cuenta privada configurada por terminal y almacenamiento en el servidor. Ninguno publica automáticamente en el catálogo. No hay registro público, pagos ni envío de contactos.
+`/alta` conserva borradores locales en el navegador. `/privado` añade captura compartida entre iPad y PC con una cuenta privada configurada por terminal y almacenamiento en el servidor. Guardar no publica automáticamente: la cuenta privada puede publicar una versión revisada y retirarla sin perder el borrador. No hay registro público, pagos ni envío de contactos.
 
 ## Ejecutar localmente
 
@@ -50,6 +50,8 @@ Para la casa ya capturada en el iPad: conserva un respaldo, inicia sesión en el
 
 El servidor guarda datos y medios en `.home-view/private.sqlite`, excluido de Git. Funciona entre dispositivos mientras ese servidor esté activo; Codespaces todavía puede suspenderse y no es alojamiento permanente. Antes de eliminar el Codespace, crea un respaldo con `npm run backup:private` y conserva una copia privada fuera de él. Para cambiar la contraseña conservando datos: `npm run setup:private -- --reset`.
 
+Para publicar la casa: en su tarjeta privada pulsa **Publicar propiedad**, revisa la confirmación y abre **Ver publicación**. Después de editar y guardar usa **Actualizar publicación**; para ocultarla usa **Retirar publicación**. Consulta [publicación y flujo cámara 360 → iPad](docs/PUBLISHING.md).
+
 Consulta [configuración, copias, límites y restauración](docs/PRIVATE_PILOT.md). No desplegar esta base en funciones efímeras o instancias sin disco persistente.
 
 ## Uso
@@ -82,7 +84,7 @@ Desde **Borradores locales** (`/alta#saved-title`) puedes revisar costos y condi
 
 Los borradores v1 se adaptan al leerlos sin sobreescribir el original: el precio pasa al bloque de la operación, el predial solo a venta y una cuota positiva conserva su importe con inclusión por confirmar. Una cuota anterior vacía o cero requiere revisión; no demuestra «No aplica». Los requisitos, servicios y pertenencia a conjunto quedan por confirmar. La edición y guardado explícitos escriben el esquema v2.
 
-Los borradores de `/alta` se almacenan en IndexedDB y no aparecen en otros dispositivos hasta copiarlos explícitamente al área privada. Pueden perderse al borrar datos del navegador o cambiar de dirección/origen del sitio. Los borradores de `/privado` y sus medios se guardan en el servidor tras iniciar sesión. Ambos flujos conservan la separación venta/renta y no publican anuncios en el catálogo.
+Los borradores de `/alta` se almacenan en IndexedDB y no aparecen en otros dispositivos hasta copiarlos explícitamente al área privada. Pueden perderse al borrar datos del navegador o cambiar de dirección/origen del sitio. Los borradores de `/privado` y sus medios se guardan en el servidor tras iniciar sesión. Ambos flujos conservan la separación venta/renta. Guardar no publica: en el área privada puedes publicar explícitamente la versión guardada, actualizarla o retirarla. Véase [publicación del piloto](docs/PUBLISHING.md).
 
 ## Piloto móvil PWA
 

@@ -88,9 +88,9 @@ export function PropertyGallery({
                 {t("Imagen no disponible")}
               </span>
             ) : (
-              <Image
+              <Image unoptimized={images.some(image => image.src.startsWith("/api/public/"))}
                 src={image.src}
-                alt={t(image.alt)}
+                alt={image.src.startsWith("/api/public/") ? image.alt : t(image.alt)}
                 fill
                 preload={imageIndex === 0}
                 sizes={
@@ -168,10 +168,10 @@ export function PropertyGallery({
                 )}
               </p>
             ) : (
-              <Image
+              <Image unoptimized={images.some(image => image.src.startsWith("/api/public/"))}
                 key={current.src}
                 src={current.src}
-                alt={t(current.alt)}
+                alt={current.src.startsWith("/api/public/") ? current.alt : t(current.alt)}
                 fill
                 sizes="(max-width: 1000px) 90vw, 1000px"
                 onError={() => recordFailure(current.src)}

@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 import { getAllowedDevOrigins } from "./lib/dev-origins";
 
 const config: NextConfig = {
+  // User media must be revocable; never persist it in the image optimizer cache.
+  images: { localPatterns: [{ pathname: "/panoramas/**", search: "" }, { pathname: "/illustrations/**", search: "" }] },
   async headers() {
     return [
       {

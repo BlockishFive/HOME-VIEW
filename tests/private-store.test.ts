@@ -134,3 +134,41 @@ test.after(() => {
   db().close();
   rmSync(directory, { recursive: true, force: true });
 });
+
+test("publication snapshots exclude private fields, survive private edits and reject stale publishing", async () => {
+  const {setPublication, publishedProperties, publishedAsset} = await import("../lib/server/publications");
+  const id = randomUUID(), photo = randomUUID();
+  const metadata = {
+    id, sharedRevision:0, title:"Fictional published house", description:"Authorized fictional description",
+    operation:"Venta", sale:{purchasePrice:2000000,annualTax:null},
+    propertyType:"Casa", area:120, beds:null, baths:null,
+    city:"León",state:"Guanajuato",neighborhood:"Fictional zone",latitude:21.12,longitude:-101.68,
+    maintenance:{status:"unknown",amount:null,included:"unknown"},community:"unknown",imageRights:true,
+    photos:[{id:photo,name:"private-filename.jpg"}],scenes:[],secret:"never public",createdAt:"2026-01-01"
+  };
+  putDraft(metadata,[{id:photo,content:Buffer.from("old public image")}],0);
+  assert.equal(publishedAsset(id,photo),undefined);
+  setPublication(id,1,true);
+  const snapshot = publishedProperties().find(p=>p.slug===`anuncio-${id}`)!;
+  assert.equal(snapshot.title,metadata.title);
+  assert.equal(snapshot.beds,null);
+  assert.equal(snapshot.builtYear,null);
+  assert.equal("secret" in snapshot,false);
+  assert.equal("imageRights" in snapshot,false);
+  assert.equal("rental" in snapshot,false);
+  assert.equal(JSON.stringify(snapshot).includes("private-filename"),false);
+  putDraft({...metadata,title:"Private revision"},[{id:photo,content:Buffer.from("new private image")}],1);
+  assert.equal(publishedProperties().find(p=>p.slug===snapshot.slug)!.title,metadata.title);
+  assert.equal(Buffer.from(publishedAsset(id,photo)!).toString(),"old public image");
+  assert.throws(()=>setPublication(id,1,true),e=>e instanceof PrivateError && e.status===409);
+  setPublication(id,2,true);
+  assert.equal(publishedProperties().find(p=>p.slug===snapshot.slug)!.title,"Private revision");
+  assert.equal(Buffer.from(publishedAsset(id,photo)!).toString(),"new private image");
+  setPublication(id,2,false);
+  assert.equal(publishedAsset(id,photo),undefined);
+  assert.ok(listDrafts().some(d=>d.id===id));
+  setPublication(id,2,true);
+  removeDraft(id,2);
+  assert.equal(publishedProperties().some(p=>p.slug===snapshot.slug),false);
+  assert.equal(publishedAsset(id,photo),undefined);
+});

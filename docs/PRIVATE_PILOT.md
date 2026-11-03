@@ -1,6 +1,6 @@
 # Área privada y captura compartida del piloto
 
-La ruta `/privado` permite crear, revisar, editar, descargar y eliminar borradores compartidos entre iPad y PC. Usa una cuenta privada única, creada por la persona administradora mediante terminal. No hay registro público, correo de recuperación ni pagos. Los anuncios e imágenes privados no aparecen en el catálogo de demostración.
+La ruta `/privado` permite crear, revisar, editar, descargar y eliminar borradores compartidos entre iPad y PC. Usa una cuenta privada única, creada por la persona administradora mediante terminal. No hay registro público, correo de recuperación ni pagos. Los anuncios e imágenes privados solo aparecen en el catálogo tras la acción explícita **Publicar propiedad**. Véase [publicación](PUBLISHING.md).
 
 ## Activar en el Codespace
 

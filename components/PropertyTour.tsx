@@ -14,7 +14,7 @@ export function PropertyTour({
 }) {
   const { locale, t } = useI18n();
   const property = localizeProperty(sourceProperty, locale);
-  const [current, setCurrent] = useState<RoomId>("sala");
+  const [current, setCurrent] = useState<RoomId>(property.rooms[0]?.id ?? "sala");
   return (
     <>
       <section
@@ -29,8 +29,8 @@ export function PropertyTour({
             <h2 id="tour-title">{t("Entra. Mira. Imagina.")}</h2>
           </div>
           <p>
-            {t("Muévete por el interior con los puntos")}
-            <br /> {t("del recorrido o el plano de habitaciones.")}
+            {t(property.published ? "Explora las escenas con los puntos del recorrido" : "Muévete por el interior con los puntos")}
+            <br /> {!property.published && t("del recorrido o el plano de habitaciones.")}
           </p>
         </div>
         <div className="tour-layout">
@@ -39,7 +39,8 @@ export function PropertyTour({
               rooms={property.rooms}
               current={current}
               onSelect={setCurrent}
-              translateRoomNames
+              label={property.published ? "Recorrido de la propiedad" : "INTERIOR SINTÉTICO · DEMO"}
+              translateRoomNames={!property.published}
             />
             <div
               className="room-tabs"
@@ -66,21 +67,21 @@ export function PropertyTour({
             <h2>{t("Siéntete en casa.")}</h2>
             <p className="muted">
               {t(
-                "Elige un espacio en el plano o sigue los puntos del recorrido.",
+                property.published ? "Selecciona una escena o sigue los puntos del recorrido." : "Elige un espacio en el plano o sigue los puntos del recorrido.",
               )}
             </p>
-            <FloorPlan
+            {!property.published && <FloorPlan
               rooms={property.rooms}
               current={current}
               onSelect={setCurrent}
-            />
+            />}
             <div className="sidebar-price">
-              <small>{t("PRECIO ILUSTRATIVO")}</small>
+              <small>{t(property.published ? "Precio anunciado" : "PRECIO ILUSTRATIVO")}</small>
               <strong>
                 {property.price} <span>MXN</span>
               </strong>
             </div>
-            <VisitRequest />
+            {!property.published && <VisitRequest />}
           </aside>
         </div>
       </section>

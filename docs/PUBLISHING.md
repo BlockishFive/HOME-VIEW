@@ -1,0 +1,26 @@
+# Publicar una propiedad durante el piloto
+
+1. Abre `/privado`, inicia sesión y guarda o copia tu propiedad. En otro dispositivo pulsa **Actualizar lista privada**.
+2. Revisa la tarjeta guardada completa: operación, importes, condiciones, ubicación, fotos y panoramas. No se publican ediciones que aún estén en el formulario sin guardar.
+3. Pulsa **Publicar propiedad** y confirma que tienes autorización y que el contenido no contiene datos personales. La ubicación capturada también se hará pública: usa un punto aproximado autorizado si no quieres divulgar el domicilio.
+4. Abre **Ver publicación**. Aparecerá también en Inicio y en Renta/Venta/Terrenos según corresponda. Actualiza el catálogo de otros dispositivos; no hay sincronización en tiempo real.
+5. Guardar cambios conserva la publicación anterior. Pulsa **Actualizar publicación** para reemplazarla con la versión guardada revisada. Un aviso indica cambios pendientes; una revisión obsoleta devuelve conflicto.
+6. **Retirar publicación** quita la ficha y medios públicos, conservando el borrador. Eliminar un borrador también elimina su publicación. Las copias descargadas por visitantes no se pueden revocar.
+
+Solo la cuenta privada única puede publicar, actualizar o retirar. No hay registro público ni roles de cliente. Las publicaciones son accesibles sin sesión privada a cualquiera que pueda abrir el sitio; la visibilidad del puerto de Codespaces sigue siendo independiente. Esto no despliega la aplicación ni elimina las restricciones de GitHub.
+
+Se publica una copia de descripción, título, datos de venta/renta, mantenimiento, tipo, superficie, cuartos, ubicación autorizada y medios. No se publican credenciales, sesiones, nombres originales de archivos ni notas de migración. Los campos no capturados no se inventan. La UI está en español e inglés; los textos del anunciante conservan su idioma.
+
+El snapshot incluye medios independientes. El límite de medios privados sigue siendo 300 MiB y el total de privados + publicados es 600 MiB (más metadatos, WAL y respaldos). Respaldar SQLite incluye las publicaciones. El servidor necesita almacenamiento persistente; no se ha configurado hosting permanente. Las respuestas públicas no se cachean y el worker no las guarda. Una página ya abierta puede conservar lo que cargó hasta actualizar.
+
+## Captura con cámara 360 e iPad
+
+Flujo compatible: tomar escenas con cámara 360 → unir/exportar desde su app a **JPEG equirectangular completo 2:1** → guardar en Fotos/Archivos del iPad → editar el borrador privado y añadirlas como panoramas → crear conexiones manuales y revisar → guardar → actualizar publicación. Se pueden añadir después de publicar las fotos normales. No se convierte automáticamente una panorámica parcial de iPhone en una esfera.
+
+La app acepta JPEG/PNG/WebP de hasta 12 MiB por panorama, mínimo 1024×512 y relación exacta 2:1, máximo 8 escenas; el envío completo no supera 48 MiB. El servidor reencoda hasta 4096×2048. No admite RAW ni formatos propietarios de cámara ni los une automáticamente. No hay conexión directa por Bluetooth/Wi-Fi ni SDK de fabricantes. Probar exportaciones reales con el modelo de cámara y Safari del iPad antes de una visita; la prueba automática usa escenas sintéticas autorizadas.
+
+## Próxima mejora de mapas
+
+El mapa actual conserva Natural Earth/PMTiles local: sirve de referencia general y no tiene calles completas ni direcciones actualizadas. No confundir un marcador manual con geocodificación ni precisión catastral.
+
+Para la siguiente entrega se propone MapLibre con cartografía vectorial basada en OpenStreetMap mediante un proveedor con actualizaciones, cobertura comprobada en León/Marroka, atribución visible y uso compatible con su licencia. Antes de integrar: elegir proveedor y presupuesto/cuotas, restringir claves al dominio, verificar búsqueda de direcciones y ajuste manual del pin en iPad, mostrar precisión aproximada/pública elegida por el administrador y controlar qué consultas de ubicación salen del dispositivo. No usar servidores públicos gratuitos de OSM como infraestructura ilimitada ni prometer datos en tiempo real. Mantener una alternativa local con aviso de cobertura cuando falle la red. Las calles, búsqueda, selección táctil de ubicación y proveedor actualizado siguen pendientes; esta entrega no cambia el mapa base.
