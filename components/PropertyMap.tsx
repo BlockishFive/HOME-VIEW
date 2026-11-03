@@ -5,6 +5,7 @@ import type { Map as VectorMap, Marker, StyleSpecification } from "maplibre-gl";
 import type { Protocol } from "pmtiles";
 import type { Property } from "@/lib/properties";
 import { useI18n } from "./I18nProvider";
+import { streetMapStyle } from "@/lib/street-map-style";
 import { validPoint, type Point } from "@/lib/location";
 import { translate, type Locale } from "@/lib/i18n";
 
@@ -224,6 +225,14 @@ export function PropertyMap({
   const map = useRef<VectorMap | null>(null);
   const library = useRef<MapLibrary | null>(null);
   const propertyMarkers = useRef<Marker[]>([]);
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
+  const view = useRef<{
+    center: [number, number];
+    zoom: number;
+    region: Region;
+  } | null>(null);
+  const lastSelection = useRef("");
   const select = useRef(onSelect);
   select.current = onSelect;
   const [region, setRegion] = useState<Region>("León");
@@ -265,13 +274,14 @@ export function PropertyMap({
         if (cancelled || !host.current) return;
         instance = new M.Map({
           container: host.current,
-          style: streets ? {
-            version: 8,
-            sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, maxzoom: 19 } },
-            layers: [{id:"osm-streets",type:"raster",source:"osm"}],
-          } : mapStyle(window.location.origin),
-          center: captureRef.current && validPoint(captureRef.current.point) ? [captureRef.current.point.lng, captureRef.current.point.lat] : regions.León.center,
-          zoom: regions.León.zoom,
+          style: streets
+            ? streetMapStyle(localeRef.current)
+            : mapStyle(window.location.origin),
+          center:
+            captureRef.current && validPoint(captureRef.current.point)
+              ? [captureRef.current.point.lng, captureRef.current.point.lat]
+              : (view.current?.center ?? regions.León.center),
+          zoom: Math.min(view.current?.zoom ?? regions.León.zoom, maxZoom),
           minZoom: 3,
           maxZoom,
           maxBounds: [-120, 13, -85, 34],
@@ -287,14 +297,29 @@ export function PropertyMap({
         if (captureRef.current) {
           const marker = new M.Marker({ color: "#c5f53a", draggable: true });
           captureMarker.current = marker;
-          if (validPoint(captureRef.current.point)) marker.setLngLat([captureRef.current.point.lng, captureRef.current.point.lat]).addTo(activeMap);
+          if (validPoint(captureRef.current.point))
+            marker
+              .setLngLat([
+                captureRef.current.point.lng,
+                captureRef.current.point.lat,
+              ])
+              .addTo(activeMap);
           marker.on("dragend", () => {
             const point = marker.getLngLat();
-            if (validPoint(point)) captureRef.current?.onChange({lat: Number(point.lat.toFixed(6)), lng: Number(point.lng.toFixed(6))});
-            else if (captureRef.current && validPoint(captureRef.current.point)) marker.setLngLat(captureRef.current.point);
+            if (validPoint(point))
+              captureRef.current?.onChange({
+                lat: Number(point.lat.toFixed(6)),
+                lng: Number(point.lng.toFixed(6)),
+              });
+            else if (captureRef.current && validPoint(captureRef.current.point))
+              marker.setLngLat(captureRef.current.point);
           });
           activeMap.on("click", (event) => {
-            if (validPoint(event.lngLat)) captureRef.current?.onChange({lat: Number(event.lngLat.lat.toFixed(6)), lng: Number(event.lngLat.lng.toFixed(6))});
+            if (validPoint(event.lngLat))
+              captureRef.current?.onChange({
+                lat: Number(event.lngLat.lat.toFixed(6)),
+                lng: Number(event.lngLat.lng.toFixed(6)),
+              });
           });
         }
         function markLoading() {
@@ -337,29 +362,30 @@ export function PropertyMap({
           if (cancelled) return;
           checkReady();
         });
-        for (const [name, position] of [
-          ["León", [-101.686, 21.122]],
-          ["Guanajuato", [-101.257, 21.019]],
-          ["Ciudad de México", [-99.133, 19.433]],
-        ] as const) {
-          const label = document.createElement("span");
-          label.className = "geo-city-label";
-          label.textContent = t(name);
-          cityLabels.current.push({ element: label, name });
-          label.setAttribute("aria-hidden", "true");
-          cityMarkers.push(
-            new M.Marker({ element: label, anchor: "top", offset: [0, 14] })
-              .setLngLat([position[0], position[1]])
-              .addTo(activeMap),
-          );
-        }
+        if (!streets)
+          for (const [name, position] of [
+            ["León", [-101.686, 21.122]],
+            ["Guanajuato", [-101.257, 21.019]],
+            ["Ciudad de México", [-99.133, 19.433]],
+          ] as const) {
+            const label = document.createElement("span");
+            label.className = "geo-city-label";
+            label.textContent = t(name);
+            cityLabels.current.push({ element: label, name });
+            label.setAttribute("aria-hidden", "true");
+            cityMarkers.push(
+              new M.Marker({ element: label, anchor: "top", offset: [0, 14] })
+                .setLngLat([position[0], position[1]])
+                .addTo(activeMap),
+            );
+          }
         observer = new ResizeObserver(() => activeMap.resize());
         observer.observe(host.current);
         markLoading();
-        setRegion("León");
-        setZoom(regions.León.zoom);
+        setRegion(view.current?.region ?? "León");
+        setZoom(activeMap.getZoom());
         setInitialized(true);
-        setMapVersion(version => version + 1);
+        setMapVersion((version) => version + 1);
       } catch {
         if (!cancelled) {
           instance?.remove();
@@ -374,6 +400,14 @@ export function PropertyMap({
     void initialize();
     return () => {
       cancelled = true;
+      if (instance) {
+        const center = instance.getCenter();
+        view.current = {
+          center: [center.lng, center.lat],
+          zoom: instance.getZoom(),
+          region: view.current?.region ?? "León",
+        };
+      }
       clearTimeout(timeout);
       observer?.disconnect();
       for (const marker of propertyMarkers.current) marker.remove();
@@ -391,8 +425,14 @@ export function PropertyMap({
   useEffect(() => {
     if (!capture || !validPoint(capture.point) || !initialized) return;
     captureMarker.current?.setLngLat(capture.point).addTo(map.current!);
-    map.current?.jumpTo({center:[capture.point.lng, capture.point.lat]});
-  }, [capture?.point.lat, capture?.point.lng, initialized, streets, mapVersion]);
+    map.current?.jumpTo({ center: [capture.point.lng, capture.point.lat] });
+  }, [
+    capture?.point.lat,
+    capture?.point.lng,
+    initialized,
+    streets,
+    mapVersion,
+  ]);
 
   useEffect(() => {
     const M = library.current;
@@ -435,10 +475,19 @@ export function PropertyMap({
   useEffect(() => {
     const property = properties.find((item) => item.slug === selected);
     if (!initialized || !map.current || !property) return;
+    const key = `${property.slug}:${property.coordinates.lat}:${property.coordinates.lng}`;
+    if (view.current && lastSelection.current === key) return;
+    lastSelection.current = key;
+    const nextZoom = Math.max(12, map.current.getZoom());
     map.current.jumpTo({
       center: [property.coordinates.lng, property.coordinates.lat],
-      zoom: Math.max(12, map.current.getZoom()),
+      zoom: nextZoom,
     });
+    view.current = {
+      center: [property.coordinates.lng, property.coordinates.lat],
+      zoom: nextZoom,
+      region: "León",
+    };
     setRegion("León");
   }, [
     selected,
@@ -450,6 +499,20 @@ export function PropertyMap({
   ]);
 
   useEffect(() => {
+    if (streets && map.current?.isStyleLoaded()) {
+      const style = streetMapStyle(locale);
+      for (const layer of style.layers)
+        if (
+          layer.type === "symbol" &&
+          layer.layout?.["text-field"] &&
+          map.current.getLayer(layer.id)
+        )
+          map.current.setLayoutProperty(
+            layer.id,
+            "text-field",
+            layer.layout["text-field"],
+          );
+    }
     for (const label of cityLabels.current)
       label.element.textContent = t(label.name);
     host.current
@@ -458,10 +521,17 @@ export function PropertyMap({
         "aria-label",
         t("Mapa vectorial de {region}", { region: t(region) }),
       );
-  }, [locale, region, initialized, mapVersion]);
+  }, [locale, region, initialized, mapVersion, streets, tileState]);
 
   function chooseRegion(next: Region) {
     setRegion(next);
+    if (view.current) view.current.region = next;
+    else
+      view.current = {
+        center: regions[next].center,
+        zoom: regions[next].zoom,
+        region: next,
+      };
     map.current?.jumpTo(regions[next]);
   }
   function retry() {
@@ -470,120 +540,164 @@ export function PropertyMap({
 
   return (
     <div className="map-view">
-      <p className="geo-provider-notice">{t("Al activar calles, OpenStreetMap recibe tu IP y el área consultada. Requiere internet; no garantiza calles completas ni precisión catastral.")}</p>
+      <p className="geo-provider-notice">
+        {t(
+          "Al activar calles detalladas, OpenFreeMap recibe tu IP y el área consultada. Requiere internet; no garantiza cobertura completa ni precisión catastral.",
+        )}
+      </p>
       <div className="geo-layer-buttons">
-        <button type="button" aria-pressed={streets} onClick={() => setStreets(!streets)}>{t(streets ? "Usar mapa local" : "Activar calles · OpenStreetMap")}</button>
-      </div>
-    <div
-      className="property-map geo-map"
-      data-zoom={zoom}
-      data-region={region}
-      data-tile-state={tileState}
-      data-map-engine={streets ? "maplibre-osm" : "maplibre-pmtiles"}
-    >
-      <div
-        ref={host}
-        className="geo-map-canvas"
-        role="region"
-        aria-label={t("Mapa vectorial de {region}", { region: t(region) })}
-      />
-
-      <div
-        className="geo-region-buttons"
-        role="group"
-        aria-label={t("Alcance del mapa")}
-      >
-        {(Object.keys(regions) as Region[]).map((name) => (
-          <button
-            key={name}
-            type="button"
-            onClick={() => chooseRegion(name)}
-            aria-pressed={region === name}
-            disabled={!initialized}
-          >
-            {t(name)}
-          </button>
-        ))}
-      </div>
-      <div
-        className="geo-map-controls"
-        role="group"
-        aria-label={t("Controles del mapa")}
-      >
         <button
           type="button"
-          aria-label={t("Acercar mapa")}
-          disabled={!initialized || zoom >= maxZoom}
-          onClick={() => map.current?.zoomIn({ duration: 0 })}
+          aria-pressed={streets}
+          onClick={() => setStreets(!streets)}
         >
-          +
-        </button>
-        <button
-          type="button"
-          aria-label={t("Alejar mapa")}
-          disabled={!initialized || zoom <= 3}
-          onClick={() => map.current?.zoomOut({ duration: 0 })}
-        >
-          −
-        </button>
-        <button
-          type="button"
-          aria-label={t("Actualizar cartografía")}
-          title={t("Actualizar cartografía")}
-          disabled={!initialized}
-          onClick={retry}
-        >
-          ↻
-        </button>
-        <button
-          type="button"
-          aria-label={t("Restablecer mapa")}
-          disabled={!initialized}
-          onClick={() => chooseRegion("León")}
-        >
-          ⌖
-        </button>
-      </div>
-      {tileState !== "ready" && (
-        <div
-          className={`geo-map-notice${tileState === "error" ? " geo-map-error" : ""}`}
-          aria-live="polite"
-        >
-          <p>
-            {t(
-              tileState === "error"
-                ? initializationError
-                  ? "No se pudo iniciar el visor vectorial. Comprueba que WebGL esté disponible."
-                  : streets ? "No se pudieron cargar las calles. Puedes volver al mapa local sin perder el punto." : "No se pudo cargar el mapa local. La lista de propiedades sigue disponible."
-                : "Preparando el mapa de Home View…",
-            )}
-          </p>
-          {tileState === "error" && (
-            <div className="geo-map-recovery">
-              <button type="button" onClick={retry}>
-                {t("Volver a cargar mapa")}
-              </button>
-            </div>
+          {t(
+            streets
+              ? "Usar mapa de respaldo"
+              : "Calles detalladas · OpenFreeMap",
           )}
-        </div>
-      )}
-      <div className="geo-map-footer">
-        <span>
-          {t(streets ? "Calles de OpenStreetMap · Cobertura según sus colaboradores" : "Mapa de referencia · Vías principales")}
-        </span>
-        <span className="geo-map-attribution">
-          {t("Datos:")}{" "}
-          <a
-            href={streets ? "https://www.openstreetmap.org/copyright" : "https://www.naturalearthdata.com/about/terms-of-use/"}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {streets ? "© OpenStreetMap contributors" : "Natural Earth"}
-          </a>{" "}
-          {!streets && t("· Dominio público")}
-        </span>
+        </button>
       </div>
-    </div>
+      <div
+        className="property-map geo-map"
+        data-zoom={zoom}
+        data-region={region}
+        data-tile-state={tileState}
+        data-map-engine={streets ? "maplibre-openfreemap" : "maplibre-pmtiles"}
+      >
+        <div
+          ref={host}
+          className="geo-map-canvas"
+          role="region"
+          aria-label={t("Mapa vectorial de {region}", { region: t(region) })}
+        />
+
+        <div
+          className="geo-region-buttons"
+          role="group"
+          aria-label={t("Alcance del mapa")}
+        >
+          {(Object.keys(regions) as Region[]).map((name) => (
+            <button
+              key={name}
+              type="button"
+              onClick={() => chooseRegion(name)}
+              aria-pressed={region === name}
+              disabled={!initialized}
+            >
+              {t(name)}
+            </button>
+          ))}
+        </div>
+        <div
+          className="geo-map-controls"
+          role="group"
+          aria-label={t("Controles del mapa")}
+        >
+          <button
+            type="button"
+            aria-label={t("Acercar mapa")}
+            disabled={!initialized || zoom >= maxZoom}
+            onClick={() => map.current?.zoomIn({ duration: 0 })}
+          >
+            +
+          </button>
+          <button
+            type="button"
+            aria-label={t("Alejar mapa")}
+            disabled={!initialized || zoom <= 3}
+            onClick={() => map.current?.zoomOut({ duration: 0 })}
+          >
+            −
+          </button>
+          <button
+            type="button"
+            aria-label={t("Actualizar cartografía")}
+            title={t("Actualizar cartografía")}
+            disabled={!initialized}
+            onClick={retry}
+          >
+            ↻
+          </button>
+          <button
+            type="button"
+            aria-label={t("Restablecer mapa")}
+            disabled={!initialized}
+            onClick={() => chooseRegion("León")}
+          >
+            ⌖
+          </button>
+        </div>
+        {tileState !== "ready" && (
+          <div
+            className={`geo-map-notice${tileState === "error" ? " geo-map-error" : ""}`}
+            aria-live="polite"
+          >
+            <p>
+              {t(
+                tileState === "error"
+                  ? initializationError
+                    ? "No se pudo iniciar el visor vectorial. Comprueba que WebGL esté disponible."
+                    : streets
+                      ? "No se pudo conectar con OpenFreeMap. Puede haber un bloqueo de red o del proveedor. Usa el mapa de respaldo o las coordenadas; tu punto se conserva."
+                      : "No se pudo cargar el mapa local. La lista de propiedades sigue disponible."
+                  : "Preparando el mapa de Home View…",
+              )}
+            </p>
+            {tileState === "error" && (
+              <div className="geo-map-recovery">
+                <button type="button" onClick={retry}>
+                  {t("Volver a cargar mapa")}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        <div className="geo-map-footer">
+          <span>
+            {t(
+              streets
+                ? "Estilo Home View · Calles y edificios"
+                : "Mapa de respaldo · Sin callejero completo",
+            )}
+          </span>
+          <span className="geo-map-attribution">
+            {streets && (
+              <>
+                <a
+                  href="https://openfreemap.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  OpenFreeMap
+                </a>
+                {" · "}
+                <a
+                  href="https://openmaptiles.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  © OpenMapTiles
+                </a>
+                {" · "}
+              </>
+            )}
+            {t("Datos:")}{" "}
+            <a
+              href={
+                streets
+                  ? "https://www.openstreetmap.org/copyright"
+                  : "https://www.naturalearthdata.com/about/terms-of-use/"
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {streets ? "© OpenStreetMap contributors" : "Natural Earth"}
+            </a>{" "}
+            {!streets && t("· Dominio público")}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

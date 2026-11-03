@@ -1,6 +1,6 @@
 import { test, expect } from "./fixtures";
 import { randomUUID } from "node:crypto";
-import sharp from "sharp";
+import { streetFixture, streetTileJSON } from "./street-fixture";
 const reviewed =
   "Revisé la ubicación y autorizo la precisión pública seleccionada.";
 async function login(page: import("@playwright/test").Page) {
@@ -29,7 +29,7 @@ test("iPad location search is explicit, tapping and GPS adjust the private point
   let searches = 0,
     tiles = 0;
   let failTiles = true;
-  const streetTile = await sharp({create:{width:256,height:256,channels:3,background:"#29362e"}}).png().toBuffer();
+  const streetTile = streetFixture();
   await page.route("**/api/private/geocode", (route) => {
     searches++;
     expect(route.request().method()).toBe("POST");
@@ -50,10 +50,19 @@ test("iPad location search is explicit, tapping and GPS adjust the private point
     });
   });
   // All external tiles are intercepted: browser tests never load community tile servers.
-  await page.route("https://tile.openstreetmap.org/**", (route) => {
+  await page.route("https://tiles.openfreemap.org/**", (route) => {
     tiles++;
     if (failTiles) return route.abort();
-    return route.fulfill({contentType:"image/png",headers:{"Access-Control-Allow-Origin":"*"},body:streetTile});
+    if (route.request().url().endsWith("/planet"))
+      return route.fulfill({
+        headers: { "Access-Control-Allow-Origin": "*" },
+        json: streetTileJSON,
+      });
+    return route.fulfill({
+      contentType: "application/x-protobuf",
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: streetTile,
+    });
   });
   await login(page);
   const picker = page.locator(".location-picker");
@@ -83,16 +92,20 @@ test("iPad location search is explicit, tapping and GPS adjust the private point
   await expect(
     page.getByLabel("Latitud del punto privado", { exact: true }),
   ).not.toHaveValue("21.154321");
-  const beforeDrag = await page.getByLabel("Latitud del punto privado", {exact:true}).inputValue();
+  const beforeDrag = await page
+    .getByLabel("Latitud del punto privado", { exact: true })
+    .inputValue();
   const marker = picker.locator(".maplibregl-marker:not(.geo-city-label)");
   await expect(marker).toBeVisible();
-  await marker.hover({position:{x:13,y:13}});
+  await marker.hover({ position: { x: 13, y: 13 } });
   const box = (await marker.boundingBox())!;
   await page.mouse.move(box.x + 13, box.y + 13);
   await page.mouse.down();
-  await page.mouse.move(box.x + 48, box.y + 43, {steps:8});
+  await page.mouse.move(box.x + 48, box.y + 43, { steps: 8 });
   await page.mouse.up();
-  await expect(page.getByLabel("Latitud del punto privado", {exact:true})).not.toHaveValue(beforeDrag);
+  await expect(
+    page.getByLabel("Latitud del punto privado", { exact: true }),
+  ).not.toHaveValue(beforeDrag);
   await picker
     .getByRole("button", { name: "Usar mi ubicación actual", exact: true })
     .click();
@@ -114,13 +127,13 @@ test("iPad location search is explicit, tapping and GPS adjust the private point
   );
   await picker
     .getByRole("button", {
-      name: "Activar calles · OpenStreetMap",
+      name: "Calles detalladas · OpenFreeMap",
       exact: true,
     })
     .click();
   await expect(picker.locator(".geo-map")).toHaveAttribute(
     "data-map-engine",
-    "maplibre-osm",
+    "maplibre-openfreemap",
   );
   await expect(picker.locator(".geo-map")).toHaveAttribute(
     "data-tile-state",
@@ -133,7 +146,7 @@ test("iPad location search is explicit, tapping and GPS adjust the private point
       .first(),
   ).toBeVisible();
   await picker
-    .getByRole("button", { name: "Usar mapa local", exact: true })
+    .getByRole("button", { name: "Usar mapa de respaldo", exact: true })
     .click();
   await expect(picker.locator(".geo-map")).toHaveAttribute(
     "data-tile-state",
@@ -148,19 +161,53 @@ test("iPad location search is explicit, tapping and GPS adjust the private point
     ),
   ).toBe(true);
   failTiles = false;
-  await picker.getByRole("button",{name:"Activar calles · OpenStreetMap",exact:true}).click();
-  await expect(picker.locator(".geo-map")).toHaveAttribute("data-tile-state","ready");
-  for(let i=0;i<7;i++) await picker.getByRole("button",{name:"Acercar mapa",exact:true}).click();
-  await expect(picker.getByRole("button",{name:"Acercar mapa",exact:true})).toBeDisabled();
-  await expect(picker.locator(".geo-map")).toHaveAttribute("data-zoom","19");
-  await picker.getByRole("button",{name:"Usar mapa local",exact:true}).click();
-  await expect(picker.locator(".geo-map")).toHaveAttribute("data-tile-state","ready");
-  await picker.screenshot({ path: test.info().outputPath("location-ipad.png") });
+  await picker
+    .getByRole("button", {
+      name: "Calles detalladas · OpenFreeMap",
+      exact: true,
+    })
+    .click();
+  await expect(picker.locator(".geo-map")).toHaveAttribute(
+    "data-tile-state",
+    "ready",
+  );
+  for (
+    let i = 0;
+    i < 7 &&
+    !(await picker
+      .getByRole("button", { name: "Acercar mapa", exact: true })
+      .isDisabled());
+    i++
+  )
+    await picker
+      .getByRole("button", { name: "Acercar mapa", exact: true })
+      .click();
+  await expect(
+    picker.getByRole("button", { name: "Acercar mapa", exact: true }),
+  ).toBeDisabled();
+  await expect(picker.locator(".geo-map")).toHaveAttribute("data-zoom", "19");
+  await picker
+    .getByRole("button", { name: "Usar mapa de respaldo", exact: true })
+    .click();
+  await expect(picker.locator(".geo-map")).toHaveAttribute(
+    "data-tile-state",
+    "ready",
+  );
+  await picker.screenshot({
+    path: test.info().outputPath("location-ipad.png"),
+  });
   await page.goto("/renta");
-  await page.getByRole("button",{name:"Activar calles · OpenStreetMap",exact:true}).click();
-  await expect(page.locator(".geo-map")).toHaveAttribute("data-tile-state","ready");
+  await page
+    .getByRole("button", {
+      name: "Calles detalladas · OpenFreeMap",
+      exact: true,
+    })
+    .click();
+  await expect(page.locator(".geo-map")).toHaveAttribute(
+    "data-tile-state",
+    "ready",
+  );
   await expect(page.locator(".geo-map .geo-marker")).toHaveCount(1);
-
 });
 test("private coordinates survive save/edit while public HTML only receives the chosen approximate point", async ({
   page,
@@ -257,9 +304,13 @@ test("private coordinates survive save/edit while public HTML only receives the 
   await expect(
     page.getByRole("checkbox", { name: reviewed, exact: true }),
   ).not.toBeChecked();
-  const withdrawn = await page.request.post(`/api/private/publication/${draft.id}`, {
-    headers:{Origin:"http://127.0.0.1:3000"}, data:{revision:draft.sharedRevision,publish:false},
-  });
+  const withdrawn = await page.request.post(
+    `/api/private/publication/${draft.id}`,
+    {
+      headers: { Origin: "http://127.0.0.1:3000" },
+      data: { revision: draft.sharedRevision, publish: false },
+    },
+  );
   expect(withdrawn.status()).toBe(200);
   await outsider.close();
 });

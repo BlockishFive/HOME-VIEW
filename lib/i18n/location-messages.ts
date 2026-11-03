@@ -4,7 +4,12 @@ export const locationMessages: Record<string, string> = {
   "Longitud del punto privado": "Private point longitude",
   "El punto cambió mientras se obtenía el GPS. Se conservó tu ajuste manual.":
     "The point changed while getting GPS. Your manual adjustment was retained.",
-  "Activar calles · OpenStreetMap": "Enable streets · OpenStreetMap",
+  "Calles detalladas · OpenFreeMap": "Detailed streets · OpenFreeMap",
+  "Usar mapa de respaldo": "Use backup map",
+  "Al activar calles detalladas, OpenFreeMap recibe tu IP y el área consultada. Requiere internet; no garantiza cobertura completa ni precisión catastral.": "When you enable detailed streets, OpenFreeMap receives your IP and viewed area. Internet is required; complete coverage and cadastral accuracy are not guaranteed.",
+  "Estilo Home View · Calles y edificios": "Home View style · Streets and buildings",
+  "Mapa de respaldo · Sin callejero completo": "Backup map · No complete street network",
+  "No se pudo conectar con OpenFreeMap. Puede haber un bloqueo de red o del proveedor. Usa el mapa de respaldo o las coordenadas; tu punto se conserva.": "Could not connect to OpenFreeMap. The network or provider may be blocking access. Use the backup map or coordinates; your point is retained.",
   "Usar mapa local": "Use local map",
   "Al activar calles, OpenStreetMap recibe tu IP y el área consultada. Requiere internet; no garantiza calles completas ni precisión catastral.":
     "When you enable streets, OpenStreetMap receives your IP and the viewed area. Internet is required; complete streets and cadastral accuracy are not guaranteed.",
