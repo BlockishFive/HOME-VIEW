@@ -25,3 +25,7 @@ La prueba comprueba manifest, iconos, registro, aviso offline y que Cache Storag
 ## Idiomas
 
 El selector de idioma usa el manifest español o `public/manifest-en.webmanifest` con el mismo ID y start_url. El aviso offline tiene español/inglés y conserva la preferencia del navegador. El worker v3 renueva su caché de aviso e iconos; no lee ni cachea borradores. La versión instalada del sistema operativo puede conservar su nombre hasta actualizar/reinstalar según el navegador. Véase [idiomas](I18N.md).
+
+## Guardado automático de pantalla abierta
+
+El editor conserva capturas parciales en IndexedDB y puede seguir escribiendo localmente si se corta la conexión con la pantalla ya abierta. Esto no cambia el alcance del service worker: el arranque de la app y la comprobación de sesión privada necesitan red. No se cachean pantallas privadas, medios de propiedades ni tokens. Esperar confirmación local antes de cerrar; pagehide/visibilitychange son solo mejor esfuerzo. No se implementa cola de subida automática. Véase AUTOSAVE_DASHBOARD.md.

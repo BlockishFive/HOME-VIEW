@@ -1,6 +1,6 @@
 # Pendientes antes de producción
 
-El catálogo público es estático y ficticio. `/alta` guarda localmente; `/privado` requiere una cuenta privada y persiste datos y medios en el servidor. No hay registro público, cobros ni formularios de contacto. El aviso de visita no representa una reserva ni envía mensajes. No añadir credenciales al repositorio.
+El catálogo público incluye demos ficticias y versiones publicadas explícitamente desde el piloto. `/alta` guarda localmente; `/privado` requiere una cuenta privada y persiste datos y medios en el servidor. No hay registro público, cobros ni formularios de contacto. El aviso de visita no representa una reserva ni envía mensajes. No añadir credenciales al repositorio.
 
 Antes de operar con propiedades o personas reales:
 
@@ -48,7 +48,7 @@ Mantener PMTiles y snapshots como datos estáticos verificados. La generación v
 - La migración v1 es no destructiva al leer. Revisar explícitamente condiciones antes de guardar v2: montos antiguos cero no prueban exención, y una cuota positiva no prueba que se incluya en la renta. No extrapolar aval, póliza ni servicios. Conservar respaldos antes de cambios de dominio o limpieza de almacenamiento.
 - Las fotografías y panoramas se validan/reencodan en cliente con límites de bytes y píxeles, pero la decodificación puede consumir memoria antes de medir dimensiones. Probar móviles de poca memoria; limitar recursos y validar independientemente en cualquier futuro servidor. Proporción 2:1 no garantiza contenido panorámico ni autorización. No ocultar rostros/reflejos/documentos solo por retirar metadatos.
 - El piloto compartido ya tiene sesión privada, autorización de API/medios, cuotas, revisión para evitar sobrescrituras y respaldo consistente. Siguen pendientes moderación, retención formal, identidades/roles múltiples, segundo factor, supervisión y restauración operativa. No exponer IndexedDB por endpoints improvisados.
-- Edición concurrente entre pestañas no tiene bloqueo ni combinación: última escritura gana. Pruebas automáticas no equivalen a revisión física de instalación iOS/Android ni a auditoría de seguridad.
+- Los borradores confirmados de `/alta` conservan el modelo anterior: no combinan cambios entre pestañas y la última escritura gana. Las recuperaciones automáticas y el servidor privado sí comparan versiones y rechazan sobrescrituras obsoletas. Pruebas automáticas no equivalen a revisión física de instalación iOS/Android ni a auditoría de seguridad.
 
 ## Servidor privado del piloto
 
@@ -69,3 +69,9 @@ El optimizador Next Image solo acepta las rutas estáticas de demo `/panoramas/*
 La captura privada y la precisión pública son independientes. Aproximar el marcador no anonimiza descripciones o fotos. Los snapshots antiguos sin precisión declarada se aproximan al servirlos; guardar nuevos campos no supone autorización para publicar coordenadas exactas. Una nueva publicación exige revisar y guardar la elección; cambiar el punto o la precisión revoca la revisión en UI. Proteger también respaldos que conservan el punto privado.
 
 GPS solo se lee tras pulsar el botón y conceder permiso; no hay seguimiento. Calles externas solo tras opt-in con aviso de IP/viewport. Photon solo recibe el texto solicitado, no el GPS, y requiere sesión/origen válido. No registrar consultas ni respuestas sensibles en consola. El endpoint de proveedor es configuración administrativa HTTPS, no un parámetro de usuario, sin redirecciones. La caché de consultas/respuestas privadas vive en SQLite; caduca a las 24 h y se limpia/limita al consultar, los respaldos pueden conservarla. No enviar datos personales/confidenciales. Antes de ampliar acceso: proveedor con cuotas acordadas, retención operativa y análisis de privacidad. Véase LOCATION_CAPTURE.md.
+
+## Capturas automáticas del dispositivo
+
+La recuperación puede contener datos y medios privados completos incluso antes de validar el formulario. Se guarda solo en IndexedDB de ese origen y no transmite hasta Guardar. No contiene contraseña/cookie/token, pero tampoco tiene cifrado de aplicación ni aislamiento frente a otra persona con acceso al mismo perfil. Cerrar sesión oculta la interfaz privada y revoca sesión; no borra silenciosamente una recuperación sin confirmar. Informar antes de capturar y descartar/confirmar al terminar en un equipo compartido.
+
+La versión local evita reemplazos entre pestañas; la revisión del backend sigue impidiendo sobrescrituras del servidor. No se usa el idioma como dato de captura ni se acepta un origen remoto de recuperación. Los límites de cuota/20 registros generan error sin afirmar éxito ni borrar los anteriores. Browser eviction, modo privado, limpieza de datos y terminación del proceso pueden perder almacenamiento o cambios aún pendientes. Copias parciales no están incluidas en backup:private. La verificación de sesión requiere conexión y no se añade un acceso offline privado. Véase AUTOSAVE_DASHBOARD.md.

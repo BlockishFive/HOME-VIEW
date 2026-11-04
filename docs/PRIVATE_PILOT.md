@@ -66,3 +66,7 @@ El respaldo es una instantánea consistente SQLite creada con `VACUUM INTO`. Inc
 Las pruebas de navegador se ejecutan con una base temporal aislada y credenciales ficticias. El puerto 3000 debe estar libre; se desactiva reutilizar servidores existentes para no probar contra datos reales. La prueba de dos contextos representa iPad/PC; falta validación en Safari y dispositivos físicos.
 
 Continúan pendientes identidad multiusuario/roles, segundo factor, recuperación gestionada, almacenamiento cifrado/servicio de objetos, supervisión, backups externos automatizados, pruebas de restauración operativa, administración de disco y alojamiento estable. La base contiene material privado: proteger el volumen y las copias. Las sesiones y contraseña tienen hash, pero fotos y descripciones no están cifradas por la aplicación en reposo. Véase [seguridad](SECURITY.md).
+
+## Panel y capturas pendientes
+
+Al entrar se muestra el panel de propiedades con filtros; el formulario se abre con Nueva propiedad o Editar. Los medios completos se cargan a petición. Existe además una copia automática de la captura parcial **en el navegador actual**, separada del servidor, que se puede continuar tras recargar. Para verla en otro dispositivo debes confirmar Guardar en el servidor. Lee AUTOSAVE_DASHBOARD.md antes de usar un equipo compartido o depender de recuperación sin conexión; los respaldos de SQLite no incluyen IndexedDB.

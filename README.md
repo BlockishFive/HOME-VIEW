@@ -80,11 +80,19 @@ Los JPEG locales son ilustraciones originales generadas mediante trazado de rayo
 6. Opcional para viviendas: en **Panoramas 360 y escenas**, confirma que son capturas equirectangulares completas autorizadas. Añade hasta 8 imágenes 2:1 de al menos 1024×512 y hasta 12 MB cada una; se reencodan a un máximo de 4096 px, sin recortar la esfera. Nombra escenas y crea conexiones de un solo sentido con destino y ángulos manuales. Añade la conexión de regreso si hace falta. **Abrir vista previa 360** reutiliza Marzipano; una foto convencional no se transforma en 360. Los terrenos conservan galería, sin recorrido.
 7. Confirma que tienes autorización para usar las imágenes y guarda el borrador. Sigue siendo local, no publicado y accesible a quien use ese navegador. Usa **Descargar respaldo** para conservar una copia JSON con fotos; la importación de respaldos aún está pendiente.
 
-Desde **Borradores locales** (`/alta#saved-title`) puedes revisar costos y condiciones, editar, guardar sobre el mismo borrador, descargar respaldo o eliminar. Las escenas guardadas se abren bajo demanda. El respaldo JSON v2 incluye fotos y panoramas; la importación sigue pendiente. **Cancelar edición** descarta los cambios aún no guardados. Al guardar se confirma que el registro se puede volver a leer y la captura permanece en el formulario. **Ver el borrador guardado** abre su tarjeta; **Crear otro borrador** limpia el formulario explícitamente. Guardar otra vez actualiza el mismo registro.
+Desde **Borradores locales** (`/alta#saved-title`) puedes revisar costos y condiciones, editar, guardar sobre el mismo borrador, descargar respaldo o eliminar. Las escenas guardadas se abren bajo demanda. El respaldo JSON v2 incluye fotos y panoramas; la importación sigue pendiente. **Cancelar edición** conserva la recuperación automática y abre una captura vacía; para eliminar esa recuperación usa **Descartar captura local**. Al guardar se confirma que el registro se puede volver a leer y la captura permanece en el formulario. **Ver el borrador guardado** abre su tarjeta; **Crear otro borrador** limpia el formulario explícitamente. Guardar otra vez actualiza el mismo registro.
 
 Los borradores v1 se adaptan al leerlos sin sobreescribir el original: el precio pasa al bloque de la operación, el predial solo a venta y una cuota positiva conserva su importe con inclusión por confirmar. Una cuota anterior vacía o cero requiere revisión; no demuestra «No aplica». Los requisitos, servicios y pertenencia a conjunto quedan por confirmar. La edición y guardado explícitos escriben el esquema v2.
 
 Los borradores de `/alta` se almacenan en IndexedDB y no aparecen en otros dispositivos hasta copiarlos explícitamente al área privada. Pueden perderse al borrar datos del navegador o cambiar de dirección/origen del sitio. Los borradores de `/privado` y sus medios se guardan en el servidor tras iniciar sesión. Ambos flujos conservan la separación venta/renta. Guardar no publica: en el área privada puedes publicar explícitamente la versión guardada, actualizarla o retirarla. Véase [publicación del piloto](docs/PUBLISHING.md).
+
+## Panel privado y guardado automático
+
+`/privado` muestra primero las propiedades, con búsqueda y filtros por publicación. **Nueva propiedad** y **Editar borrador** abren el formulario. Los panoramas no se descargan para listar tarjetas; se cargan al consultar detalles o editar.
+
+Mientras capturas, se guardan campos incompletos, fotos y escenas en **este dispositivo**. Espera **Guardado en este dispositivo** antes de cerrar. Al volver, usa **Continuar captura**; el envío al servidor sigue siendo explícito con Guardar. **Confirmado en el servidor** indica que ya respondió el backend. Las recuperaciones locales permanecen incluso tras cerrar sesión y no están cifradas para otros usuarios del mismo perfil de navegador.
+
+Consulta [recuperación, privacidad y límites de conexión](docs/AUTOSAVE_DASHBOARD.md). Todavía se necesita internet para abrir la aplicación y verificar la sesión privada; no hay subida automática ni arranque privado offline.
 
 ## Capturar ubicación en el iPad
 
