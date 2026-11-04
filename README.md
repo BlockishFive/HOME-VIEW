@@ -78,9 +78,9 @@ Los JPEG locales son ilustraciones originales generadas mediante trazado de rayo
 4. Ajusta latitud/longitud a una ubicación aproximada de tu zona. La referencia inicial es el centro de León; no indica tu domicilio.
 5. Selecciona entre 1 y 8 fotos JPEG/PNG/WebP de hasta 5 MB cada una. Convierte HEIC previamente. El navegador las decodifica, reduce a un máximo de 1920 px y reencoda como JPEG sin los metadatos originales. Las fotos normales no se convierten en panoramas 360.
 6. Opcional para viviendas: en **Panoramas 360 y escenas**, confirma que son capturas equirectangulares completas autorizadas. Añade hasta 8 imágenes 2:1 de al menos 1024×512 y hasta 12 MB cada una; se reencodan a un máximo de 4096 px, sin recortar la esfera. Nombra escenas y crea conexiones de un solo sentido con destino y ángulos manuales. Añade la conexión de regreso si hace falta. **Abrir vista previa 360** reutiliza Marzipano; una foto convencional no se transforma en 360. Los terrenos conservan galería, sin recorrido.
-7. Confirma que tienes autorización para usar las imágenes y guarda el borrador. Sigue siendo local, no publicado y accesible a quien use ese navegador. Usa **Descargar respaldo** para conservar una copia JSON con fotos; la importación de respaldos aún está pendiente.
+7. Confirma que tienes autorización para usar las imágenes y guarda el borrador. Sigue siendo local, no publicado y accesible a quien use ese navegador. Usa **Descargar respaldo** para conservar una copia JSON con fotos; puedes restaurarlo desde **Respaldar y restaurar** tras revisar una vista previa.
 
-Desde **Borradores locales** (`/alta#saved-title`) puedes revisar costos y condiciones, editar, guardar sobre el mismo borrador, descargar respaldo o eliminar. Las escenas guardadas se abren bajo demanda. El respaldo JSON v2 incluye fotos y panoramas; la importación sigue pendiente. **Cancelar edición** conserva la recuperación automática y abre una captura vacía; para eliminar esa recuperación usa **Descartar captura local**. Al guardar se confirma que el registro se puede volver a leer y la captura permanece en el formulario. **Ver el borrador guardado** abre su tarjeta; **Crear otro borrador** limpia el formulario explícitamente. Guardar otra vez actualiza el mismo registro.
+Desde **Borradores locales** (`/alta#saved-title`) puedes revisar costos y condiciones, editar, guardar sobre el mismo borrador, descargar respaldo o eliminar. Las escenas guardadas se abren bajo demanda. El respaldo JSON v2 incluye fotos y panoramas; se restaura como una copia nueva. **Cancelar edición** conserva la recuperación automática y abre una captura vacía; para eliminar esa recuperación usa **Descartar captura local**. Al guardar se confirma que el registro se puede volver a leer y la captura permanece en el formulario. **Ver el borrador guardado** abre su tarjeta; **Crear otro borrador** limpia el formulario explícitamente. Guardar otra vez actualiza el mismo registro.
 
 Los borradores v1 se adaptan al leerlos sin sobreescribir el original: el precio pasa al bloque de la operación, el predial solo a venta y una cuota positiva conserva su importe con inclusión por confirmar. Una cuota anterior vacía o cero requiere revisión; no demuestra «No aplica». Los requisitos, servicios y pertenencia a conjunto quedan por confirmar. La edición y guardado explícitos escriben el esquema v2.
 
@@ -93,6 +93,14 @@ Los borradores de `/alta` se almacenan en IndexedDB y no aparecen en otros dispo
 Mientras capturas, se guardan campos incompletos, fotos y escenas en **este dispositivo**. Espera **Guardado en este dispositivo** antes de cerrar. Al volver, usa **Continuar captura**; el envío al servidor sigue siendo explícito con Guardar. **Confirmado en el servidor** indica que ya respondió el backend. Las recuperaciones locales permanecen incluso tras cerrar sesión y no están cifradas para otros usuarios del mismo perfil de navegador.
 
 Consulta [recuperación, privacidad y límites de conexión](docs/AUTOSAVE_DASHBOARD.md). Todavía se necesita internet para abrir la aplicación y verificar la sesión privada; no hay subida automática ni arranque privado offline.
+
+## Respaldos y editor visual 360
+
+**Respaldar y restaurar** permite descargar la captura actual aunque esté incompleta, revisar un archivo JSON y restaurarlo como una captura nueva. Incluye fotos, panoramas, conexiones y orientación, sin sobrescribir originales. En el área privada la restauración permanece en este navegador hasta confirmar Guardar borrador privado. Debes revisar otra vez los permisos de imágenes y la ubicación. Los archivos contienen información privada: consérvalos fuera del Codespace y en un lugar seguro.
+
+En **Editar visualmente escena…** puedes colocar una flecha tocando el panorama o usando el centro de la vista. Arrastrar/pellizcar solo cambia la mirada o el zoom. **Usar esta vista al entrar** conserva orientación por escena; **Empezar recorrido en escena…** elige el inicio. Se avisa de escenas sin camino de ida/regreso, conservando los ajustes numéricos manuales.
+
+Consulta [formatos, límites, restauración y pasos del editor](docs/BACKUPS_AND_VISUAL_TOURS.md). No hay conexión directa con la cámara ni publicación automática.
 
 ## Capturar ubicación en el iPad
 

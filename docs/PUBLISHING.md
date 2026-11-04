@@ -15,7 +15,7 @@ El snapshot incluye medios independientes. El límite de medios privados sigue s
 
 ## Captura con cámara 360 e iPad
 
-Flujo compatible: tomar escenas con cámara 360 → unir/exportar desde su app a **JPEG equirectangular completo 2:1** → guardar en Fotos/Archivos del iPad → editar el borrador privado y añadirlas como panoramas → crear conexiones manuales y revisar → guardar → actualizar publicación. Se pueden añadir después de publicar las fotos normales. No se convierte automáticamente una panorámica parcial de iPhone en una esfera.
+Flujo compatible: tomar escenas con cámara 360 → unir/exportar desde su app a **JPEG equirectangular completo 2:1** → guardar en Fotos/Archivos del iPad → editar el borrador privado y añadirlas como panoramas → colocar conexiones por toque o ángulos, elegir orientación/inicio y revisar → guardar → actualizar publicación. Se pueden añadir después de publicar las fotos normales. No se convierte automáticamente una panorámica parcial de iPhone en una esfera.
 
 La app acepta JPEG/PNG/WebP de hasta 12 MiB por panorama, mínimo 1024×512 y relación exacta 2:1, máximo 8 escenas; el envío completo no supera 48 MiB. El servidor reencoda hasta 4096×2048. No admite RAW ni formatos propietarios de cámara ni los une automáticamente. No hay conexión directa por Bluetooth/Wi-Fi ni SDK de fabricantes. Probar exportaciones reales con el modelo de cámara y Safari del iPad antes de una visita; la prueba automática usa escenas sintéticas autorizadas.
 
@@ -24,3 +24,5 @@ La app acepta JPEG/PNG/WebP de hasta 12 MiB por panorama, mínimo 1024×512 y re
 El mapa actual conserva Natural Earth/PMTiles local: sirve de referencia general y no tiene calles completas ni direcciones actualizadas. No confundir un marcador manual con geocodificación ni precisión catastral.
 
 Ya hay una capa de calles raster de OpenStreetMap opcional y un buscador Photon bajo sesión, con selección manual y GPS. La ubicación privada se separa de la precisión pública. Véase [captura de ubicación](LOCATION_CAPTURE.md) para flujo, límites, permisos, atribución y validaciones pendientes. Se mantiene el mapa local de referencia; no garantiza cobertura completa de Marroka, ni numeración o precisión catastral. Un proveedor con SLA/cobertura verificada y las rutas siguen pendientes para un uso mayor.
+
+El editor visual y los respaldos conservan orientación y conexiones en el borrador; no alteran una publicación hasta Guardar y Actualizar publicación. Una restauración JSON crea otra captura local, nunca reemplaza un snapshot. Véase [respaldos y editor visual](BACKUPS_AND_VISUAL_TOURS.md).

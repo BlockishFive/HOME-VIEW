@@ -29,7 +29,7 @@ Las recuperaciones están en IndexedDB, base `home-view-captures`, separada de `
 
 El contenido sigue en ese navegador incluso tras cerrar sesión. La interfaz privada exige iniciar sesión, pero IndexedDB no cifra los datos ni los protege de otra persona con acceso al mismo perfil del dispositivo. En un equipo compartido, confirma y descarta lo pendiente antes de terminar. El aviso aparece antes de capturar. Borrar datos del navegador, cambiar de origen/perfil, modo privado o la expulsión de almacenamiento por el sistema puede eliminar estas recuperaciones.
 
-`npm run backup:private` respalda SQLite del servidor, no las recuperaciones de IndexedDB. Las exportaciones JSON existentes corresponden a borradores confirmados; importación y exportación de capturas parciales siguen pendientes.
+`npm run backup:private` respalda SQLite del servidor, no las recuperaciones de IndexedDB. Puedes descargar la captura actual, una recuperación automática o el borrador confirmado. Los JSON se revisan y restauran como copias nuevas, sin reemplazar originales; véase [respaldos y editor visual](BACKUPS_AND_VISUAL_TOURS.md).
 
 ## Alcance de conexión y límites
 

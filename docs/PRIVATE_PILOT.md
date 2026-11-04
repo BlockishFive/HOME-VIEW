@@ -46,7 +46,7 @@ npm run backup:private
 npm run setup:private -- --reset
 ```
 
-El respaldo es una instantánea consistente SQLite creada con `VACUUM INTO`. Incluye todos los medios y la configuración de acceso. La ruta se muestra en la terminal; conserva una copia en un lugar privado fuera del Codespace. No la subas al repositorio. El JSON descargado desde una tarjeta es útil para conservar una propiedad, pero su importación sigue pendiente.
+El respaldo es una instantánea consistente SQLite creada con `VACUUM INTO`. Incluye todos los medios y la configuración de acceso. La ruta se muestra en la terminal; conserva una copia en un lugar privado fuera del Codespace. No la subas al repositorio. El JSON descargado desde una tarjeta permite conservar una propiedad y restaurarla como una captura nueva, tras revisión. También se pueden respaldar capturas incompletas. No reemplaza un respaldo completo de SQLite; véase [respaldos portátiles](BACKUPS_AND_VISUAL_TOURS.md).
 
 `--reset` cambia la cuenta/contraseña mediante acceso a la terminal y revoca las sesiones, conservando las propiedades. No existe recuperación por correo. Para restaurar una instantánea: detén el servidor, conserva aparte la base actual y sus archivos `-wal`/`-shm`, coloca la instantánea como `private.sqlite` en un directorio privado vacío, ejecuta `setup:private -- --reset` y arranca con ese mismo HOME_VIEW_DATA_DIR. No mezcles una base restaurada con archivos WAL de otra base. Probar la restauración y los respaldos externos antes de operar de forma permanente.
 
@@ -70,3 +70,7 @@ Continúan pendientes identidad multiusuario/roles, segundo factor, recuperació
 ## Panel y capturas pendientes
 
 Al entrar se muestra el panel de propiedades con filtros; el formulario se abre con Nueva propiedad o Editar. Los medios completos se cargan a petición. Existe además una copia automática de la captura parcial **en el navegador actual**, separada del servidor, que se puede continuar tras recargar. Para verla en otro dispositivo debes confirmar Guardar en el servidor. Lee AUTOSAVE_DASHBOARD.md antes de usar un equipo compartido o depender de recuperación sin conexión; los respaldos de SQLite no incluyen IndexedDB.
+
+## Respaldo portátil y orientación 360
+
+Las importaciones de JSON en `/privado` solo crean capturas locales nuevas: no adoptan ID/revisión ni publicación del archivo. Tras revisarlas, Guardar borrador privado crea otra propiedad. La orientación opcional `initialView` se valida en servidor y se incorpora al snapshot al publicar; los recorridos antiguos conservan su orientación predeterminada. [Guía de respaldos y editor visual](BACKUPS_AND_VISUAL_TOURS.md).
