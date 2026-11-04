@@ -245,16 +245,23 @@ async function upload(request: NextRequest) {
         pitch: h.pitch,
       }),
     );
+    const initialView = scene.initialView === undefined ? undefined : {
+      yaw: scene.initialView?.yaw,
+      pitch: scene.initialView?.pitch,
+      fov: scene.initialView?.fov,
+    };
     validated.push({
       id,
       name: scene.name,
       blob: new Blob([new Uint8Array(content)], { type: "image/jpeg" }),
       hotspots,
+      ...(initialView ? { initialView } : {}),
     });
     scenes.push({
       id,
       name: scene.name,
       hotspots,
+      ...(initialView ? { initialView } : {}),
       url: `/api/private/media/${raw.id}/${id}`,
     });
   }

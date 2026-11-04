@@ -73,10 +73,11 @@ export function captureFingerprint(content: CaptureContent) {
       size: blob.size,
       type: blob.type,
     })),
-    scenes: content.scenes.map(({ id, name, blob, hotspots }) => ({
+    scenes: content.scenes.map(({ id, name, blob, hotspots, initialView }) => ({
       id,
       name,
       hotspots,
+      initialView,
       size: blob.size,
       type: blob.type,
     })),

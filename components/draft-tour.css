@@ -1,6 +1,18 @@
 .draft-tour-editor {
   margin-block: 2rem;
 }
+.tour-visual-editor { min-width:0; padding:16px; border:1px solid #93ad5b; border-radius:16px; background:#15261c; margin-block:16px; }
+.tour-visual-controls { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr)); gap:16px; }
+.tour-visual-actions,.tour-scene-actions { display:flex; flex-wrap:wrap; gap:10px; margin-block:12px; }
+.tour-visual-editor button,.tour-scene-actions button { min-height:44px; }
+.tour-visual-actions > button { padding:12px 16px; border:1px solid #8faa58; border-radius:10px; background:#263b24; color:#edf4df; text-align:left; }
+.tour-visual-editor h3 { font-size:20px; margin:0 0 12px; }
+.tour-visual-editor button[aria-pressed="true"] { background:#d7f25f; color:#14271c; }
+.tour-placement-notice,.tour-entry-badge { color:#e3ef9b; }
+.tour-entry-badge { font-weight:700; }
+.tour-connectivity { margin-block:16px; border-left:3px solid #ddc75c; padding:4px 16px; background:#24291a; }
+.tour-connectivity p { overflow-wrap:anywhere; }
+.tour-crosshair { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#efff84; font-size:32px; text-shadow:0 1px 4px #000; pointer-events:none; }
 .draft-tour-editor fieldset {
   min-width: 0;
 }

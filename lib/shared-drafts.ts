@@ -54,6 +54,7 @@ type RemoteMedia = {
   name: string;
   url: string;
   hotspots?: ListingDraft["scenes"][number]["hotspots"];
+  initialView?: ListingDraft["scenes"][number]["initialView"];
 };
 type Remote<T> = T extends unknown
   ? Omit<T, "photos" | "scenes"> & {
@@ -81,6 +82,7 @@ async function hydrate(draft: RemoteDraft): Promise<ListingDraft> {
       id: asset.id,
       name: asset.name,
       hotspots: asset.hotspots ?? [],
+      ...(asset.initialView ? { initialView: asset.initialView } : {}),
       blob: await blob(asset),
     });
   return { ...draft, photos, scenes } as ListingDraft;
@@ -97,10 +99,11 @@ export async function saveSharedDraft(
   const metadata = {
     ...draft,
     photos: draft.photos.map(({ id, name }) => ({ id, name })),
-    scenes: draft.scenes.map(({ id, name, hotspots }) => ({
+    scenes: draft.scenes.map(({ id, name, hotspots, initialView }) => ({
       id,
       name,
       hotspots,
+      initialView,
     })),
   };
   form.set("draft", JSON.stringify(metadata));

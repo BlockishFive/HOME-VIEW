@@ -9,6 +9,7 @@ export type Room = {
   x: number;
   y: number;
   hotspots: Hotspot[];
+  initialView?: import("./draft-tour").SceneView;
 };
 type PropertyBase = {
   published?: boolean;

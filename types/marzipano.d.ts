@@ -6,6 +6,13 @@ declare module "marzipano" {
     pitch(): number;
     setFov(value: number): void;
     fov(): number;
+    parameters(): { yaw: number; pitch: number; fov: number };
+    screenToCoordinates(point: { x: number; y: number }): {
+      yaw: number;
+      pitch: number;
+    };
+    addEventListener(event: "change", listener: () => void): void;
+    removeEventListener(event: "change", listener: () => void): void;
   };
   type Scene = {
     switchTo(options?: { transitionDuration?: number }): void;
@@ -30,6 +37,7 @@ declare module "marzipano" {
       ): unknown;
     };
   }
+  interface RectilinearView extends View {}
   class Viewer {
     constructor(
       element: HTMLElement,

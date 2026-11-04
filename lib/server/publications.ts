@@ -23,7 +23,7 @@ export function publicProperty(draft: ListingDraft): Property {
     maintenance: draft.maintenance, community: draft.community,
     tag: draft.operation, cover: media(draft.photos[0].id),
     gallery: draft.photos.map((photo, i) => ({ src: media(photo.id), alt: draft.title, label: `Foto ${i + 1}` })),
-    rooms: draft.scenes.map(scene => ({ id: scene.id, name: scene.name, panorama: media(scene.id), x: 0, y: 0, hotspots: scene.hotspots })),
+    rooms: draft.scenes.map(scene => ({ id: scene.id, name: scene.name, panorama: media(scene.id), x: 0, y: 0, hotspots: scene.hotspots, ...(scene.initialView ? {initialView:scene.initialView} : {}) })),
     plotArea: draft.propertyType === "Terreno" ? draft.area : null,
     builtYear: null, parking: null, levels: null, buildingType: "Por confirmar", ownership: "Por confirmar", features: [], reference: slug,
   } as Property;

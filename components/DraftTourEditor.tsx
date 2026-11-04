@@ -1,9 +1,12 @@
 "use client";
 import { useI18n } from "@/components/I18nProvider";
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
+import { useDraftTourRooms } from "./useDraftTourRooms";
+import { TourVisualEditor } from "./TourVisualEditor";
 import { PanoramaViewer } from "./PanoramaViewer";
 import {
   MAX_SCENES,
+  analyzeTour,
   removeDraftScene,
   validatePanoramaDimensions,
   validatePanoramaFile,
@@ -58,26 +61,8 @@ export function DraftTourPreview({
   shared?: boolean;
 }) {
   const { t } = useI18n();
-  const [rooms, setRooms] = useState<
-    {
-      id: string;
-      name: string;
-      panorama: string;
-      hotspots: DraftScene["hotspots"];
-    }[]
-  >([]);
+  const rooms = useDraftTourRooms(scenes);
   const [current, setCurrent] = useState("");
-  useEffect(() => {
-    const nextRooms = scenes.map((scene) => ({
-      id: scene.id,
-      name: scene.name || t("Escena sin nombre"),
-      panorama: URL.createObjectURL(scene.blob),
-      hotspots: scene.hotspots,
-    }));
-    setRooms(nextRooms);
-    return () =>
-      nextRooms.forEach((room) => URL.revokeObjectURL(room.panorama));
-  }, [scenes, t]);
   const selected = rooms.some((room) => room.id === current)
     ? current
     : rooms[0]?.id;
@@ -172,6 +157,14 @@ export function DraftTourEditor({
   const [error, setError] = useState("");
   const [preview, setPreview] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [visual, setVisual] = useState<string | null>(null);
+  const analysis = analyzeTour(scenes);
+  const sceneNames = (ids: string[]) =>
+    ids
+      .map(
+        (id) => scenes.find((s) => s.id === id)?.name || t("Escena sin nombre"),
+      )
+      .join(", ");
   function update(id: string, values: Partial<DraftScene>) {
     onChange(
       scenes.map((scene) =>
@@ -255,8 +248,27 @@ export function DraftTourEditor({
             {t(error)}
           </p>
         )}
+        {visual && scenes.length > 0 && (
+          <>
+            <button type="button" onClick={() => setVisual(null)}>
+              {t("Cerrar editor visual")}
+            </button>
+            <TourVisualEditor
+              scenes={scenes}
+              current={visual}
+              onSelect={setVisual}
+              onChange={onChange}
+              disabled={disabled || busy}
+            />
+          </>
+        )}
         {scenes.map((scene, sceneIndex) => (
           <div key={scene.id} className="draft-scene-card">
+            {sceneIndex === 0 && (
+              <p className="tour-entry-badge">
+                {t("Escena inicial del recorrido")}
+              </p>
+            )}
             <label className="listing-field">
               <span>
                 {t("Nombre de escena {number}", { number: sceneIndex + 1 })}
@@ -269,6 +281,34 @@ export function DraftTourEditor({
                 }
               />
             </label>
+            <div className="tour-scene-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setVisual(scene.id);
+                  setPreview(false);
+                }}
+              >
+                {t("Editar visualmente escena {number}", {
+                  number: sceneIndex + 1,
+                })}
+              </button>
+              {sceneIndex > 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onChange([
+                      scene,
+                      ...scenes.filter((s) => s.id !== scene.id),
+                    ])
+                  }
+                >
+                  {t("Empezar recorrido en escena {number}", {
+                    number: sceneIndex + 1,
+                  })}
+                </button>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => onChange(removeDraftScene(scenes, scene.id))}
@@ -407,10 +447,37 @@ export function DraftTourEditor({
             </button>
           </div>
         ))}
+        {(analysis.unreachable.length > 0 || analysis.noReturn.length > 0) && (
+          <aside className="tour-connectivity">
+            <h3>{t("Revisar conexiones del recorrido")}</h3>
+            {analysis.unreachable.length > 0 && (
+              <p>
+                {t("Sin camino desde la escena inicial: {names}.", {
+                  names: sceneNames(analysis.unreachable),
+                })}
+              </p>
+            )}
+            {analysis.noReturn.length > 0 && (
+              <p>
+                {t("Sin camino de regreso al inicio: {names}.", {
+                  names: sceneNames(analysis.noReturn),
+                })}
+              </p>
+            )}
+            <p>
+              {t(
+                "Puedes seguir usando la lista de escenas. Las conexiones de regreso se colocan manualmente; revisa los ángulos en cada panorama.",
+              )}
+            </p>
+          </aside>
+        )}
         {!!scenes.length && (
           <button
             type="button"
-            onClick={() => setPreview((previous) => !previous)}
+            onClick={() => {
+              setPreview((previous) => !previous);
+              setVisual(null);
+            }}
           >
             {t(preview ? "Cerrar vista previa 360" : "Abrir vista previa 360")}
           </button>

@@ -1,4 +1,5 @@
 import { captureMessages } from "./i18n/capture-messages";
+import { backupTourMessages } from "./i18n/backup-tour-messages";
 import { locationMessages } from "./i18n/location-messages";
 import { privateMessages } from "./i18n/private-messages";
 import { siteMessages } from "./i18n/site-messages";
@@ -12,6 +13,7 @@ export function validLocale(value: unknown): Locale {
 export const englishMessages: Record<string, string> = {
   ...siteMessages,
   ...captureMessages,
+  ...backupTourMessages,
   ...locationMessages,
   ...privateMessages,
   ...catalogMessages,

@@ -6,6 +6,9 @@ import {
   validatePanoramaDimensions,
   validatePanoramaFile,
   type DraftScene,
+  analyzeTour,
+  validSceneView,
+  defaultSceneView,
 } from "../lib/draft-tour";
 const scenes: DraftScene[] = [
   {
@@ -31,6 +34,37 @@ test("panoramas require supported, bounded files and exact complete-sphere dimen
   assert.ok(validatePanoramaDimensions(1920, 1080));
   assert.ok(validatePanoramaDimensions(400, 200));
   assert.ok(validatePanoramaDimensions(12000, 6000));
+});
+
+test("entry views are optional for older scenes, bounded and independent of hotspot angles", () => {
+  assert.equal(validSceneView(defaultSceneView), true);
+  assert.equal(validateDraftScenes(scenes), null);
+  assert.equal(
+    validateDraftScenes([
+      { ...scenes[0], initialView: { yaw: 1, pitch: 0.1, fov: 0.8 } },
+      scenes[1],
+    ]),
+    null,
+  );
+  assert.ok(
+    validateDraftScenes([
+      { ...scenes[0], initialView: { yaw: 10, pitch: 0, fov: 1 } },
+      scenes[1],
+    ]),
+  );
+  assert.equal(validSceneView({ yaw: 0, pitch: 0, fov: NaN }), false);
+});
+test("directed tour analysis distinguishes unreachable rooms from missing return paths", () => {
+  assert.deepEqual(analyzeTour(scenes), { unreachable: [], noReturn: [] });
+  assert.deepEqual(
+    analyzeTour([{ ...scenes[0] }, { ...scenes[1], hotspots: [] }]),
+    { unreachable: [], noReturn: ["patio"] },
+  );
+  assert.deepEqual(analyzeTour([{ ...scenes[0], hotspots: [] }, scenes[1]]), {
+    unreachable: ["patio"],
+    noReturn: [],
+  });
+  assert.deepEqual(analyzeTour([]), { unreachable: [], noReturn: [] });
 });
 test("deleting a scene removes incoming links without mutating the original graph", () => {
   const remaining = removeDraftScene(scenes, "patio");

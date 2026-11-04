@@ -1,8 +1,15 @@
 "use client";
 import Link from "next/link";
+import { ListingBackupTools } from "./ListingBackupTools";
+import {
+  downloadDraftBackup,
+  downloadCaptureBackup,
+  contentFromDraft,
+} from "@/lib/listing-backup";
 import { useCaptureAutosave } from "./useCaptureAutosave";
 import {
   captureFingerprint,
+  getCapture,
   initialCaptureValues,
   type CaptureContent,
   type CaptureSummary,
@@ -116,55 +123,6 @@ function PhotoPreview({ photo, label }: { photo: DraftPhoto; label: string }) {
   }, [photo]);
   return url ? <img className="draft-photo" src={url} alt={label} /> : null;
 }
-async function exportDraft(draft: ListingDraft) {
-  const photos = await Promise.all(
-    draft.photos.map(async (photo) => ({
-      name: photo.name,
-      dataUrl: await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () =>
-          reject(new Error("No se pudo preparar el respaldo."));
-        reader.readAsDataURL(photo.blob);
-      }),
-    })),
-  );
-  const scenes = await Promise.all(
-    draft.scenes.map(async (scene) => ({
-      ...scene,
-      blob: undefined,
-      dataUrl: await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () =>
-          reject(new Error("No se pudo exportar un panorama."));
-        reader.readAsDataURL(scene.blob);
-      }),
-    })),
-  );
-  const blob = new Blob(
-    [
-      JSON.stringify(
-        {
-          format: "home-view-local-draft",
-          version: 2,
-          ...draft,
-          photos,
-          scenes,
-        },
-        null,
-        2,
-      ),
-    ],
-    { type: "application/json" },
-  );
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `home-view-${draft.id}.json`;
-  anchor.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 export function ListingForm({
   storage = "local",
   registerPreserve,
@@ -221,6 +179,7 @@ export function ListingForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
   const [storageError, setStorageError] = useState("");
+  const [backupError, setBackupError] = useState("");
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [loadingMediaId, setLoadingMediaId] = useState<string | null>(null);
@@ -393,12 +352,29 @@ export function ListingForm({
   }
   async function download(draft: ListingDraft | RemoteDraft) {
     setBusy(true);
+    setBackupError("");
     try {
-      await exportDraft(
+      await downloadDraftBackup(
         shared ? await loadSharedDraft(draft) : (draft as ListingDraft),
       );
     } catch (error) {
-      setStorageError(storageMessage(error));
+      setBackupError(storageMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function downloadRecovery(id: string) {
+    setBusy(true);
+    setBackupError("");
+    try {
+      const row = await getCapture(id);
+      if (!row || row.scope !== storage)
+        throw new Error(
+          "La captura ya no está disponible en este dispositivo.",
+        );
+      await downloadCaptureBackup(row.content);
+    } catch (error) {
+      setBackupError(storageMessage(error));
     } finally {
       setBusy(false);
     }
@@ -571,45 +547,7 @@ export function ListingForm({
     setErrors({});
     if (fileInput.current) fileInput.current.value = "";
   }
-  function contentOf(draft: ListingDraft): CaptureContent {
-    return {
-      values: {
-        ...initial,
-        title: draft.title,
-        operation: draft.operation,
-        propertyType: draft.propertyType,
-        rentPrice:
-          draft.operation === "Renta"
-            ? String(draft.rental.monthlyRent ?? "")
-            : "",
-        salePrice:
-          draft.operation === "Venta"
-            ? String(draft.sale.purchasePrice ?? "")
-            : "",
-        description: draft.description,
-        state: draft.state,
-        city: draft.city,
-        neighborhood: draft.neighborhood,
-        area: String(draft.area),
-        beds: String(draft.beds ?? ""),
-        baths: String(draft.baths ?? ""),
-        latitude: String(draft.latitude),
-        longitude: String(draft.longitude),
-        imageRights: draft.imageRights,
-      },
-      rental: draft.operation === "Renta" ? draft.rental : defaultRentalTerms(),
-      sale:
-        draft.operation === "Venta"
-          ? draft.sale
-          : { purchasePrice: null, annualTax: null },
-      maintenance: draft.maintenance,
-      community: draft.community,
-      publicLocation: draft.publicLocation ?? "approximate",
-      locationReviewed: draft.locationReviewed === true,
-      photos: draft.photos,
-      scenes: draft.scenes,
-    };
-  }
+  const contentOf = contentFromDraft;
   async function resetEditor() {
     const next = {
       ...contentRef.current,
@@ -1144,6 +1082,18 @@ export function ListingForm({
         )}
       </div>
       {shared && savedSection}
+      <ListingBackupTools
+        scope={storage}
+        current={editorOpen ? content : undefined}
+        disabled={busy}
+        onBusyChange={setBusy}
+        onRestored={autosave.reload}
+      />
+      {backupError && (
+        <p className="listing-error" role="alert">
+          {t(backupError)}
+        </p>
+      )}
       {(!shared ||
         editorOpen ||
         autosave.captures.length > 0 ||
@@ -1209,6 +1159,13 @@ export function ListingForm({
                 onClick={() => void recoverCapture(row.id)}
               >
                 {t("Continuar captura")}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void downloadRecovery(row.id)}
+              >
+                {t("Descargar captura")}
               </button>
               <button
                 type="button"

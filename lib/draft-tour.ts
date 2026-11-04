@@ -1,10 +1,29 @@
 /** Local-only panoramas. A 2:1 image must already be an equirectangular 360 capture. */
 export type DraftHotspot = { target: string; yaw: number; pitch: number };
+export type SceneView = { yaw: number; pitch: number; fov: number };
+export const defaultSceneView: SceneView = {
+  yaw: 0,
+  pitch: 0,
+  fov: Math.PI / 2.6,
+};
+export function validSceneView(view: SceneView): boolean {
+  return (
+    !!view &&
+    Number.isFinite(view.yaw) &&
+    Math.abs(view.yaw) <= Math.PI &&
+    Number.isFinite(view.pitch) &&
+    Math.abs(view.pitch) <= Math.PI / 2 &&
+    Number.isFinite(view.fov) &&
+    view.fov >= 0.45 &&
+    view.fov <= 1.7
+  );
+}
 export type DraftScene = {
   id: string;
   name: string;
   blob: Blob;
   hotspots: DraftHotspot[];
+  initialView?: SceneView;
 };
 export const MAX_SCENES = 8;
 export const MAX_PANORAMA_BYTES = 12 * 1024 * 1024;
@@ -35,6 +54,8 @@ export function validateDraftScenes(scenes: DraftScene[]): string | null {
   if (ids.size !== scenes.length || scenes.some((scene) => !scene.id))
     return "Las escenas necesitan identificadores únicos.";
   for (const scene of scenes) {
+    if (scene.initialView !== undefined && !validSceneView(scene.initialView))
+      return "Revisa la orientación de entrada de las escenas.";
     if (!scene.name.trim() || scene.name.length > 80)
       return "Nombra cada escena con entre 1 y 80 caracteres.";
     if (
@@ -62,6 +83,32 @@ export function validateDraftScenes(scenes: DraftScene[]): string | null {
     }
   }
   return null;
+}
+/** Directed reachability: a connection does not imply a return connection. */
+export function analyzeTour(scenes: Pick<DraftScene, "id" | "hotspots">[]) {
+  const first = scenes[0]?.id;
+  const walk = (start: string) => {
+    const seen = new Set<string>();
+    const pending = [start];
+    while (pending.length) {
+      const id = pending.pop()!;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      for (const link of scenes.find((scene) => scene.id === id)?.hotspots ??
+        [])
+        pending.push(link.target);
+    }
+    return seen;
+  };
+  const reached = first ? walk(first) : new Set<string>();
+  return {
+    unreachable: scenes
+      .filter((scene) => !reached.has(scene.id))
+      .map((scene) => scene.id),
+    noReturn: scenes
+      .filter((scene) => scene.id !== first && !walk(scene.id).has(first!))
+      .map((scene) => scene.id),
+  };
 }
 /** Deleting a scene also removes every incoming connection to it. */
 export function removeDraftScene(
