@@ -14,6 +14,7 @@ async function signIn(page: Page) {
   await expect(
     page.getByRole("heading", { name: "Mis borradores privados", exact: true }),
   ).toBeVisible();
+  await page.getByRole("button",{name:"Nueva propiedad",exact:true}).click();
 }
 async function fill(page: Page, title: string) {
   await page.getByLabel("Título del anuncio", { exact: true }).fill(title);
@@ -114,6 +115,7 @@ test("an iPad capture with 360 media opens on a second device and remains outsid
     .locator(".draft-card")
     .filter({ has: pc.getByRole("heading", { name: title, exact: true }) });
   await expect(card).toBeVisible();
+  await card.getByText("Ver detalles y medios",{exact:true}).click();
   await expect(card.locator(".draft-photo-grid img")).toBeVisible();
   await card
     .getByRole("button", {

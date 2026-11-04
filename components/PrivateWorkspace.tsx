@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Header } from "./Header";
 import { ListingForm } from "./ListingForm";
 import { useI18n, usePageTitle } from "./I18nProvider";
@@ -14,6 +14,7 @@ export function PrivateWorkspace() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const preserve = useRef<(() => Promise<boolean>) | null>(null);
   useEffect(() => {
     let active = true;
     privateRequest("session")
@@ -69,6 +70,16 @@ export function PrivateWorkspace() {
     setBusy(true);
     setError("");
     try {
+      if (preserve.current && !(await preserve.current())) {
+        if (
+          !window.confirm(
+            t(
+              "Hay una operación en curso o no se pudo conservar la captura. Si cierras sesión puedes perder los últimos cambios. ¿Cerrar de todos modos?",
+            ),
+          )
+        )
+          return;
+      }
       await privateRequest("logout", { method: "POST" });
       setState("login");
       try {
@@ -158,7 +169,14 @@ export function PrivateWorkspace() {
                 {t("Cerrar sesión")}
               </button>
             </div>
-            <ListingForm storage="shared" />
+            <div inert={busy}>
+              <ListingForm
+                storage="shared"
+                registerPreserve={(callback) => {
+                  preserve.current = callback;
+                }}
+              />
+            </div>
           </>
         )}
       </main>

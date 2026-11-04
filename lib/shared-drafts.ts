@@ -6,9 +6,11 @@ export class SharedAccessError extends Error {
   }
 }
 const messages: Record<string, string> = {
-  geocoder: "La búsqueda no está disponible. Ajusta el punto en el mapa o escribe las coordenadas; tu captura se conserva.",
+  geocoder:
+    "La búsqueda no está disponible. Ajusta el punto en el mapa o escribe las coordenadas; tu captura se conserva.",
   search_limited: "Espera unos segundos antes de buscar otra dirección.",
-  location_review: "Revisa y guarda la ubicación del borrador antes de publicar.",
+  location_review:
+    "Revisa y guarda la ubicación del borrador antes de publicar.",
   unauthorized:
     "Tu sesión privada expiró. Inicia sesión en otra pestaña y vuelve a guardar; la captura permanece aquí.",
   not_configured: "El área privada aún no está configurada.",
@@ -53,11 +55,15 @@ type RemoteMedia = {
   url: string;
   hotspots?: ListingDraft["scenes"][number]["hotspots"];
 };
-type RemoteDraft = Omit<ListingDraft, "photos" | "scenes"> & {
-  photos: RemoteMedia[];
-  scenes: RemoteMedia[];
-  sharedRevision: number;
-};
+type Remote<T> = T extends unknown
+  ? Omit<T, "photos" | "scenes"> & {
+      photos: RemoteMedia[];
+      scenes: RemoteMedia[];
+      sharedRevision: number;
+      publishedRevision?: number | null;
+    }
+  : never;
+export type RemoteDraft = Remote<ListingDraft>;
 async function hydrate(draft: RemoteDraft): Promise<ListingDraft> {
   const blob = async (asset: RemoteMedia) => {
     if (!asset.url.startsWith(`/api/private/media/${draft.id}/`))
@@ -114,6 +120,26 @@ export async function deleteSharedDraft(id: string, revision: number) {
   });
 }
 
-export async function publishSharedDraft(id: string, revision: number, publish: boolean) {
-  await privateRequest(`publication/${id}`, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({revision, publish})});
+export async function publishSharedDraft(
+  id: string,
+  revision: number,
+  publish: boolean,
+) {
+  await privateRequest(`publication/${id}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ revision, publish }),
+  });
+}
+
+export async function getSharedDraftSummaries(): Promise<RemoteDraft[]> {
+  return (await (await privateRequest("drafts")).json()).drafts;
+}
+export async function loadSharedDraft(
+  draft: RemoteDraft | ListingDraft,
+): Promise<ListingDraft> {
+  if (draft.photos[0] && "blob" in draft.photos[0])
+    return draft as ListingDraft;
+  const data = await (await privateRequest(`drafts/${draft.id}`)).json();
+  return hydrate(data.draft);
 }

@@ -70,6 +70,8 @@ test("a failed transaction keeps text and photos and can be retried", async ({
     IDBObjectStore.prototype.put = function (
       ...args: Parameters<IDBObjectStore["put"]>
     ) {
+      if (this.transaction.db.name !== "home-view-listing-drafts")
+        return original.apply(this, args);
       IDBObjectStore.prototype.put = original;
       const request = original.apply(this, args);
       this.transaction.abort();
@@ -108,6 +110,8 @@ test("a failed read-back retains capture and retry updates the same committed id
   await page.evaluate(() => {
     const original = IDBObjectStore.prototype.get;
     IDBObjectStore.prototype.get = function (key: IDBValidKey | IDBKeyRange) {
+      if (this.transaction.db.name !== "home-view-listing-drafts")
+        return original.call(this, key);
       IDBObjectStore.prototype.get = original;
       const request = original.call(this, key);
       this.transaction.abort();

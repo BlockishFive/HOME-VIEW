@@ -339,6 +339,12 @@ export async function privateHandler(
     }
     if (path === "drafts" && method === "GET")
       return json({ drafts: listDrafts() });
+    if (segments[0] === "drafts" && segments.length === 2 && method === "GET") {
+      checkId(segments[1]);
+      const draft = listDrafts().find((draft) => draft.id === segments[1]);
+      if (!draft) throw new PrivateError("not_found", 404);
+      return json({ draft });
+    }
     if (path === "drafts" && method === "PUT")
       return json({ draft: await upload(request) });
     if (

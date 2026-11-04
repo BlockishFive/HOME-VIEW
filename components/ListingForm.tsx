@@ -1,9 +1,18 @@
 "use client";
 import Link from "next/link";
+import { useCaptureAutosave } from "./useCaptureAutosave";
+import {
+  captureFingerprint,
+  initialCaptureValues,
+  type CaptureContent,
+  type CaptureSummary,
+} from "@/lib/capture-store";
 import { LocationPicker } from "./LocationPicker";
 import type { PublicLocation } from "@/lib/location";
 import {
-  getSharedDrafts,
+  getSharedDraftSummaries,
+  loadSharedDraft,
+  type RemoteDraft,
   saveSharedDraft,
   deleteSharedDraft,
   publishSharedDraft,
@@ -36,23 +45,7 @@ import { TermsDetails } from "./PropertyCosts";
 import { ListingTermsFields } from "./ListingTermsFields";
 import { DraftTourEditor, DraftTourSavedPreview } from "./DraftTourEditor";
 import { validateDraftScenes, type DraftScene } from "@/lib/draft-tour";
-const initial = {
-  title: "",
-  operation: "Renta" as ListingOperation,
-  propertyType: "Casa" as ListingKind,
-  rentPrice: "",
-  salePrice: "",
-  description: "",
-  state: "Guanajuato",
-  city: "León",
-  neighborhood: "",
-  area: "",
-  beds: "",
-  baths: "",
-  latitude: "21.122",
-  longitude: "-101.686",
-  imageRights: false,
-};
+const initial = initialCaptureValues;
 function numberOrNull(value: string) {
   return value.trim() === "" ? null : Number(value);
 }
@@ -174,8 +167,10 @@ async function exportDraft(draft: ListingDraft) {
 }
 export function ListingForm({
   storage = "local",
+  registerPreserve,
 }: {
   storage?: "local" | "shared";
+  registerPreserve?: (preserve: (() => Promise<boolean>) | null) => void;
 }) {
   const shared = storage === "shared";
   const sharedRevision = useRef(0);
@@ -184,11 +179,11 @@ export function ListingForm({
     id: string;
     message: string;
   } | null>(null);
-  const revisionOf = (draft: ListingDraft) =>
+  const revisionOf = (draft: ListingDraft | RemoteDraft) =>
     "sharedRevision" in draft && typeof draft.sharedRevision === "number"
       ? draft.sharedRevision
       : 0;
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   function localizeMessage(message: string) {
     const photoError = message.match(/^No se pudo leer (.+): (.*)$/);
     return photoError
@@ -201,8 +196,9 @@ export function ListingForm({
   const formId = useId();
   const fieldId = (name: string) => `${formId}-${name}`;
   const [values, setValues] = useState(initial);
-  const [publicLocation,setPublicLocation] = useState<PublicLocation>("approximate");
-  const [locationReviewed,setLocationReviewed] = useState(false);
+  const [publicLocation, setPublicLocation] =
+    useState<PublicLocation>("approximate");
+  const [locationReviewed, setLocationReviewed] = useState(false);
   const [rental, setRental] = useState<RentalTerms>(defaultRentalTerms);
   const [sale, setSale] = useState<SaleTerms>({
     purchasePrice: null,
@@ -212,22 +208,205 @@ export function ListingForm({
     useState<Maintenance>(defaultMaintenance);
   const [community, setCommunity] = useState<Community>("unknown");
   const [scenes, setScenes] = useState<DraftScene[]>([]);
-  const [editing, setEditing] = useState<ListingDraft | null>(null);
+  const [editing, setEditing] = useState<Pick<
+    ListingDraft,
+    "id" | "title"
+  > | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
   const identity = useRef<{ id: string; createdAt: string } | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [photos, setPhotos] = useState<DraftPhoto[]>([]);
-  const [drafts, setDrafts] = useState<ListingDraft[]>([]);
+  const [drafts, setDrafts] = useState<(ListingDraft | RemoteDraft)[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
   const [storageError, setStorageError] = useState("");
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [loadingMediaId, setLoadingMediaId] = useState<string | null>(null);
+  const savedListRef = useRef<HTMLElement>(null);
+  const [online, setOnline] = useState(true);
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    update();
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
+  const [editorOpen, setEditorOpen] = useState(!shared);
+  const [query, setQuery] = useState("");
+  const [expandedDrafts, setExpandedDrafts] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [statusFilter, setStatusFilter] = useState("all");
+  const content: CaptureContent = {
+    values,
+    rental,
+    sale,
+    maintenance,
+    community,
+    publicLocation,
+    locationReviewed,
+    photos,
+    scenes,
+  };
+  const contentRef = useRef(content);
+  contentRef.current = content;
+  const autosave = useCaptureAutosave(content, storage, editorOpen, () => {
+    identity.current ??= {
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+    };
+    return {
+      identity: identity.current,
+      sharedRevision: sharedRevision.current,
+      editingTitle: editing?.title,
+    };
+  });
+  useEffect(() => {
+    if (!registerPreserve) return;
+    registerPreserve(() => (busy ? Promise.resolve(false) : autosave.flush()));
+    return () => registerPreserve(null);
+  }, [registerPreserve, autosave.flush, busy]);
+  const publicationState = (draft: ListingDraft | RemoteDraft) =>
+    !("publishedRevision" in draft && draft.publishedRevision)
+      ? "draft"
+      : draft.publishedRevision === revisionOf(draft)
+        ? "published"
+        : "changes";
+  const searchText = (text: string) =>
+    text
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+  const visibleDrafts = drafts.filter(
+    (draft) =>
+      (statusFilter === "all" || publicationState(draft) === statusFilter) &&
+      searchText(
+        `${draft.title} ${draft.city} ${draft.neighborhood} ${draft.operation}`,
+      ).includes(searchText(query.trim())),
+  );
+  function applyCapture(next: CaptureContent) {
+    setValues(next.values);
+    setRental(next.rental);
+    setSale(next.sale);
+    setMaintenance(next.maintenance);
+    setCommunity(next.community);
+    setPublicLocation(next.publicLocation);
+    setLocationReviewed(next.locationReviewed);
+    setPhotos(next.photos);
+    setScenes(next.scenes);
+    setErrors({});
+    setSavedId(null);
+    setMessage("");
+  }
+  async function recoverCapture(id: string) {
+    setBusy(true);
+    try {
+      const capture = await autosave.restore(id);
+      if (!capture) return;
+      identity.current = capture.identity;
+      sharedRevision.current = capture.sharedRevision;
+      setEditing(
+        capture.editingTitle
+          ? { id: capture.identity.id, title: capture.editingTitle }
+          : null,
+      );
+      applyCapture(capture.content);
+      setEditorOpen(true);
+      requestAnimationFrame(() =>
+        formRef.current?.scrollIntoView({ block: "start" }),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function closeEditor() {
+    setBusy(true);
+    try {
+      if (await autosave.flush()) {
+        setEditorOpen(false);
+        document
+          .getElementById("saved-title")
+          ?.scrollIntoView({ block: "start" });
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function discardCapture(row: CaptureSummary) {
+    if (
+      !window.confirm(
+        t(
+          "¿Descartar esta captura automática del dispositivo? No se eliminará ninguna propiedad del servidor.",
+        ),
+      )
+    )
+      return;
+    setBusy(true);
+    try {
+      if (await autosave.discard(row))
+        if (row.id === autosave.activeId) {
+          await resetEditor();
+          setEditorOpen(!shared);
+        }
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function forkCapture() {
+    setBusy(true);
+    try {
+      await autosave.fork();
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function expand(draft: ListingDraft | RemoteDraft) {
+    setLoadingMediaId(draft.id);
+    setBusy(true);
+    setStorageError("");
+    try {
+      const full = await loadSharedDraft(draft);
+      setDrafts((rows) => rows.map((row) => (row.id === full.id ? full : row)));
+    } catch (error) {
+      setStorageError(storageMessage(error));
+    } finally {
+      setBusy(false);
+      setLoadingMediaId(null);
+    }
+  }
+  async function beginEdit(draft: ListingDraft | RemoteDraft) {
+    setBusy(true);
+    try {
+      await edit(
+        shared ? await loadSharedDraft(draft) : (draft as ListingDraft),
+      );
+    } catch (error) {
+      setStorageError(storageMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function download(draft: ListingDraft | RemoteDraft) {
+    setBusy(true);
+    try {
+      await exportDraft(
+        shared ? await loadSharedDraft(draft) : (draft as ListingDraft),
+      );
+    } catch (error) {
+      setStorageError(storageMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  }
   const fileInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     let active = true;
-    (shared ? getSharedDrafts() : getListingDrafts())
+    (shared ? getSharedDraftSummaries() : getListingDrafts())
       .then((result) => {
         if (active) setDrafts(result);
       })
@@ -258,7 +437,6 @@ export function ListingForm({
     const selected = Array.from(files);
     const error = validatePhotoFiles(selected);
     if (error) {
-      setPhotos([]);
       setErrors((previous) => ({ ...previous, photos: error }));
       return;
     }
@@ -270,7 +448,6 @@ export function ListingForm({
       setPhotos(prepared);
       setErrors((previous) => ({ ...previous, photos: "" }));
     } catch (error) {
-      setPhotos([]);
       setErrors((previous) => ({ ...previous, photos: storageMessage(error) }));
     } finally {
       setBusy(false);
@@ -301,7 +478,8 @@ export function ListingForm({
       maintenance,
       community,
       area: Number(values.area),
-      publicLocation, locationReviewed,
+      publicLocation,
+      locationReviewed,
       latitude: Number(values.latitude),
       longitude: Number(values.longitude),
       beds: numberOrNull(values.beds),
@@ -325,8 +503,10 @@ export function ListingForm({
       });
       return;
     }
+    const submittedSignature = captureFingerprint(contentRef.current);
     setBusy(true);
     try {
+      await autosave.flush();
       identity.current ??= {
         id: crypto.randomUUID(),
         createdAt: new Date().toISOString(),
@@ -346,10 +526,17 @@ export function ListingForm({
         Object.assign(draft, { sharedRevision: revision });
       } else await saveListingDraft(draft);
       setDrafts((previous) => [
-        Object.assign(draft, { publishedRevision: (previous.find(item => item.id === draft.id) as ListingDraft & {publishedRevision?: number})?.publishedRevision }),
+        Object.assign(draft, {
+          publishedRevision: (
+            previous.find((item) => item.id === draft.id) as ListingDraft & {
+              publishedRevision?: number;
+            }
+          )?.publishedRevision,
+        }),
         ...previous.filter((item) => item.id !== draft.id),
       ]);
-      setEditing(draft);
+      setEditing({ id: draft.id, title: draft.title });
+      await autosave.confirmed(submittedSignature);
       setSavedId(draft.id);
       setStorageError("");
       setMessage(
@@ -366,13 +553,14 @@ export function ListingForm({
       );
     }
   }
-  function resetEditor() {
+  function resetValues() {
     sharedRevision.current = 0;
     identity.current = null;
     setSavedId(null);
     setMessage("");
     setValues(initial);
-    setPublicLocation("approximate");setLocationReviewed(false);
+    setPublicLocation("approximate");
+    setLocationReviewed(false);
     setRental(defaultRentalTerms());
     setSale({ purchasePrice: null, annualTax: null });
     setMaintenance(defaultMaintenance());
@@ -383,8 +571,75 @@ export function ListingForm({
     setErrors({});
     if (fileInput.current) fileInput.current.value = "";
   }
-  function edit(draft: ListingDraft) {
-    setPublicLocation(draft.publicLocation ?? "approximate");setLocationReviewed(draft.locationReviewed === true);
+  function contentOf(draft: ListingDraft): CaptureContent {
+    return {
+      values: {
+        ...initial,
+        title: draft.title,
+        operation: draft.operation,
+        propertyType: draft.propertyType,
+        rentPrice:
+          draft.operation === "Renta"
+            ? String(draft.rental.monthlyRent ?? "")
+            : "",
+        salePrice:
+          draft.operation === "Venta"
+            ? String(draft.sale.purchasePrice ?? "")
+            : "",
+        description: draft.description,
+        state: draft.state,
+        city: draft.city,
+        neighborhood: draft.neighborhood,
+        area: String(draft.area),
+        beds: String(draft.beds ?? ""),
+        baths: String(draft.baths ?? ""),
+        latitude: String(draft.latitude),
+        longitude: String(draft.longitude),
+        imageRights: draft.imageRights,
+      },
+      rental: draft.operation === "Renta" ? draft.rental : defaultRentalTerms(),
+      sale:
+        draft.operation === "Venta"
+          ? draft.sale
+          : { purchasePrice: null, annualTax: null },
+      maintenance: draft.maintenance,
+      community: draft.community,
+      publicLocation: draft.publicLocation ?? "approximate",
+      locationReviewed: draft.locationReviewed === true,
+      photos: draft.photos,
+      scenes: draft.scenes,
+    };
+  }
+  async function resetEditor() {
+    const next = {
+      ...contentRef.current,
+      values: initial,
+      rental: defaultRentalTerms(),
+      sale: { purchasePrice: null, annualTax: null },
+      maintenance: defaultMaintenance(),
+      community: "unknown" as const,
+      publicLocation: "approximate" as const,
+      locationReviewed: false,
+      photos: [],
+      scenes: [],
+    };
+    setBusy(true);
+    try {
+      if (!(await autosave.begin(next))) return;
+      resetValues();
+      setEditorOpen(true);
+      requestAnimationFrame(() =>
+        formRef.current?.scrollIntoView({ block: "start" }),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function edit(draft: ListingDraft) {
+    if (!(await autosave.begin(contentOf(draft)))) return;
+    setEditorOpen(true);
+    setPublicLocation(draft.publicLocation ?? "approximate");
+    setLocationReviewed(draft.locationReviewed === true);
     sharedRevision.current = revisionOf(draft);
     identity.current = { id: draft.id, createdAt: draft.createdAt };
     setSavedId(null);
@@ -428,9 +683,13 @@ export function ListingForm({
     setErrors({});
     setMessage(
       draft.migrationNote ||
-        "Editando un borrador local. Guarda para conservar los cambios.",
+        (shared
+          ? "Editando un borrador privado. Guarda para enviar los cambios; publicar es una acción independiente."
+          : "Editando un borrador local. Guarda para conservar los cambios."),
     );
-    formRef.current?.scrollIntoView({ behavior: "smooth" });
+    requestAnimationFrame(() =>
+      formRef.current?.scrollIntoView({ behavior: "smooth" }),
+    );
   }
   async function remove(id: string) {
     setBusy(true);
@@ -442,7 +701,10 @@ export function ListingForm({
         );
       else await deleteListingDraft(id);
       setDrafts((previous) => previous.filter((draft) => draft.id !== id));
-      if (editing?.id === id) resetEditor();
+      if (editing?.id === id) {
+        await resetEditor();
+        if (shared) setEditorOpen(false);
+      }
       setMessage(
         shared
           ? "Borrador eliminado del servidor privado."
@@ -454,11 +716,19 @@ export function ListingForm({
       setBusy(false);
     }
   }
+  function replaceShared(rows: RemoteDraft[]) {
+    savedListRef.current
+      ?.querySelectorAll<HTMLDetailsElement>("details")
+      .forEach((details) => {
+        details.open = false;
+      });
+    setDrafts(rows);
+  }
   async function refreshShared() {
     setBusy(true);
     setStorageError("");
     try {
-      setDrafts(await getSharedDrafts());
+      replaceShared(await getSharedDraftSummaries());
       setMessage(
         "Lista privada actualizada. La captura en curso permanece en el formulario.",
       );
@@ -468,18 +738,32 @@ export function ListingForm({
       setBusy(false);
     }
   }
-  async function publish(draft: ListingDraft, enabled: boolean) {
-    if (!window.confirm(t(enabled
-      ? "Se publicará la versión guardada: descripción, precios, condiciones, ubicación, fotos y panoramas serán visibles para cualquiera con acceso al sitio. Confirma que tienes autorización y que no contienen datos personales. Los cambios sin guardar no se publican. ¿Publicar?"
-      : "¿Retirar esta propiedad del catálogo público? El borrador privado se conservará."))) return;
+  async function publish(draft: ListingDraft | RemoteDraft, enabled: boolean) {
+    if (
+      !window.confirm(
+        t(
+          enabled
+            ? "Se publicará la versión guardada: descripción, precios, condiciones, ubicación, fotos y panoramas serán visibles para cualquiera con acceso al sitio. Confirma que tienes autorización y que no contienen datos personales. Los cambios sin guardar no se publican. ¿Publicar?"
+            : "¿Retirar esta propiedad del catálogo público? El borrador privado se conservará.",
+        ),
+      )
+    )
+      return;
     setBusy(true);
     setStorageError("");
     try {
       await publishSharedDraft(draft.id, revisionOf(draft), enabled);
-      setDrafts(await getSharedDrafts());
-      setMessage(enabled ? "Propiedad publicada. Abre el catálogo para verla." : "Propiedad retirada. Se conserva el borrador privado.");
-    } catch (error) { setStorageError(storageMessage(error)); }
-    finally { setBusy(false); }
+      replaceShared(await getSharedDraftSummaries());
+      setMessage(
+        enabled
+          ? "Propiedad publicada. Abre el catálogo para verla."
+          : "Propiedad retirada. Se conserva el borrador privado.",
+      );
+    } catch (error) {
+      setStorageError(storageMessage(error));
+    } finally {
+      setBusy(false);
+    }
   }
   async function copyToPrivate(draft: ListingDraft) {
     setBusy(true);
@@ -533,6 +817,287 @@ export function ListingForm({
       </label>
     );
   }
+  const savedSection = (
+    <section
+      ref={savedListRef}
+      className="listing-saved"
+      aria-labelledby="saved-title"
+    >
+      <h2 id="saved-title">
+        {t(shared ? "Mis borradores privados" : "Mis borradores locales")}
+      </h2>
+      <p className="listing-help">
+        {t(
+          shared
+            ? "Guardar no publica. Usa Publicar propiedad para compartir una versión en el catálogo; puedes retirarla cuando quieras."
+            : "Estos anuncios no están publicados. Quien use este navegador en este dispositivo podría acceder a ellos.",
+        )}
+      </p>
+      {shared && (
+        <div className="dashboard-controls">
+          <label className="listing-field">
+            <span>{t("Buscar mis propiedades")}</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </label>
+          <label className="listing-field">
+            <span>{t("Estado de publicación")}</span>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+            >
+              <option value="all">{t("Todas mis propiedades")}</option>
+              <option value="draft">{t("Borradores")}</option>
+              <option value="published">{t("Publicadas")}</option>
+              <option value="changes">{t("Cambios pendientes")}</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            className="button button-dark"
+            disabled={busy || !autosave.ready}
+            onClick={() => void resetEditor()}
+          >
+            {t("Nueva propiedad")}
+          </button>
+        </div>
+      )}
+      {shared && !editorOpen && storageError && (
+        <p className="listing-error" role="alert">
+          {t(storageError)}
+        </p>
+      )}
+      {shared && !editorOpen && message && <p role="status">{t(message)}</p>}
+      {!loaded ? (
+        <p role="status">{t("Leyendo borradores…")}</p>
+      ) : drafts.length === 0 ? (
+        <p className="listing-empty">
+          {t(
+            shared
+              ? "Todavía no hay borradores en el servidor privado."
+              : "Todavía no has guardado borradores en este navegador.",
+          )}
+        </p>
+      ) : visibleDrafts.length === 0 ? (
+        <p>{t("No hay propiedades con esos filtros.")}</p>
+      ) : (
+        visibleDrafts.map((draft) => (
+          <article
+            key={draft.id}
+            id={`draft-${draft.id}`}
+            tabIndex={-1}
+            className="draft-card"
+          >
+            <div className="draft-card-heading">
+              <div>
+                <span className="draft-status">
+                  {t(
+                    shared
+                      ? "publishedRevision" in draft && draft.publishedRevision
+                        ? draft.publishedRevision === revisionOf(draft)
+                          ? "Publicado"
+                          : "Publicado · Cambios pendientes de publicar"
+                        : "Borrador privado · No publicado"
+                      : "Borrador local · No publicado",
+                  )}
+                </span>
+                <h3>{draft.title}</h3>
+                <p>
+                  {t(draft.propertyType)} · {t(draft.operation)} ·{" "}
+                  {draft.operation === "Renta"
+                    ? t("Renta mensual")
+                    : t("Precio de compra")}
+                </p>
+              </div>
+              <div className="draft-actions">
+                {shared && (
+                  <>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void publish(draft, true)}
+                    >
+                      {t(
+                        "publishedRevision" in draft && draft.publishedRevision
+                          ? "Actualizar publicación"
+                          : "Publicar propiedad",
+                      )}
+                    </button>
+                    {"publishedRevision" in draft &&
+                      !!draft.publishedRevision && (
+                        <>
+                          <Link
+                            href={`/propiedades/anuncio-${draft.id}`}
+                            target="_blank"
+                            rel="noopener"
+                          >
+                            {t("Ver publicación")}
+                          </Link>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void publish(draft, false)}
+                          >
+                            {t("Retirar publicación")}
+                          </button>
+                        </>
+                      )}
+                  </>
+                )}
+                {!shared && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void copyToPrivate(draft as ListingDraft)}
+                  >
+                    {t("Copiar al área privada")}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void beginEdit(draft)}
+                >
+                  {t("Editar borrador")}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void download(draft)}
+                >
+                  {t("Descargar respaldo")}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void remove(draft.id)}
+                >
+                  {t("Eliminar borrador")}
+                </button>
+              </div>
+            </div>
+            {copied === draft.id && (
+              <p role="status">
+                {t(
+                  "Copia guardada en el servidor privado. El original sigue en este navegador.",
+                )}{" "}
+                <Link href="/privado">{t("Ver área privada")}</Link>
+              </p>
+            )}
+            {copyError?.id === draft.id && (
+              <p className="listing-error" role="alert">
+                {t(copyError.message)}{" "}
+                <Link href="/privado" target="_blank" rel="noopener">
+                  {t("Abrir área privada")}
+                </Link>
+              </p>
+            )}
+            {shared && (
+              <p className="dashboard-meta">
+                {t("{photos} fotos · {scenes} escenas 360", {
+                  photos: draft.photos.length,
+                  scenes: draft.scenes.length,
+                })}
+              </p>
+            )}
+            {shared &&
+              draft.photos[0] &&
+              ("url" in draft.photos[0] ? (
+                <img
+                  className="dashboard-cover"
+                  src={draft.photos[0].url}
+                  alt={draft.title}
+                  loading="lazy"
+                />
+              ) : (
+                <div className="dashboard-cover">
+                  <PhotoPreview photo={draft.photos[0]} label={draft.title} />
+                </div>
+              ))}
+            <details
+              className="draft-details"
+              open={shared ? undefined : true}
+              onToggle={(event) => {
+                const open = event.currentTarget.open;
+                if (shared)
+                  setExpandedDrafts((previous) => {
+                    const next = new Set(previous);
+                    if (open) next.add(draft.id);
+                    else next.delete(draft.id);
+                    return next;
+                  });
+                if (
+                  shared &&
+                  event.currentTarget.open &&
+                  draft.photos[0] &&
+                  "url" in draft.photos[0]
+                )
+                  void expand(draft);
+              }}
+            >
+              <summary hidden={!shared}>
+                {shared ? t("Ver detalles y medios") : null}
+              </summary>
+              {(!shared || expandedDrafts.has(draft.id)) && (
+                <>
+                  {loadingMediaId === draft.id && (
+                    <p role="status">{t("Cargando fotos y escenas…")}</p>
+                  )}
+                  <p>
+                    {draft.city}, {draft.state} · {draft.neighborhood}
+                  </p>
+                  {draft.migrationNote && (
+                    <p className="listing-help">{t(draft.migrationNote)}</p>
+                  )}
+                  <p className="draft-description">{draft.description}</p>
+                  <TermsDetails terms={draft} />
+
+                  <div className="draft-photo-grid">
+                    {draft.photos
+                      .filter((photo): photo is DraftPhoto => "blob" in photo)
+                      .map((photo, i) => (
+                        <PhotoPreview
+                          key={photo.id}
+                          photo={photo}
+                          label={t("Fotografía {number} de {title}", {
+                            number: i + 1,
+                            title: draft.title,
+                          })}
+                        />
+                      ))}
+                  </div>
+                  {draft.scenes.length > 0 && (
+                    <DraftTourSavedPreview
+                      scenes={draft.scenes.filter(
+                        (scene): scene is DraftScene => "blob" in scene,
+                      )}
+                      shared={shared}
+                    />
+                  )}
+                  <p className="draft-no-tour">
+                    {draft.propertyType === "Terreno"
+                      ? t("Terreno: ficha y fotografías, sin recorrido 360.")
+                      : draft.scenes.length
+                        ? t(
+                            shared
+                              ? "Vista del recorrido guardado. Publica o actualiza la publicación para compartirlo."
+                              : "Recorrido 360 local con conexiones manuales; no publicado.",
+                          )
+                        : t(
+                            "Galería de fotos normales. Este borrador no tiene recorrido 360.",
+                          )}
+                  </p>
+                </>
+              )}
+            </details>
+          </article>
+        ))
+      )}
+    </section>
+  );
   return (
     <div className="listing-workspace">
       <div className="listing-local-notice">
@@ -578,457 +1143,476 @@ export function ListingForm({
           </button>
         )}
       </div>
-      <form
-        ref={formRef}
-        className="listing-form"
-        onSubmit={submit}
-        onChange={() => {
-          setMessage("");
-          setSavedId(null);
-        }}
-        noValidate
-      >
-        {editing && (
-          <div className="listing-local-notice">
-            <strong>{t("Editando: {title}", { title: editing.title })}</strong>
-            <button type="button" disabled={busy} onClick={resetEditor}>
-              {t("Cancelar edición")}
-            </button>
-          </div>
-        )}
-        {Object.values(errors).some(Boolean) && (
-          <div className="listing-error" role="alert" aria-atomic="true">
-            <strong>{t("Revisa la información del borrador.")}</strong>
-            <ul>
-              {Object.entries(errors)
-                .filter(([, error]) => Boolean(error))
-                .map(([name, error]) => (
-                  <li key={name}>
-                    <a
-                      href={`#${fieldId(name)}`}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        document.getElementById(fieldId(name))?.focus();
-                      }}
-                    >
-                      {localizeMessage(error)}
-                    </a>
-                  </li>
-                ))}
-            </ul>
-          </div>
-        )}
-        <fieldset disabled={busy || !loaded}>
-          <legend>{t("Datos del inmueble")}</legend>
-          <div className="listing-field-grid">
-            <label className="listing-field">
-              <span id={`${fieldId("operation")}-label`}>{t("Operación")}</span>
-              <select
-                id={fieldId("operation")}
-                aria-labelledby={`${fieldId("operation")}-label`}
-                aria-invalid={!!errors.operation}
-                value={values.operation}
-                onChange={(event) => change("operation", event.target.value)}
-              >
-                <option value="Renta">{t("Renta")}</option>
-                <option value="Venta">{t("Venta")}</option>
-              </select>
-            </label>
-            <label className="listing-field">
-              <span id={`${fieldId("propertyType")}-label`}>
-                {t("Tipo de inmueble")}
-              </span>
-              <select
-                id={fieldId("propertyType")}
-                aria-labelledby={`${fieldId("propertyType")}-label`}
-                aria-invalid={!!errors.propertyType}
-                value={values.propertyType}
-                onChange={(event) => change("propertyType", event.target.value)}
-              >
-                <option value="Casa">{t("Casa")}</option>
-                <option value="Departamento">{t("Departamento")}</option>
-                <option value="Terreno">{t("Terreno")}</option>
-              </select>
-            </label>
-            {field("title", "Título del anuncio")}
-            {field(
-              values.operation === "Renta" ? "rentPrice" : "salePrice",
-              values.operation === "Renta"
-                ? "Renta mensual (MXN)"
-                : "Precio de venta (MXN)",
-              "number",
-            )}
-            {field(
-              "area",
-              values.propertyType === "Terreno"
-                ? "Superficie del terreno (m²)"
-                : "Superficie construida (m²)",
-              "number",
-            )}
-            {values.propertyType !== "Terreno" && (
-              <>
-                {field("beds", "Recámaras (opcional)", "number")}
-                {field("baths", "Baños (opcional)", "number")}
-              </>
-            )}
-          </div>
-          <ListingTermsFields
-            fieldId={fieldId}
-            operation={values.operation}
-            rental={rental}
-            sale={sale}
-            maintenance={maintenance}
-            community={community}
-            onRental={setRental}
-            onSale={setSale}
-            onMaintenance={setMaintenance}
-            onCommunity={setCommunity}
-            errors={errors}
-          />
-          <div
-            className="draft-terms-preview"
-            aria-label={t("Vista previa de costos")}
+      {shared && savedSection}
+      {(!shared ||
+        editorOpen ||
+        autosave.captures.length > 0 ||
+        autosave.error) && (
+        <section
+          id="capture-recovery"
+          className="capture-recovery"
+          aria-label={t("Capturas en este dispositivo")}
+        >
+          <h2>{t("Capturas en este dispositivo")}</h2>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void autosave.reload()}
           >
-            <TermsDetails
-              terms={
-                values.operation === "Renta"
-                  ? {
-                      operation: "Renta",
-                      rental: {
-                        ...rental,
-                        monthlyRent: values.rentPrice.trim()
-                          ? Number(values.rentPrice)
-                          : null,
-                      },
-                      maintenance,
-                      community,
-                    }
-                  : {
-                      operation: "Venta",
-                      sale: {
-                        ...sale,
-                        purchasePrice: values.salePrice.trim()
-                          ? Number(values.salePrice)
-                          : null,
-                      },
-                      maintenance,
-                      community,
-                    }
-              }
-            />
-          </div>
-          <label className="listing-field">
-            <span id={`${fieldId("description")}-label`}>
-              {t("Descripción")}
-            </span>
-            <textarea
-              id={fieldId("description")}
-              aria-labelledby={`${fieldId("description")}-label`}
-              value={values.description}
-              onChange={(event) => change("description", event.target.value)}
-              rows={5}
-              aria-invalid={!!errors.description}
-              aria-describedby={
-                errors.description ? "error-description" : undefined
-              }
-            />
-            {errors.description && (
-              <span className="listing-field-error" id="error-description">
-                {localizeMessage(errors.description)}
-              </span>
-            )}
-          </label>
-          <h2>{t("Ubicación privada y pública")}</h2>
+            {t("Actualizar capturas del dispositivo")}
+          </button>
           <p className="listing-help">
             {t(
-              "El punto inicial es el centro de León: ajústalo a tu inmueble. Guarda el punto privado y elige por separado qué precisión tendrá el anuncio público. Usa solo referencias autorizadas en la colonia y la descripción.",
+              "El guardado automático conserva campos incompletos, fotos y escenas en este navegador, incluso tras cerrar sesión. No los envía ni publica. En un dispositivo compartido descarta las capturas al terminar.",
             )}
           </p>
-          <div className="listing-field-grid">
-            {field("state", "Estado")}
-            {field("city", "Ciudad / municipio")}
-            {field("neighborhood", "Colonia / zona")}
-            {field("latitude", "Latitud del punto privado", "number")}
-            {field("longitude", "Longitud del punto privado", "number")}
-          </div>
-          <LocationPicker point={{lat:Number(values.latitude),lng:Number(values.longitude)}}
-            onChange={point=>{setValues(previous=>({...previous,latitude:String(point.lat),longitude:String(point.lng)}));setLocationReviewed(false);setMessage("");setSavedId(null);}}
-            precision={publicLocation} onPrecision={value=>{setPublicLocation(value);setLocationReviewed(false);setMessage("");setSavedId(null);}}
-            reviewed={locationReviewed} onReviewed={value=>{setLocationReviewed(value);setMessage("");setSavedId(null);}}/>
-          <h2>{t("Fotografías autorizadas")}</h2>
-          <p className="listing-help">
-            {t(
-              "Hasta {count} fotos JPEG, PNG o WebP de 5 MB cada una. Se reducen de tamaño y se retiran los metadatos al prepararlas. Evita rostros, documentos y otros datos privados. Las fotos normales se muestran en galería; no se convierten en recorridos 360.",
-              { count: MAX_PHOTOS },
-            )}
-          </p>
-          <label className="listing-field">
-            <span id={`${fieldId("photos")}-label`}>
-              {t("Seleccionar fotografías")}
-            </span>
-            <input
-              id={fieldId("photos")}
-              aria-labelledby={`${fieldId("photos")}-label`}
-              aria-invalid={!!errors.photos}
-              ref={fileInput}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              onChange={(event) => void choosePhotos(event.target.files)}
-              aria-describedby={errors.photos ? "error-photos" : undefined}
-            />
-          </label>
-          {errors.photos && (
-            <p className="listing-field-error" id="error-photos">
-              {localizeMessage(errors.photos)}
+          {autosave.error && (
+            <p className="capture-error" role="alert">
+              {t(autosave.error)}{" "}
+              <button type="button" onClick={() => void autosave.flush()}>
+                {t("Reintentar guardado automático")}
+              </button>{" "}
+              {autosave.conflict && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void forkCapture()}
+                >
+                  {t("Guardar copia de recuperación")}
+                </button>
+              )}
             </p>
           )}
-          <div className="listing-photo-preview">
-            {photos.map((photo, i) => (
-              <PhotoPreview
-                key={photo.id}
-                photo={photo}
-                label={t("Foto seleccionada {number}", { number: i + 1 })}
-              />
-            ))}
-          </div>
-          {errors.scenes && (
-            <p id="error-scenes" className="listing-error" role="alert">
-              {localizeMessage(errors.scenes)}
-            </p>
-          )}
-          {values.propertyType !== "Terreno" && (
-            <div
-              id={fieldId("scenes")}
-              tabIndex={-1}
-              aria-invalid={!!errors.scenes}
-              aria-describedby={errors.scenes ? "error-scenes" : undefined}
-            >
-              <DraftTourEditor
-                shared={shared}
-                scenes={scenes}
-                onChange={setScenes}
+          {autosave.captures.map((row) => (
+            <div className="capture-recovery-row" key={row.id}>
+              <div>
+                <strong>{row.title || t("Captura sin título")}</strong>
+                <p>{t("Solo en este dispositivo · Pendiente de confirmar")}</p>
+                <time dateTime={row.updatedAt}>
+                  {t("Guardada en el dispositivo: {when}", {
+                    when: new Intl.DateTimeFormat(
+                      locale === "en" ? "en-US" : "es-MX",
+                      { dateStyle: "short", timeStyle: "short" },
+                    ).format(new Date(row.updatedAt)),
+                  })}
+                </time>
+                <small>
+                  {t("{photos} fotos · {scenes} escenas 360", {
+                    photos: row.photos,
+                    scenes: row.scenes,
+                  })}
+                </small>
+              </div>
+              <button
+                type="button"
+                disabled={busy || (editorOpen && autosave.activeId === row.id)}
+                onClick={() => void recoverCapture(row.id)}
+              >
+                {t("Continuar captura")}
+              </button>
+              <button
+                type="button"
                 disabled={busy}
-                onBusyChange={setBusy}
-              />
+                onClick={() => void discardCapture(row)}
+              >
+                {t("Descartar captura local")}
+              </button>
+            </div>
+          ))}
+          {autosave.ready &&
+            !autosave.error &&
+            autosave.captures.length === 0 && (
+              <p className="listing-help">
+                {t("No hay capturas pendientes en este navegador.")}
+              </p>
+            )}
+        </section>
+      )}
+      {editorOpen && (
+        <form
+          ref={formRef}
+          className="listing-form"
+          onSubmit={submit}
+          onChange={() => {
+            setMessage("");
+            setSavedId(null);
+          }}
+          noValidate
+        >
+          <div
+            className="capture-save-state"
+            data-save-state={autosave.status}
+            role="status"
+          >
+            {t(
+              autosave.status === "confirmed"
+                ? shared
+                  ? "Confirmado en el servidor"
+                  : "Borrador confirmado en este navegador"
+                : autosave.status === "device"
+                  ? shared
+                    ? "Guardado en este dispositivo · Pendiente de enviar al servidor"
+                    : "Guardado automático en este navegador · Pendiente de confirmar borrador"
+                  : autosave.status === "saving"
+                    ? "Guardando en este dispositivo…"
+                    : autosave.status === "waiting"
+                      ? "Cambios pendientes de guardar automáticamente"
+                      : autosave.status === "error"
+                        ? "Guardado automático con error"
+                        : "Guardado automático listo",
+            )}
+          </div>
+          {!online && (
+            <p className="capture-network">
+              {t(
+                "Sin conexión. Puedes seguir capturando en esta pantalla; el servidor no ha recibido estos cambios.",
+              )}
+            </p>
+          )}
+          {shared && (
+            <button
+              className="button button-dark"
+              type="button"
+              disabled={busy}
+              onClick={() => void closeEditor()}
+            >
+              {t("Volver a mis propiedades")}
+            </button>
+          )}
+          {editing && (
+            <div className="listing-local-notice">
+              <strong>
+                {t("Editando: {title}", { title: editing.title })}
+              </strong>
+              <button type="button" disabled={busy} onClick={resetEditor}>
+                {t("Cancelar edición")}
+              </button>
             </div>
           )}
-          <label className="listing-rights">
-            <input
-              id={fieldId("imageRights")}
-              aria-labelledby={`${fieldId("imageRights")}-label`}
-              aria-invalid={!!errors.imageRights}
-              type="checkbox"
-              checked={values.imageRights}
-              onChange={(event) => change("imageRights", event.target.checked)}
-              aria-describedby={errors.imageRights ? "error-rights" : undefined}
-            />
-            <span id={`${fieldId("imageRights")}-label`}>
-              {t(
-                "Tomé estas fotos y panoramas o tengo autorización para utilizarlos.",
-              )}
-            </span>
-          </label>
-          {errors.imageRights && (
-            <p className="listing-field-error" id="error-rights">
-              {localizeMessage(errors.imageRights)}
-            </p>
+          {Object.values(errors).some(Boolean) && (
+            <div className="listing-error" role="alert" aria-atomic="true">
+              <strong>{t("Revisa la información del borrador.")}</strong>
+              <ul>
+                {Object.entries(errors)
+                  .filter(([, error]) => Boolean(error))
+                  .map(([name, error]) => (
+                    <li key={name}>
+                      <a
+                        href={`#${fieldId(name)}`}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          document.getElementById(fieldId(name))?.focus();
+                        }}
+                      >
+                        {localizeMessage(error)}
+                      </a>
+                    </li>
+                  ))}
+              </ul>
+            </div>
           )}
-          <div
-            ref={feedbackRef}
-            className="draft-save-feedback"
-            aria-live="polite"
-          >
-            {storageError && (
-              <p className="listing-error" role="alert">
-                {localizeMessage(storageError)}{" "}
-                {t(
-                  "La captura permanece en el formulario. Intenta guardar otra vez sin borrar los datos del sitio.",
-                )}
-              </p>
-            )}
-            {message && (
-              <p className="listing-success" role="status">
-                {localizeMessage(message)}
-              </p>
-            )}
-            {savedId && (
-              <div className="draft-actions">
-                <a
-                  className="button button-dark"
-                  href={`#draft-${savedId}`}
-                  onClick={() =>
-                    window.requestAnimationFrame(() =>
-                      document.getElementById(`draft-${savedId}`)?.focus(),
-                    )
+          <fieldset disabled={busy || !loaded}>
+            <legend>{t("Datos del inmueble")}</legend>
+            <div className="listing-field-grid">
+              <label className="listing-field">
+                <span id={`${fieldId("operation")}-label`}>
+                  {t("Operación")}
+                </span>
+                <select
+                  id={fieldId("operation")}
+                  aria-labelledby={`${fieldId("operation")}-label`}
+                  aria-invalid={!!errors.operation}
+                  value={values.operation}
+                  onChange={(event) => change("operation", event.target.value)}
+                >
+                  <option value="Renta">{t("Renta")}</option>
+                  <option value="Venta">{t("Venta")}</option>
+                </select>
+              </label>
+              <label className="listing-field">
+                <span id={`${fieldId("propertyType")}-label`}>
+                  {t("Tipo de inmueble")}
+                </span>
+                <select
+                  id={fieldId("propertyType")}
+                  aria-labelledby={`${fieldId("propertyType")}-label`}
+                  aria-invalid={!!errors.propertyType}
+                  value={values.propertyType}
+                  onChange={(event) =>
+                    change("propertyType", event.target.value)
                   }
                 >
-                  {t("Ver el borrador guardado")}
-                </a>
-                <button type="button" disabled={busy} onClick={resetEditor}>
-                  {t("Crear otro borrador")}
-                </button>
+                  <option value="Casa">{t("Casa")}</option>
+                  <option value="Departamento">{t("Departamento")}</option>
+                  <option value="Terreno">{t("Terreno")}</option>
+                </select>
+              </label>
+              {field("title", "Título del anuncio")}
+              {field(
+                values.operation === "Renta" ? "rentPrice" : "salePrice",
+                values.operation === "Renta"
+                  ? "Renta mensual (MXN)"
+                  : "Precio de venta (MXN)",
+                "number",
+              )}
+              {field(
+                "area",
+                values.propertyType === "Terreno"
+                  ? "Superficie del terreno (m²)"
+                  : "Superficie construida (m²)",
+                "number",
+              )}
+              {values.propertyType !== "Terreno" && (
+                <>
+                  {field("beds", "Recámaras (opcional)", "number")}
+                  {field("baths", "Baños (opcional)", "number")}
+                </>
+              )}
+            </div>
+            <ListingTermsFields
+              fieldId={fieldId}
+              operation={values.operation}
+              rental={rental}
+              sale={sale}
+              maintenance={maintenance}
+              community={community}
+              onRental={setRental}
+              onSale={setSale}
+              onMaintenance={setMaintenance}
+              onCommunity={setCommunity}
+              errors={errors}
+            />
+            <div
+              className="draft-terms-preview"
+              aria-label={t("Vista previa de costos")}
+            >
+              <TermsDetails
+                terms={
+                  values.operation === "Renta"
+                    ? {
+                        operation: "Renta",
+                        rental: {
+                          ...rental,
+                          monthlyRent: values.rentPrice.trim()
+                            ? Number(values.rentPrice)
+                            : null,
+                        },
+                        maintenance,
+                        community,
+                      }
+                    : {
+                        operation: "Venta",
+                        sale: {
+                          ...sale,
+                          purchasePrice: values.salePrice.trim()
+                            ? Number(values.salePrice)
+                            : null,
+                        },
+                        maintenance,
+                        community,
+                      }
+                }
+              />
+            </div>
+            <label className="listing-field">
+              <span id={`${fieldId("description")}-label`}>
+                {t("Descripción")}
+              </span>
+              <textarea
+                id={fieldId("description")}
+                aria-labelledby={`${fieldId("description")}-label`}
+                value={values.description}
+                onChange={(event) => change("description", event.target.value)}
+                rows={5}
+                aria-invalid={!!errors.description}
+                aria-describedby={
+                  errors.description ? "error-description" : undefined
+                }
+              />
+              {errors.description && (
+                <span className="listing-field-error" id="error-description">
+                  {localizeMessage(errors.description)}
+                </span>
+              )}
+            </label>
+            <h2>{t("Ubicación privada y pública")}</h2>
+            <p className="listing-help">
+              {t(
+                "El punto inicial es el centro de León: ajústalo a tu inmueble. Guarda el punto privado y elige por separado qué precisión tendrá el anuncio público. Usa solo referencias autorizadas en la colonia y la descripción.",
+              )}
+            </p>
+            <div className="listing-field-grid">
+              {field("state", "Estado")}
+              {field("city", "Ciudad / municipio")}
+              {field("neighborhood", "Colonia / zona")}
+              {field("latitude", "Latitud del punto privado", "number")}
+              {field("longitude", "Longitud del punto privado", "number")}
+            </div>
+            <LocationPicker
+              point={{
+                lat: Number(values.latitude),
+                lng: Number(values.longitude),
+              }}
+              onChange={(point) => {
+                if (busy) return;
+                setValues((previous) => ({
+                  ...previous,
+                  latitude: String(point.lat),
+                  longitude: String(point.lng),
+                }));
+                setLocationReviewed(false);
+                setMessage("");
+                setSavedId(null);
+              }}
+              precision={publicLocation}
+              onPrecision={(value) => {
+                setPublicLocation(value);
+                setLocationReviewed(false);
+                setMessage("");
+                setSavedId(null);
+              }}
+              reviewed={locationReviewed}
+              onReviewed={(value) => {
+                setLocationReviewed(value);
+                setMessage("");
+                setSavedId(null);
+              }}
+            />
+            <h2>{t("Fotografías autorizadas")}</h2>
+            <p className="listing-help">
+              {t(
+                "Hasta {count} fotos JPEG, PNG o WebP de 5 MB cada una. Se reducen de tamaño y se retiran los metadatos al prepararlas. Evita rostros, documentos y otros datos privados. Las fotos normales se muestran en galería; no se convierten en recorridos 360.",
+                { count: MAX_PHOTOS },
+              )}
+            </p>
+            <label className="listing-field">
+              <span id={`${fieldId("photos")}-label`}>
+                {t("Seleccionar fotografías")}
+              </span>
+              <input
+                id={fieldId("photos")}
+                aria-labelledby={`${fieldId("photos")}-label`}
+                aria-invalid={!!errors.photos}
+                ref={fileInput}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                onChange={(event) => void choosePhotos(event.target.files)}
+                aria-describedby={errors.photos ? "error-photos" : undefined}
+              />
+            </label>
+            {errors.photos && (
+              <p className="listing-field-error" id="error-photos">
+                {localizeMessage(errors.photos)}
+              </p>
+            )}
+            <div className="listing-photo-preview">
+              {photos.map((photo, i) => (
+                <PhotoPreview
+                  key={photo.id}
+                  photo={photo}
+                  label={t("Foto seleccionada {number}", { number: i + 1 })}
+                />
+              ))}
+            </div>
+            {errors.scenes && (
+              <p id="error-scenes" className="listing-error" role="alert">
+                {localizeMessage(errors.scenes)}
+              </p>
+            )}
+            {values.propertyType !== "Terreno" && (
+              <div
+                id={fieldId("scenes")}
+                tabIndex={-1}
+                aria-invalid={!!errors.scenes}
+                aria-describedby={errors.scenes ? "error-scenes" : undefined}
+              >
+                <DraftTourEditor
+                  shared={shared}
+                  scenes={scenes}
+                  onChange={setScenes}
+                  disabled={busy}
+                  onBusyChange={setBusy}
+                />
               </div>
             )}
-          </div>
-          <button type="submit" className="button button-dark">
-            {busy
-              ? t("Preparando…")
-              : editing
-                ? t("Guardar cambios del borrador")
-                : t(
-                    shared
-                      ? "Guardar borrador privado"
-                      : "Guardar borrador en este navegador",
-                  )}
-          </button>
-        </fieldset>
-      </form>
-      <section className="listing-saved" aria-labelledby="saved-title">
-        <h2 id="saved-title">
-          {t(shared ? "Mis borradores privados" : "Mis borradores locales")}
-        </h2>
-        <p className="listing-help">
-          {t(
-            shared
-              ? "Guardar no publica. Usa Publicar propiedad para compartir una versión en el catálogo; puedes retirarla cuando quieras."
-              : "Estos anuncios no están publicados. Quien use este navegador en este dispositivo podría acceder a ellos.",
-          )}
-        </p>
-        {!loaded ? (
-          <p role="status">{t("Leyendo borradores…")}</p>
-        ) : drafts.length === 0 ? (
-          <p className="listing-empty">
-            {t(
-              shared
-                ? "Todavía no hay borradores en el servidor privado."
-                : "Todavía no has guardado borradores en este navegador.",
+            <label className="listing-rights">
+              <input
+                id={fieldId("imageRights")}
+                aria-labelledby={`${fieldId("imageRights")}-label`}
+                aria-invalid={!!errors.imageRights}
+                type="checkbox"
+                checked={values.imageRights}
+                onChange={(event) =>
+                  change("imageRights", event.target.checked)
+                }
+                aria-describedby={
+                  errors.imageRights ? "error-rights" : undefined
+                }
+              />
+              <span id={`${fieldId("imageRights")}-label`}>
+                {t(
+                  "Tomé estas fotos y panoramas o tengo autorización para utilizarlos.",
+                )}
+              </span>
+            </label>
+            {errors.imageRights && (
+              <p className="listing-field-error" id="error-rights">
+                {localizeMessage(errors.imageRights)}
+              </p>
             )}
-          </p>
-        ) : (
-          drafts.map((draft) => (
-            <article
-              key={draft.id}
-              id={`draft-${draft.id}`}
-              tabIndex={-1}
-              className="draft-card"
+            <div
+              ref={feedbackRef}
+              className="draft-save-feedback"
+              aria-live="polite"
             >
-              <div className="draft-card-heading">
-                <div>
-                  <span className="draft-status">
-                    {t(
-                      shared
-                        ? ("publishedRevision" in draft && draft.publishedRevision ? (draft.publishedRevision === revisionOf(draft) ? "Publicado" : "Publicado · Cambios pendientes de publicar") : "Borrador privado · No publicado")
-                        : "Borrador local · No publicado",
-                    )}
-                  </span>
-                  <h3>{draft.title}</h3>
-                  <p>
-                    {t(draft.propertyType)} · {t(draft.operation)} ·{" "}
-                    {draft.operation === "Renta"
-                      ? t("Renta mensual")
-                      : t("Precio de compra")}
-                  </p>
-                </div>
-                <div className="draft-actions">
-                  {shared && <>
-                    <button type="button" disabled={busy} onClick={() => void publish(draft, true)}>{t("publishedRevision" in draft && draft.publishedRevision ? "Actualizar publicación" : "Publicar propiedad")}</button>
-                    {"publishedRevision" in draft && !!draft.publishedRevision && <>
-                      <Link href={`/propiedades/anuncio-${draft.id}`} target="_blank" rel="noopener">{t("Ver publicación")}</Link>
-                      <button type="button" disabled={busy} onClick={() => void publish(draft, false)}>{t("Retirar publicación")}</button>
-                    </>}
-                  </>}
-                  {!shared && (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void copyToPrivate(draft)}
-                    >
-                      {t("Copiar al área privada")}
-                    </button>
+              {storageError && (
+                <p className="listing-error" role="alert">
+                  {localizeMessage(storageError)}{" "}
+                  {t(
+                    "La captura permanece en el formulario. Intenta guardar otra vez sin borrar los datos del sitio.",
                   )}
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => edit(draft)}
-                  >
-                    {t("Editar borrador")}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy}
+                </p>
+              )}
+              {message && (
+                <p className="listing-success" role="status">
+                  {localizeMessage(message)}
+                </p>
+              )}
+              {savedId && (
+                <div className="draft-actions">
+                  <a
+                    className="button button-dark"
+                    href={`#draft-${savedId}`}
                     onClick={() =>
-                      void exportDraft(draft).catch((error) =>
-                        setStorageError(storageMessage(error)),
+                      window.requestAnimationFrame(() =>
+                        document.getElementById(`draft-${savedId}`)?.focus(),
                       )
                     }
                   >
-                    {t("Descargar respaldo")}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void remove(draft.id)}
-                  >
-                    {t("Eliminar borrador")}
+                    {t("Ver el borrador guardado")}
+                  </a>
+                  <button type="button" disabled={busy} onClick={resetEditor}>
+                    {t("Crear otro borrador")}
                   </button>
                 </div>
-              </div>
-              {copied === draft.id && (
-                <p role="status">
-                  {t(
-                    "Copia guardada en el servidor privado. El original sigue en este navegador.",
-                  )}{" "}
-                  <Link href="/privado">{t("Ver área privada")}</Link>
-                </p>
               )}
-              {copyError?.id === draft.id && (
-                <p className="listing-error" role="alert">
-                  {t(copyError.message)}{" "}
-                  <Link href="/privado" target="_blank" rel="noopener">
-                    {t("Abrir área privada")}
-                  </Link>
-                </p>
-              )}
-              <p>
-                {draft.city}, {draft.state} · {draft.neighborhood}
-              </p>
-              {draft.migrationNote && (
-                <p className="listing-help">{t(draft.migrationNote)}</p>
-              )}
-              <p className="draft-description">{draft.description}</p>
-              <TermsDetails terms={draft} />
-
-              <div className="draft-photo-grid">
-                {draft.photos.map((photo, i) => (
-                  <PhotoPreview
-                    key={photo.id}
-                    photo={photo}
-                    label={t("Fotografía {number} de {title}", {
-                      number: i + 1,
-                      title: draft.title,
-                    })}
-                  />
-                ))}
-              </div>
-              {draft.scenes.length > 0 && (
-                <DraftTourSavedPreview scenes={draft.scenes} shared={shared} />
-              )}
-              <p className="draft-no-tour">
-                {draft.propertyType === "Terreno"
-                  ? t("Terreno: ficha y fotografías, sin recorrido 360.")
-                  : draft.scenes.length
-                    ? t(
-                        shared ? "Vista del recorrido guardado. Publica o actualiza la publicación para compartirlo." : "Recorrido 360 local con conexiones manuales; no publicado.",
-                      )
-                    : t(
-                        "Galería de fotos normales. Este borrador no tiene recorrido 360.",
-                      )}
-              </p>
-            </article>
-          ))
-        )}
-      </section>
+            </div>
+            <button type="submit" className="button button-dark">
+              {busy
+                ? t("Preparando…")
+                : editing
+                  ? t("Guardar cambios del borrador")
+                  : t(
+                      shared
+                        ? "Guardar borrador privado"
+                        : "Guardar borrador en este navegador",
+                    )}
+            </button>
+          </fieldset>
+        </form>
+      )}
+      {!shared && savedSection}
     </div>
   );
 }

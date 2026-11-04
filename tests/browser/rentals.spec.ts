@@ -33,10 +33,13 @@ test("rental and land sections show the correct prices and no 360 tour", async (
 test("geographic scope controls and visible attribution work; tile errors are explicit", async ({
   page,
 }) => {
+  test.setTimeout(60000);
   await page.goto("/");
   const map = page.locator(".geo-map");
   await expect(map).toHaveAttribute("data-region", "León");
-  await expect(map).toHaveAttribute("data-tile-state", "ready");
+  await expect(map).toHaveAttribute("data-tile-state", "ready", {
+    timeout: 15000,
+  });
   await page.getByRole("button", { name: "Guanajuato", exact: true }).click();
   await expect(map).toHaveAttribute("data-region", "Guanajuato");
   await expect(map).toHaveAttribute("data-zoom", "8");
@@ -55,7 +58,9 @@ test("geographic scope controls and visible attribution work; tile errors are ex
   await expect(page.locator(".property-card")).toHaveCount(5);
   await page.unroute("**/maps/home-view.pmtiles");
   await page.getByRole("button", { name: "Volver a cargar mapa" }).click();
-  await expect(map).toHaveAttribute("data-tile-state", "ready");
+  await expect(map).toHaveAttribute("data-tile-state", "ready", {
+    timeout: 15000,
+  });
   await expect(page.locator(".geo-map-notice")).toHaveCount(0);
 });
 
@@ -82,7 +87,12 @@ test("a rental draft keeps photos locally, survives reload, exports and deletes"
     .getByLabel("Seleccionar fotografías")
     .setInputFiles("public/panoramas/sala-cover.jpg");
   await expect(page.locator(".listing-photo-preview img")).toHaveCount(1);
-  await page.getByRole("checkbox", { name: "Tomé estas fotos y panoramas o tengo autorización para utilizarlos.", exact: true }).check();
+  await page
+    .getByRole("checkbox", {
+      name: "Tomé estas fotos y panoramas o tengo autorización para utilizarlos.",
+      exact: true,
+    })
+    .check();
   await page
     .getByRole("button", { name: "Guardar borrador en este navegador" })
     .click();

@@ -1,6 +1,8 @@
 import { test, expect } from "./fixtures";
 import { randomUUID } from "node:crypto";
 import { streetFixture, streetTileJSON } from "./street-fixture";
+// Keep simulated responses in Playwright's routing layer, outside the PWA worker.
+test.use({ serviceWorkers: "block" });
 const reviewed =
   "Revisé la ubicación y autorizo la precisión pública seleccionada.";
 async function login(page: import("@playwright/test").Page) {
@@ -11,6 +13,9 @@ async function login(page: import("@playwright/test").Page) {
     .fill("Fictitious-browser-pilot-2026");
   await page
     .getByRole("button", { name: "Iniciar sesión", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Nueva propiedad", exact: true })
     .click();
   await expect(page.locator(".location-picker")).toBeVisible();
 }
