@@ -16,7 +16,7 @@ Next.js App Router renderiza el catálogo y las rutas conocidas. Los slugs desco
 
 ## Activos y rendimiento
 
-`public/panoramas` contiene tres panoramas 2048×1024 y tres cubiertas 1200×850. Se usa un panorama por escena, apropiado para el prototipo. Next Image optimiza las cubiertas; Marzipano carga directamente el JPEG. Para fotos de mayor resolución conviene generar mosaicos multirresolución, presupuesto de memoria, carga progresiva y CDN controlado. El script opcional de medios usa NumPy y Pillow y no es necesario para instalar o ejecutar la aplicación.
+`public/panoramas` contiene tres panoramas 2048×1024 y tres cubiertas 1200×850. Se usa un panorama por escena, apropiado para el prototipo. Next Image optimiza las cubiertas; Marzipano usa una ObjectURL temporal del JPEG validado; solo el panorama activo se descarga. Para fotos de mayor resolución conviene generar mosaicos multirresolución, presupuesto de memoria, carga progresiva y CDN controlado. El script opcional de medios usa NumPy y Pillow y no es necesario para instalar o ejecutar la aplicación.
 
 ## Pruebas
 
@@ -34,7 +34,7 @@ Cambiar datos locales por un repositorio de datos validado en servidor, con iden
 
 El estilo oscuro es local y no usa glyphs, sprites, fuentes o teselas remotas. Los marcadores de inmuebles y etiquetas de ciudades son elementos DOM con texto seguro. Se liberan mapas, marcadores y ResizeObserver. WebGL dibuja los vectores. Los errores de lectura o inicialización ofrecen reintento explícito sin bucles; el mapa no se considera listo si la fuente reporta error.
 
-`PropertyDetails` presenta construcción, terreno de referencia, recámaras, baños, estacionamientos, año, equipamiento y costos. Predial anual y mantenimiento mensual son cifras inventadas en MXN, nunca cálculos fiscales. Se usan valores numéricos y `Intl.NumberFormat` para su presentación. La interfaz combina fondo negro, superficies oscuras y acentos lima/amarillo, según la referencia visual del usuario.
+`PropertyDetails` presenta construcción, terreno de referencia, recámaras, baños, estacionamientos, año, equipamiento y costos por operación. Solo venta contiene predial anual; mantenimiento usa un estado explícito. Las cifras del catálogo son ficticias en MXN, nunca cálculos fiscales. Se usan valores numéricos y `Intl.NumberFormat` para su presentación. La interfaz combina fondo negro, superficies oscuras y acentos lima/amarillo, según la referencia visual del usuario.
 
 Para publicar ubicaciones reales se deberá decidir su precisión pública, obtener autorización, implementar límites y filtros por viewport y revisar las licencias de los datos y los costos de infraestructura. No se representan límites catastrales ni levantamientos topográficos. Véase SERVICES.md.
 
@@ -44,7 +44,7 @@ La configuración de desarrollo permite explícitamente el origen de loopback `1
 
 La ruta de cada propiedad abre con nombre, dirección ficticia, precio de demostración y un mosaico de tres ilustraciones. `PropertyGallery` recibe imágenes con `src`, `alt` y `label`. Usa un diálogo nativo modal con foco inicial, Escape, retorno de foco al disparador, flechas anterior/siguiente, contador y estado de imagen no disponible. El scroll de fondo se bloquea mientras el diálogo está abierto. No se incorpora ninguna fotografía ni texto comercial de las capturas de referencia.
 
-`PropertySectionNav` usa enlaces a secciones visibles, en vez de pestañas que oculten contenido. La posición de las secciones indica el enlace activo con un listener de scroll limitado mediante requestAnimationFrame; se detecta también el final del documento para activar Costos en pantallas altas. `PropertyDetails` reúne descripción y resumen en una cuadrícula, con niveles, tipo de construcción, barrio, régimen, terreno, antigüedad, predial y estacionamientos. `plotArea: null` representa superficie de terreno no especificada: no se sustituye por cero ni por la superficie del departamento. `PropertyCosts` mantiene el detalle de costos en una sección independiente.
+`PropertySectionNav` usa enlaces a secciones visibles, en vez de pestañas que oculten contenido. La posición de las secciones indica el enlace activo con un listener de scroll limitado mediante requestAnimationFrame; se detecta también el final del documento para activar Costos en pantallas altas. `PropertyDetails` reúne descripción y resumen en una cuadrícula, con niveles, tipo de construcción, barrio, régimen, terreno, antigüedad, predial solo para venta y estacionamientos. `plotArea: null` representa superficie de terreno no especificada: no se sustituye por cero ni por la superficie del departamento. `PropertyCosts` mantiene el detalle de costos en una sección independiente.
 
 `PropertyActions` invoca Web Share cuando está disponible. Si no lo está o falla, intenta Clipboard API y confirma únicamente después de copiar; si el permiso se deniega, presenta una URL de solo lectura para copiar manualmente. Cancelar el diálogo nativo no activa el portapapeles. El fragmento de sección se elimina del enlace compartido. Imprimir abre la función del navegador; una hoja de impresión conserva descripción, resumen, precio, imagen principal y costos, y omite controles y WebGL.
 
@@ -54,9 +54,9 @@ Los datos de titularidad y referencia son ficticios; no son certificados ni comp
 
 `Property.operation` diferencia Venta/Renta; el precio de una renta es mensual y se etiqueta en tarjetas, marcadores y ficha. `/venta`, `/renta` y `/terrenos` reutilizan `CatalogPage` y `PropertyExplorer` con filtros iniciales. `hasTour` exige una vivienda y escenas: ningún terreno renderiza visor, hotspots, mini plano o acceso a 360. La casa en renta incluida es una demo con fotos convencionales.
 
-`ListingForm` y `lib/listing-drafts.ts` no dependen del catálogo estático ni de un backend. Validan datos, permisos sobre imágenes, cantidad, tipo y tamaño; las fotos se decodifican y reencodan con canvas antes de guardar blobs en IndexedDB. Las transacciones se confirman antes de anunciar éxito. Se revocan las ObjectURL de previsualización y se maneja almacenamiento denegado/cuota. El respaldo JSON incluye las fotos; no hay todavía importación ni sincronización.
+`ListingForm` usa IndexedDB en modo local y API autenticada en modo compartido, con una publicación explícita separada de la captura. `lib/listing-drafts.ts` conserva el repositorio local. Validan datos, permisos sobre imágenes, cantidad, tipo y tamaño; las fotos se decodifican y reencodan con canvas antes de guardar blobs en IndexedDB. Las transacciones se confirman antes de anunciar éxito. Se revocan las ObjectURL de previsualización y se maneja almacenamiento denegado/cuota. El respaldo JSON incluye las fotos; la importación portátil descrita al final crea una copia nueva. No hay sincronización automática de IndexedDB.
 
-Los datos del formulario no se insertan en `lib/properties.ts` ni se publican en rutas del servidor. Para un catálogo compartido se necesita una capa persistente con autorización, validación en servidor y moderación. Las pruebas de navegador cubren persistencia, exportación y eliminación de borradores y leen el archivo PMTiles local real; el mapa ya no requiere acceso a un proveedor externo.
+Los datos del formulario no se insertan en `lib/properties.ts`. Los borradores compartidos se pueden publicar explícitamente como snapshots en SQLite. La moderación automática sigue pendiente; la persona administradora revisa antes de publicar. Las pruebas de navegador cubren persistencia, exportación y eliminación de borradores y leen el archivo PMTiles local real; el mapa ya no requiere acceso a un proveedor externo.
 
 ## Desarrollo en Codespaces y solicitudes del mapa
 
@@ -65,3 +65,97 @@ Los datos del formulario no se insertan en `lib/properties.ts` ni se publican en
 El antiguo mapa raster de OpenStreetMap se sustituyó por datos locales de Natural Earth, sin solicitudes HTTP a proveedores de mapas. El lector PMTiles solicita rangos del archivo estático y el servidor debe responder 206 con Content-Range. El paquete usa teselas MVT con geometrías reales cuantizadas y gzip; scripts/build-vector-map.py verifica SHA256 de snapshots y genera el archivo y sus métricas. Véase MAP_DATA.md.
 
 Las pruebas leen los datos locales reales, verifican encabezados y geometría en León y prueban el transporte Range y la recuperación del mapa. No se sustituyen los datos geográficos por imágenes simuladas. El callejero completo, la geocodificación, los puntos de interés y las rutas continúan pendientes.
+
+## Piloto: contratos y cantidades
+
+`lib/property-terms.ts` define `RentalTerms`, `SaleTerms`, `Maintenance` y `Community`. `Property` y `DraftInput` son uniones discriminadas por `operation`: solo `Renta` contiene `rental`; solo `Venta` contiene `sale`. No se guardan simultáneamente las condiciones de operaciones distintas. `priceValue` del catálogo permanece como índice de presupuesto; sus pruebas verifican que coincide con el importe del bloque de operación. Una renta no tiene campo de predial.
+
+`null` representa un importe pendiente. Las opciones usan valores explícitos (`unknown`, requisitos independientes o alternativos, servicios incluidos/excluidos, cuota aplicable o no aplicable). `normalizeDraftInput` elige los campos del contrato activo, elimina valores escondidos y limpia cuota/inclusión si no aplica. Al seleccionar aval o póliza, los requisitos independientes se limpian. Las cantidades se validan en cliente con hasta dos decimales; los totales usan centavos para evitar error de punto flotante.
+
+`rentalSummary` y `rentalMonthlyTotal` son la única lógica de presentación/suma. La renta anunciada incluye la cuota solo cuando se confirma `included: yes`; si es adicional se suma una vez. El total se omite ante monto o inclusión pendientes, incluso si se sabe que existe cuota. `No aplica` se muestra explícito y no genera una cuota cero inventada. No se suman servicios, depósito ni póliza. `TermsDetails` comparte estos resultados entre la ficha pública, la vista previa del formulario y los borradores; catálogo y panel del mapa reutilizan los mismos helpers.
+
+## Piloto: borradores y medios
+
+El esquema de registro es `schemaVersion: 2`; la base IndexedDB conserva su versión estructural 1 y el store `listings`. No necesita crear stores nuevos. `migrateListingDraft` adapta registros v1 en memoria al leerlos, conservando ID, fecha y blobs. No sobrescribe originales al abrir. Precio y predial se mapean a la operación; cuota antigua positiva conserva monto con inclusión desconocida. Cuota vacía/cero antigua es ambigua y se marca por confirmar. No se deducen condiciones comerciales. Al editar/guardar se escribe v2 sobre el mismo ID con `updatedAt`.
+
+`ListingForm` separa estados de venta/renta, comunes, fotos y escenas. `ListingTermsFields` conecta las opciones con validación, vista previa y guardado. El panel permite editar, cancelar, eliminar y exportar; cada transacción termina antes de anunciar éxito. La importación crea recuperaciones nuevas tras revisión. Para los borradores confirmados de `/alta` la última escritura gana; las recuperaciones automáticas y el backend privado, descritos más abajo, rechazan versiones obsoletas.
+
+`lib/draft-tour.ts` valida límites, dimensiones de captura y el grafo. `DraftTourEditor` procesa capturas ya equirectangulares (la proporción 2:1 no prueba por sí misma una esfera completa), permite nombre, destino, yaw y pitch manuales. Eliminar escena retira conexiones entrantes. Las conexiones son dirigidas; escenas sin conexiones siguen accesibles por botones, sin inventar plano ni adyacencias. Se guardan JPEG reencodados en blobs separados de las fotografías convencionales. El respaldo v2 serializa ambos grupos a data URLs junto a las conexiones.
+
+`DraftTourPreview` adapta los blobs a ObjectURL y al mismo `PanoramaViewer` genérico de las demostraciones. Destruye visores y revoca URLs al cambiar o cerrar. `DraftTourSavedPreview` lo monta bajo demanda para limitar WebGL. Los controles usan `type=button` dentro del formulario. La etiqueta de material local evita atribuir al propietario imágenes sintéticas. Las demos existentes mantienen sus panoramas y plano genérico.
+
+## Piloto móvil y límites
+
+Véase [PWA](PWA.md) para instalación, worker y límites offline. No se cambian el mapa ni sus datos/licencias. No hay pagos ni registro público. El panel local continúa sin autenticación; `/privado` añade cuenta privada, API y medios autorizados, validación en servidor y un comando de respaldo. Identidades múltiples, alojamiento estable y backups externos automatizados siguen pendientes.
+
+Pruebas nuevas: reglas de cantidades/mantenimiento/garantías, migración y normalización v1/v2, límites/grafo 360 y regresiones de navegador de separación por operación, mantenimiento, edición, persistencia, respaldo, escenas manuales, manifest y aviso offline. Los archivos `tests/browser/*` usan medios procedurales del repositorio, no material de terceros.
+
+## Interfaz bilingüe y captura en iPad
+
+`I18nProvider` conserva locale cliente sin cambiar ruta/origen ni esquema de IndexedDB. Los diccionarios explícitos de `lib/i18n/` traducen la interfaz y el catálogo ficticio; se preserva el contenido escrito por el propietario. Los helpers de costos admiten locale opcional sin cambiar las cantidades ni cálculos. Las vistas cliente de inicio, alta y propiedad dejan en servidor la resolución de rutas, 404 y parámetros estáticos. Los componentes de mapa actualizan etiquetas conservando vista y filtros.
+
+Los dos manifests comparten identidad PWA; el aviso offline usa la misma preferencia y el worker v2 mantiene la caché limitada. El HTML estático inicial sigue en español y `noindex`, con traducción al hidratar. No es una implementación de SEO multilingüe en servidor. Véase [I18N.md](I18N.md) para límites y tipografía.
+
+## Confirmación de guardado local
+
+Después de confirmar la transacción IndexedDB, `saveListingDraft` verifica que el registro se puede leer con el mismo ID, actualización y medios. El formulario conserva texto, condiciones, fotos y escenas, y vincula las siguientes escrituras al mismo ID. Una lectura de verificación fallida no descarta la captura ni cambia el ID al reintentar. El aviso de éxito/error aparece junto al botón; la limpieza requiere una acción explícita. Esto mejora la confirmación local, sin agregar sincronización ni almacenamiento compartido.
+
+## Backend privado y dispositivos
+
+`/privado` monta `PrivateWorkspace`, comprueba sesión y reutiliza `ListingForm` con storage=shared. `lib/shared-drafts.ts` serializa fotos/escenas a multipart e hidrata medios autenticados como blobs. La revisión que se está editando se conserva separada de una actualización de lista; una captura antigua devuelve 409. La copia explícita desde la tarjeta local conserva el original IndexedDB.
+
+`/api/private/[...segments]` usa runtime Node.js y no-store. `private-http` comprueba origen, sesión, límites, contrato por operación y decodificación Sharp antes de escribir. `private-store` usa node:sqlite con transacciones WAL y revisión optimista: registro y blobs se reemplazan atómicamente. Un único propietario del piloto se configura por CLI con scrypt; tokens aleatorios tienen hash en DB, cookie HttpOnly/SameSite y expiración. No existe endpoint de alta pública.
+
+Los medios privados se sirven bajo sesión por ID validado; no están en public ni en URLs firmadas permanentes. Las publicaciones conservan copias separadas con acceso público, descritas abajo. El directorio persistente por defecto es .home-view (ignorado). Un volumen externo se selecciona con HOME_VIEW_DATA_DIR; los orígenes de un proxy propio pueden fijarse con HOME_VIEW_PUBLIC_ORIGIN. Respaldos consistentes con VACUUM INTO y credenciales/cambios por terminal. Véase [PRIVATE_PILOT.md](PRIVATE_PILOT.md).
+
+## Publicación explícita del piloto
+
+`lib/server/publications.ts` transforma la versión guardada a `Property` mediante una lista explícita de campos. `publications` y `publication_assets` conservan un snapshot transaccional separado del borrador. Editar un borrador usa UPSERT (no REPLACE, que borraría la publicación por cascade) y no cambia lo publicado. Publicar/actualizar/retirar requieren sesión, origen válido y revisión vigente. El catálogo de inicio, renta, venta, terrenos y fichas se renderiza dinámicamente con demos + snapshots; se mantienen los mapas locales. `/api/public/media/[id]/[asset]` solo entrega medios publicados, sin autenticación, con no-store y sin optimizador de imágenes. Retirar o eliminar revoca esas rutas; no puede recuperar descargas previas. Los campos no capturados permanecen desconocidos y no se reutiliza el plano demo para escenas del usuario.
+
+## Captura de ubicación y cartografía online opcional
+
+`LocationPicker` integra búsqueda explícita autenticada, GPS a petición, selección por clic/arrastre y revisión de precisión. `PropertyMap` mantiene PMTiles como fuente inicial y añade vectores OpenFreeMap opt-in con estilo original Home View con atribución y recuperación al mapa local. El cambio de fuente no escribe coordenadas. La UI conserva el punto privado y calcula un preview público; `lib/location.ts` implementa cobertura, celda aproximada y normalización de resultados Photon.
+
+DraftInput añade publicLocation/locationReviewed opcionales para lectura compatible de v1/v2, con valores predeterminados seguros al guardar. `publicProperty` exige revisión y publica únicamente el punto derivado de la precisión elegida. `publishedProperties` aproxima snapshots antiguos sin precisión declarada antes de serializarlos. No se incluyen el punto privado ni campos de revisión en el DTO público.
+
+POST /api/private/geocode mantiene las comprobaciones de sesión/origen/tamaño, y delega en geocoding.ts. El endpoint Photon es fijo o definido por el administrador. SQLite guarda un gate entre procesos y una caché con clave hash, TTL y límite; no se crea un proxy de URLs arbitrarias. Errores y denegaciones no borran la captura. Detalles y restricciones de proveedores en LOCATION_CAPTURE.md.
+
+El estilo de calles se mantiene en `lib/street-map-style.ts`, fuente TileJSON OpenFreeMap, esquema OpenMapTiles, sin raster/sprites/glyphs remotos. MapLibre 6 genera texto con fuentes del dispositivo. La UI muestra atribución explícita de los tres proyectos. Al cambiar de fuente se recrea la instancia, se restaura la vista en memoria y se rehacen marcadores por versión de mapa; la selección solo recentra si cambió la propiedad o sus coordenadas. El cambio de idioma actualiza las expresiones de etiquetas sin recrear la vista. El respaldo sigue siendo el PMTiles local.
+
+## Panel privado y recuperación de captura
+
+ListingForm compartido monta primero el panel con metadata y portadas autorizadas, búsqueda y filtro de publicación; el editor se abre por acción. getSharedDraftSummaries no hidrata galerías. GET /api/private/drafts/:id devuelve metadata autenticada/no-store; loadSharedDraft descarga solo los blobs de la propiedad solicitada. El editor conserva una revisión propia aunque se actualice la lista.
+
+lib/capture-store.ts usa otra base IndexedDB (home-view-captures, schema 1) para contenido parcial con strings intactos, términos separados y blobs. Las escrituras comparan versión y actualizan en la misma transacción; límite 20 recuperaciones. components/useCaptureAutosave serializa escrituras, espera 800 ms, guarda al ocultar/salir con mejor esfuerzo y distingue cambios pendientes, dispositivo confirmado, servidor confirmado y error. La huella compara campos y referencias/tamaños de medios, sin convertir blobs a JSON ni incluir idioma.
+
+Se borra la recuperación después de una confirmación manual exitosa si corresponde al mismo contenido; los errores conservan campos e identidad. Revertir al baseline quita copias obsoletas. Recuperar restaura ID y sharedRevision; no adopta automáticamente una revisión más reciente del panel ni crea otro destino. Las copias de recuperación ante conflicto solo cambian el ID del registro local. Al cerrar sesión el padre solicita checkpoint y bloquea interacción durante la salida; si falla, deja elegir cancelar. No hay cola de envío automática ni caché de pantallas privadas. Detalles en AUTOSAVE_DASHBOARD.md.
+
+## Respaldos portátiles y recorrido visual
+
+`lib/listing-backup.ts` comparte la conversión de borrador confirmado a captura y separa parseo acotado de decodificación/reencodificación en cliente. Formatos draft v1/v2 y capture v1; permite campos parciales sin normalizarlos como cero. Exporta por lista explícita y excluye contexto de servidor/sesión. La lectura no escribe datos ni usa red. `ListingBackupTools` ofrece vista previa y restauración confirmada mediante `writeCapture` con UUID nuevos y revisión 0; remapea IDs de escenas/destinos y revoca autorización de medios/revisión de ubicación para exigir nueva comprobación. Los errores mantienen el candidato para reintento. No escribe directamente a listings, SQLite o publicaciones.
+
+`TourVisualEditor` reutiliza `PanoramaViewer` con callbacks opcionales de edición. Distingue toque de arrastre y multitouch, captura el puntero para terminar gestos fuera del elemento y usa `RectilinearView.screenToCoordinates` para colocar flechas. La alternativa del centro usa los parámetros reales del visor. `useDraftTourRooms` conserva ObjectURL mientras no cambie el blob; libera solo lo reemplazado/eliminado y todo al desmontar. Al editar conexiones se preserva la mirada de la misma escena; entrar a otra usa su orientación inicial.
+
+`DraftScene.initialView` es opcional (yaw, pitch, fov en radianes); los registros existentes mantienen el valor predeterminado. Se incluye en huella de autosave, exportación/importación, serialización compartida, validación de servidor y lista pública de campos del snapshot. No hay cambio de esquema SQLite/IndexedDB. El orden del array determina la escena inicial; reordenar conserva IDs y conexiones. `analyzeTour` analiza alcanzabilidad dirigida y regreso al primer nodo sin crear conexiones.
+
+Véase [BACKUPS_AND_VISUAL_TOURS.md](BACKUPS_AND_VISUAL_TOURS.md) para uso, límites y comprobaciones físicas pendientes.
+
+## Revisión de publicación y referencias de visita
+
+`listing-presentation.ts` construye el DTO público mediante una lista de campos, compartida por el snapshot del servidor y la vista previa privada. `PropertyPageContent` reutiliza el contenido de la ficha sin cabecera global, compartir ni indicación de publicación real cuando preview=true. `PropertyPageView` conserva título y página pública. La galería entrega los medios privados/blob directamente, excluidos del optimizador; no crea una ruta pública de preview.
+
+`listing-review.ts` separa blockers obligatorios, términos pendientes y avisos de recorrido por operación. `ListingReviewDialog` muestra la captura actual o la versión guardada, crea/revoca ObjectURL solo para medios locales, mantiene foco modal y distingue Escape de una galería anidada. Abrir la revisión privada relee metadata autenticada; confirmar usa esa revisión concreta y el backend mantiene su comparación transaccional. Los errores conservan la ventana y el editor; refrescar revisión vuelve a exigir consentimiento. No se persiste la casilla UI como credencial de autorización.
+
+`visit-access.ts` define el campo opcional privado y sus límites, validación de pares y enlaces externos de hosts fijos. El formulario conserva strings parciales en autosave/JSON; normalizar borradores confirmados valida el par y selecciona solo esas claves. No requiere cambios estructurales de IndexedDB/SQLite; registros anteriores carecen de acceso. La huella usa orden explícito de campos y omite una referencia completamente vacía, evitando marcar como cambios la lectura de datos antiguos o el orden de claves de un respaldo.
+
+`LocationPicker` distingue inmueble/acceso en memoria, cancela búsquedas al cambiar de modo y comprueba modo y punto al recibir GPS. `PropertyMap` mantiene un marcador activo arrastrable y otra referencia pasiva; ampliación, centrado y fitBounds no alteran los datos. Cambiar de fuente conserva vista/marcadores. El acceso no se pasa a PropertyMap público ni al DTO; las notas no se incluyen en enlaces externos. [Guía de uso](REVIEW_AND_VISITS.md).
+
+## Historial transaccional y recuperación completa
+
+`history-store.ts` añade `history_heads`, `draft_versions`, `version_blobs`, `version_assets` y `activity_log` en SQLite `user_version=1`. La primera migración archiva solo el estado existente. Guardar/restaurar, sus medios y su evento comparten `BEGIN IMMEDIATE` con la escritura privada; cualquier cuota/conflicto revierte todo. Las versiones son inmutables, los blobs se deduplican por SHA-256 y se recogen cuando pierden referencias. La retención conserva las últimas 10, hasta 200 propiedades/300 MiB de medios; el log conserva 5,000 eventos acotados. Los identificadores/revisiones mínimos de borradores eliminados evitan resurrección por clientes antiguos.
+
+`private-http.ts` sirve historial, previews y medios bajo sesión/no-store y exige origen exacto/revisión/estado para restaurar o purgar. `PrivateHistoryPanel` carga metadata a petición, reutiliza `ListingReviewDialog` sin publicar y solicita checkpoint local antes de mutar. Restaurar copia medios y grafo, crea una revisión monotónica y revoca derechos/revisión de ubicación. No toca el snapshot público ni adopta la revisión del editor abierto.
+
+`private-backup.ts` implementa `VACUUM INTO`, verificación de integridad/FK/esquema/cuotas/datos/JPEG/hashes y manifiesto SHA-256. La restauración valida, copia a staging privado, migra si corresponde, revoca sesiones y bloqueos, comprueba otra vez y renombra hacia un destino nuevo/vacío. Son herramientas de terminal, sin endpoint HTTP de subida/restauración. No alteran el origen, la configuración activa ni publicaciones posteriores al respaldo. [Flujo y límites](HISTORY_AND_RECOVERY.md).
+
+`image-metadata.ts`, `browser-media.ts` y `panorama-resource.ts` separan lectura previa de cabeceras, reducción/reencodificación secuencial y carga acotada del panorama activo. La preparación soporta orientación EXIF, bitmap reducido o fallback Image; libera recursos en finally. La vista usa un único fetch y ObjectURL temporal por escena, con AbortController, timeout y reintento local. No se crea caché privada ni telemetría. Los mosaicos multirresolución, Web Workers y la evaluación física de Safari continúan pendientes. [Ensayo de campo](PILOT_CHECKLIST.md).

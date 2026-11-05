@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "./I18nProvider";
 import { useEffect, useRef, useState } from "react";
 const allSections = [
   {
@@ -27,6 +28,7 @@ export function PropertySectionNav({
 }: {
   withTour?: boolean;
 }) {
+  const { locale, t } = useI18n();
   const sections = allSections.filter(
     (section) => withTour || section.id !== "recorrido",
   );
@@ -71,7 +73,7 @@ export function PropertySectionNav({
     <nav
       ref={navigation}
       className="property-section-nav"
-      aria-label="Secciones del inmueble"
+      aria-label={t("Secciones del inmueble")}
     >
       {sections.map((section) => (
         <a
@@ -93,7 +95,7 @@ export function PropertySectionNav({
           >
             <path d={section.path} />
           </svg>
-          <span>{section.label}</span>
+          <span>{t(section.label)}</span>
           <span className="section-dot" aria-hidden="true" />
         </a>
       ))}

@@ -1,7 +1,15 @@
 "use client";
+import { useI18n } from "./I18nProvider";
+import { localizeProperty } from "@/lib/localized-properties";
 import type { Property } from "@/lib/properties";
 import { PropertyMap } from "./PropertyMap";
-export function PropertyLocation({ property }: { property: Property }) {
+export function PropertyLocation({
+  property: sourceProperty,
+}: {
+  property: Property;
+}) {
+  const { locale, t } = useI18n();
+  const property = localizeProperty(sourceProperty, locale);
   return (
     <section
       id="ubicacion"
@@ -10,15 +18,16 @@ export function PropertyLocation({ property }: { property: Property }) {
       tabIndex={-1}
     >
       <div>
-        <p className="eyebrow">EL ENTORNO TAMBIÉN ES HOGAR</p>
-        <h2 id="location-title">Ubica tu próximo espacio.</h2>
+        <p className="eyebrow">{t("EL ENTORNO TAMBIÉN ES HOGAR")}</p>
+        <h2 id="location-title">{t("Ubica tu próximo espacio.")}</h2>
         <p>{property.address}</p>
         <strong>{property.location}</strong>
         <p className="demo-note">
-          Cartografía vectorial de referencia de Natural Earth. El marcador de
-          esta ficha es una ubicación aproximada ficticia en León, Guanajuato;
-          no identifica una propiedad real ni sus límites.
+          {t(
+            property.published ? "Ubicación proporcionada por la administración. El mapa es de referencia y no acredita límites del inmueble." : "Cartografía vectorial de referencia de Natural Earth. El marcador de esta ficha es una ubicación aproximada ficticia en León, Guanajuato; no identifica una propiedad real ni sus límites.",
+          )}
         </p>
+      {property.published && <p className="listing-local-notice">{t(property.locationPrecision === "exact" ? "Punto exacto autorizado por la administración." : "Zona aproximada. El marcador no identifica el domicilio exacto.")}</p>}
       </div>
       <PropertyMap
         properties={[property]}

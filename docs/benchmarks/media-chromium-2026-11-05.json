@@ -1,0 +1,106 @@
+{
+  "environment": "Automated Chromium, synthetic media, iPad-sized viewport; not physical Safari",
+  "sourcePhoto": {
+    "width": 6000,
+    "height": 4000,
+    "orientation": 6,
+    "bytes": 2171666
+  },
+  "sourcePanorama": {
+    "width": 8192,
+    "height": 4096,
+    "bytes": 3032177
+  },
+  "preparationMs": 7573,
+  "views": [
+    {
+      "scene": 1,
+      "milliseconds": 310
+    },
+    {
+      "scene": 2,
+      "milliseconds": 658
+    },
+    {
+      "scene": 3,
+      "milliseconds": 523
+    },
+    {
+      "scene": 4,
+      "milliseconds": 534
+    },
+    {
+      "scene": 5,
+      "milliseconds": 486
+    },
+    {
+      "scene": 6,
+      "milliseconds": 356
+    },
+    {
+      "scene": 7,
+      "milliseconds": 539
+    },
+    {
+      "scene": 8,
+      "milliseconds": 721
+    }
+  ],
+  "active": 0,
+  "maxActive": 1,
+  "decodes": 10,
+  "outputs": [
+    {
+      "width": 1280,
+      "height": 1920,
+      "bytes": 663443
+    },
+    {
+      "width": 1280,
+      "height": 1920,
+      "bytes": 663443
+    },
+    {
+      "width": 3072,
+      "height": 1536,
+      "bytes": 1318271
+    },
+    {
+      "width": 3072,
+      "height": 1536,
+      "bytes": 1318271
+    },
+    {
+      "width": 3072,
+      "height": 1536,
+      "bytes": 1318271
+    },
+    {
+      "width": 3072,
+      "height": 1536,
+      "bytes": 1318271
+    },
+    {
+      "width": 3072,
+      "height": 1536,
+      "bytes": 1318271
+    },
+    {
+      "width": 3072,
+      "height": 1536,
+      "bytes": 1318271
+    },
+    {
+      "width": 3072,
+      "height": 1536,
+      "bytes": 1318271
+    },
+    {
+      "width": 4096,
+      "height": 2048,
+      "bytes": 1759789
+    }
+  ],
+  "ticks": 91,
+  "maxGap": 2352.8000000044703
+}

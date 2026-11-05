@@ -65,8 +65,16 @@ test("demo photos and original land illustration are local and valid", () => {
 
 test("demo fiscal and map data are valid and filters compose", () => {
   for (const property of properties) {
-    assert.ok(property.annualTax > 0 && Number.isFinite(property.annualTax));
-    assert.ok(property.monthlyMaintenance >= 0);
+    if (property.operation === "Venta") {
+      assert.ok(property.sale.annualTax !== null && property.sale.annualTax > 0);
+      assert.equal(property.rental, undefined);
+      assert.equal(property.sale.purchasePrice, property.priceValue);
+    } else {
+      assert.equal(property.sale, undefined);
+      assert.equal("annualTax" in property, false);
+      assert.equal(property.rental.monthlyRent, property.priceValue);
+    }
+    assert.ok(property.maintenance.amount === null || property.maintenance.amount >= 0);
     assert.ok(property.coordinates.lat > 14 && property.coordinates.lat < 33);
     assert.ok(
       property.coordinates.lng > -119 && property.coordinates.lng < -86,

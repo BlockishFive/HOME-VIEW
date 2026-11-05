@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#141614" />
+    <title>Sin conexión · Home View</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #141614;
+        color: #f4f5ec;
+        font:
+          16px system-ui,
+          sans-serif;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+      main {
+        max-width: 580px;
+        border: 1px solid #52653b;
+        border-radius: 24px;
+        padding: 32px;
+      }
+      small {
+        color: #c5f53a;
+        letter-spacing: 0.08em;
+        font-size: 14px;
+      }
+      h1 {
+        font-size: clamp(28px, 6vw, 42px);
+        line-height: 1.2;
+      }
+      p {
+        line-height: 1.6;
+        color: #d0d7c4;
+      }
+      a {
+        display: inline-block;
+        margin-top: 12px;
+        color: #141614;
+        background: #c5f53a;
+        padding: 14px 20px;
+        border-radius: 24px;
+        text-decoration: none;
+        font-weight: 700;
+      }
+      strong {
+        color: #f4d34f;
+      }
+      label {
+        display: block;
+        margin: 20px 0;
+        font-size: 14px;
+      }
+      select {
+        display: block;
+        margin-top: 8px;
+        background: #202b19;
+        color: #edf1e6;
+        border: 1px solid #607841;
+        border-radius: 8px;
+        padding: 10px;
+        font:
+          16px system-ui,
+          sans-serif;
+        min-height: 44px;
+      }
+      a:focus-visible,
+      select:focus-visible {
+        outline: 3px solid #f4d34f;
+        outline-offset: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <small data-i18n="badge">HOME VIEW · PILOTO LOCAL</small>
+      <label
+        >Idioma / Language<select id="language" aria-label="Idioma / Language">
+          <option value="es">Español</option>
+          <option value="en">English</option>
+        </select></label
+      >
+      <h1 data-i18n="heading">Necesitas conexión para abrir esta pantalla.</h1>
+      <p>
+        <span data-i18n="saved"
+          >Los borradores locales siguen en este navegador; los privados permanecen en el servidor.</span
+        >
+        <strong data-i18n="private">El área privada necesita conexión.</strong>
+        <span data-i18n="keep"
+          >No borres los datos del sitio para resolver un problema de
+          conexión.</span
+        >
+      </p>
+      <p data-i18n="scope">
+        Este piloto todavía no permite abrir el editor, el mapa ni el recorrido
+        360 sin conexión. Cuando vuelva la red, abre tu panel y descarga un
+        respaldo.
+      </p>
+      <a href="/alta" data-i18n="retry">Reintentar abrir mis borradores</a>
+      <script>
+        const english = {
+          badge: "HOME VIEW · LOCAL PILOT",
+          heading: "You need a connection to open this screen.",
+          saved: "Local drafts remain in this browser; private drafts remain on the server.",
+          private: "The private workspace needs a connection.",
+          keep: "Do not clear site data to fix a connection problem.",
+          scope:
+            "This pilot cannot yet open the editor, map or 360 tour offline. When the connection returns, open your panel and download a backup.",
+          retry: "Try opening my drafts again",
+        };
+        const spanish = {};
+        document.querySelectorAll("[data-i18n]").forEach((element) => {
+          spanish[element.dataset.i18n] = element.textContent;
+        });
+        function apply(value) {
+          const locale = value === "en" ? "en" : "es";
+          document.documentElement.lang = locale;
+          document.title =
+            locale === "en"
+              ? "Offline · Home View"
+              : "Sin conexión · Home View";
+          document.getElementById("language").value = locale;
+          document.querySelectorAll("[data-i18n]").forEach((element) => {
+            element.textContent = (locale === "en" ? english : spanish)[
+              element.dataset.i18n
+            ];
+          });
+        }
+        try {
+          apply(localStorage.getItem("home-view-language"));
+        } catch {
+          apply("es");
+        }
+        document
+          .getElementById("language")
+          .addEventListener("change", (event) => {
+            apply(event.target.value);
+            try {
+              localStorage.setItem("home-view-language", event.target.value);
+            } catch {}
+          });
+      </script>
+    </main>
+  </body>
+</html>

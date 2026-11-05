@@ -2,13 +2,13 @@
 
 > HOME-VIEW · Project Design for Real Estate Services
 
-Prototipo en español para venta y renta de casas, departamentos y terrenos. Incluye cinco fichas ficticias, mapa vectorial propio MapLibre/PMTiles con vistas de referencia de México, Guanajuato y León, galería ampliable, datos de predial y costos, compartir e imprimir. Las tres viviendas originales tienen recorridos 360 con Marzipano. La casa en renta de demostración utiliza una galería convencional; los terrenos no ofrecen 360.
+Prototipo en español e inglés para venta y renta de casas, departamentos y terrenos. Incluye cinco fichas ficticias, mapa vectorial propio MapLibre/PMTiles con vistas de referencia de México, Guanajuato y León, galería ampliable, costos separados para venta y renta, compartir e imprimir. Las tres viviendas originales tienen recorridos 360 con Marzipano. La casa en renta de demostración utiliza una galería convencional; los terrenos no ofrecen 360.
 
-`/alta` permite preparar una ficha con tus propias fotos autorizadas y guardarla como borrador solo en este navegador. No hay cuentas, pagos, envío de contactos ni publicación de los borradores en un catálogo compartido.
+`/alta` conserva borradores locales en el navegador. `/privado` añade captura compartida entre iPad y PC con una cuenta privada configurada por terminal y almacenamiento en el servidor. Guardar no publica automáticamente: la cuenta privada puede publicar una versión revisada y retirarla sin perder el borrador. No hay registro público, pagos ni envío de contactos.
 
 ## Ejecutar localmente
 
-Requisitos: Node.js 24 LTS y npm 11 (versiones utilizadas en desarrollo). No se necesitan claves ni variables de entorno. El mapa incluido se sirve desde este mismo sitio; no necesita conexión a un proveedor cartográfico ni claves de API.
+Requisitos: Node.js 24 LTS y npm 11 (versiones utilizadas en desarrollo). No se necesitan claves. `NEXT_TELEMETRY_DISABLED=1` evita escrituras de telemetría en entornos con directorio personal de solo lectura. El mapa incluido se sirve desde este mismo sitio; no necesita conexión a un proveedor cartográfico ni claves de API.
 
 ```sh
 npm ci
@@ -20,11 +20,11 @@ Abre el puerto 3000 en tu navegador local. En un entorno donde el directorio per
 ```sh
 npm test                # integridad del catálogo, grafo de habitaciones y medios
 npm run typecheck       # TypeScript
-npm run build           # compilación de producción
+NEXT_TELEMETRY_DISABLED=1 npm run build  # compilación de producción
 npm run start           # servir la compilación en puerto 3000
 ```
 
-Pruebas de navegador (compilar antes; se puede reutilizar un servidor de producción en puerto 3000):
+Pruebas de navegador (compilar antes y dejar libre el puerto 3000; el servidor usa una base temporal y cuenta ficticia aisladas):
 
 ```sh
 npx playwright install chromium
@@ -34,6 +34,25 @@ npx playwright test
 Si Chromium ya está instalado, puedes evitar la descarga con `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npx playwright test` (comando verificado en este entorno).
 
 En Linux, Playwright puede requerir sus dependencias del sistema (`npx playwright install --with-deps chromium`). En la nube usa `PLAYWRIGHT_BROWSERS_PATH=/workspace/.cache/ms-playwright` al instalar y ejecutar si el directorio personal no es escribible.
+
+## Activar el área privada en el piloto
+
+Con el servidor detenido, después de actualizar la rama e instalar dependencias:
+
+```sh
+npm run setup:private
+NEXT_TELEMETRY_DISABLED=1 npm run dev
+```
+
+El primer comando pide un usuario y una contraseña de al menos 14 caracteres, sin mostrarla. No la envíes al chat ni la guardes en GitHub. En el iPad y la PC abre la **misma dirección HTTPS** del sitio y entra en **Área privada** (`/privado`). Guarda desde allí y usa **Actualizar lista privada** en el otro dispositivo.
+
+Para la casa ya capturada en el iPad: conserva un respaldo, inicia sesión en el área privada en otra pestaña y pulsa **Copiar al área privada** en la tarjeta de **Borradores locales**. El original permanece local; no se suben todos los borradores automáticamente.
+
+El servidor guarda datos y medios en `.home-view/private.sqlite`, excluido de Git. Funciona entre dispositivos mientras ese servidor esté activo; Codespaces todavía puede suspenderse y no es alojamiento permanente. Antes de eliminar el Codespace, crea un respaldo con `npm run backup:private` y conserva una copia privada fuera de él. Para cambiar la contraseña conservando datos: `npm run setup:private -- --reset`.
+
+Para publicar la casa: en su tarjeta privada pulsa **Publicar propiedad**, revisa la lista y **Ver ficha previa**, marca la autorización y pulsa **Confirmar publicación**. Después abre **Ver publicación**. Después de editar y guardar usa **Actualizar publicación**; para ocultarla usa **Retirar publicación**. Consulta [publicación y flujo cámara 360 → iPad](docs/PUBLISHING.md).
+
+Consulta [configuración, copias, límites y restauración](docs/PRIVATE_PILOT.md). No desplegar esta base en funciones efímeras o instancias sin disco persistente.
 
 ## Uso
 
@@ -54,12 +73,60 @@ Los JPEG locales son ilustraciones originales generadas mediante trazado de rayo
 ## Preparar tu casa en renta
 
 1. Abre **Alta de inmueble** (`/alta`). Se inicia con Renta, Casa, Guanajuato y León.
-2. Completa título, mensualidad en MXN, superficie, descripción y colonia. Recámaras, baños, predial y mantenimiento pueden dejarse sin especificar; no se inventan montos.
-3. Ajusta latitud/longitud a una ubicación aproximada de tu zona. La referencia inicial es el centro de León; no indica tu domicilio.
-4. Selecciona entre 1 y 8 fotos JPEG/PNG/WebP de hasta 5 MB cada una. Convierte HEIC previamente. El navegador las decodifica, reduce a un máximo de 1920 px y reencoda como JPEG sin los metadatos originales. Las fotos normales no se convierten en panoramas 360.
-5. Confirma que tienes autorización para usar las imágenes y guarda el borrador. Sigue siendo local, no publicado y accesible a quien use ese navegador. Usa **Descargar respaldo** para conservar una copia JSON con fotos; la importación de respaldos aún está pendiente.
+2. Completa título, mensualidad en MXN, superficie, descripción y colonia. Para **Renta** registra depósito en MXN, plazo mínimo en meses, aval y póliza como requisitos independientes o como alternativas («aval o póliza»), mascotas, amueblado y agua/electricidad/gas/internet incluidos. Todos pueden quedar **Por confirmar**. No se pide ni muestra predial en renta. Para **Venta** se pide precio de compra y predial anual opcional, sin requisitos de arrendamiento.
+3. Indica si pertenece a fraccionamiento o condominio y si existe cuota de mantenimiento: **Sí**, **No aplica** o **Por confirmar**. Si existe, el monto puede quedar pendiente; en renta indica además si ya está incluido en la mensualidad. **$18,000 + $900** produce **Renta y mantenimiento: $18,900/mes**; una cuota incluida no se vuelve a sumar. Solo se muestra el total cuando renta, cuota e inclusión son conocidos. Nunca se suman servicios, depósito ni póliza.
+4. Ajusta latitud/longitud a una ubicación aproximada de tu zona. La referencia inicial es el centro de León; no indica tu domicilio.
+5. Selecciona entre 1 y 8 fotos JPEG/PNG/WebP de hasta 5 MB cada una. Convierte HEIC previamente. El navegador las decodifica, reduce a un máximo de 1920 px y reencoda como JPEG sin los metadatos originales. Las fotos normales no se convierten en panoramas 360.
+6. Opcional para viviendas: en **Panoramas 360 y escenas**, confirma que son capturas equirectangulares completas autorizadas. Añade hasta 8 imágenes 2:1 de al menos 1024×512 y hasta 12 MB cada una; se reencodan a un máximo de 4096 px, sin recortar la esfera. Nombra escenas y crea conexiones de un solo sentido con destino y ángulos manuales. Añade la conexión de regreso si hace falta. **Abrir vista previa 360** reutiliza Marzipano; una foto convencional no se transforma en 360. Los terrenos conservan galería, sin recorrido.
+7. Confirma que tienes autorización para usar las imágenes y guarda el borrador. Sigue siendo local, no publicado y accesible a quien use ese navegador. Usa **Descargar respaldo** para conservar una copia JSON con fotos; puedes restaurarlo desde **Respaldar y restaurar** tras revisar una vista previa.
 
-Los borradores se almacenan en IndexedDB, no se suben al servidor y no aparecen en otros dispositivos ni en el catálogo público. Pueden perderse al borrar datos del navegador o cambiar de dirección/origen del sitio. Antes de publicar inmuebles reales se necesita backend, control de acceso y almacenamiento compartido.
+Desde **Borradores locales** (`/alta#saved-title`) puedes revisar costos y condiciones, editar, guardar sobre el mismo borrador, descargar respaldo o eliminar. Las escenas guardadas se abren bajo demanda. El respaldo JSON v2 incluye fotos y panoramas; se restaura como una copia nueva. **Cancelar edición** conserva la recuperación automática y abre una captura vacía; para eliminar esa recuperación usa **Descartar captura local**. Al guardar se confirma que el registro se puede volver a leer y la captura permanece en el formulario. **Ver el borrador guardado** abre su tarjeta; **Crear otro borrador** limpia el formulario explícitamente. Guardar otra vez actualiza el mismo registro.
+
+Los borradores v1 se adaptan al leerlos sin sobreescribir el original: el precio pasa al bloque de la operación, el predial solo a venta y una cuota positiva conserva su importe con inclusión por confirmar. Una cuota anterior vacía o cero requiere revisión; no demuestra «No aplica». Los requisitos, servicios y pertenencia a conjunto quedan por confirmar. La edición y guardado explícitos escriben el esquema v2.
+
+Los borradores de `/alta` se almacenan en IndexedDB y no aparecen en otros dispositivos hasta copiarlos explícitamente al área privada. Pueden perderse al borrar datos del navegador o cambiar de dirección/origen del sitio. Los borradores de `/privado` y sus medios se guardan en el servidor tras iniciar sesión. Ambos flujos conservan la separación venta/renta. Guardar no publica: en el área privada puedes publicar explícitamente la versión guardada, actualizarla o retirarla. Véase [publicación del piloto](docs/PUBLISHING.md).
+
+## Panel privado y guardado automático
+
+`/privado` muestra primero las propiedades, con búsqueda y filtros por publicación. **Nueva propiedad** y **Editar borrador** abren el formulario. Los panoramas no se descargan para listar tarjetas; se cargan al consultar detalles o editar.
+
+Mientras capturas, se guardan campos incompletos, fotos y escenas en **este dispositivo**. Espera **Guardado en este dispositivo** antes de cerrar. Al volver, usa **Continuar captura**; el envío al servidor sigue siendo explícito con Guardar. **Confirmado en el servidor** indica que ya respondió el backend. Las recuperaciones locales permanecen incluso tras cerrar sesión y no están cifradas para otros usuarios del mismo perfil de navegador.
+
+Consulta [recuperación, privacidad y límites de conexión](docs/AUTOSAVE_DASHBOARD.md). Todavía se necesita internet para abrir la aplicación y verificar la sesión privada; no hay subida automática ni arranque privado offline.
+
+## Respaldos y editor visual 360
+
+**Respaldar y restaurar** permite descargar la captura actual aunque esté incompleta, revisar un archivo JSON y restaurarlo como una captura nueva. Incluye fotos, panoramas, conexiones y orientación, sin sobrescribir originales. En el área privada la restauración permanece en este navegador hasta confirmar Guardar borrador privado. Debes revisar otra vez los permisos de imágenes y la ubicación. Los archivos contienen información privada: consérvalos fuera del Codespace y en un lugar seguro.
+
+En **Editar visualmente escena…** puedes colocar una flecha tocando el panorama o usando el centro de la vista. Arrastrar/pellizcar solo cambia la mirada o el zoom. **Usar esta vista al entrar** conserva orientación por escena; **Empezar recorrido en escena…** elige el inicio. Se avisa de escenas sin camino de ida/regreso, conservando los ajustes numéricos manuales.
+
+Consulta [formatos, límites, restauración y pasos del editor](docs/BACKUPS_AND_VISUAL_TOURS.md). No hay conexión directa con la cámara ni publicación automática.
+
+## Revisar el anuncio y preparar visitas
+
+**Revisar captura actual** muestra faltantes y condiciones por confirmar sin guardar el formulario. **Publicar propiedad** y **Actualizar publicación** abren la revisión de la versión guardada en el servidor. **Ver ficha previa** usa la plantilla y los datos públicos del anuncio, con la precisión elegida. La publicación requiere revisar, marcar la autorización y confirmar; si otro dispositivo cambió la versión, debes actualizarla y revisar otra vez. Las condiciones desconocidas pueden seguir como Por confirmar.
+
+En el mapa puedes **Ubicar inmueble** o **Ubicar acceso para visitas**. El acceso y sus notas son privados, separados de la ubicación pública, y se conservan en borradores, recuperación y respaldos. **Ver inmueble y acceso** encuadra ambos; puedes ampliar el mapa y abrir enlaces para contrastar coordenadas o pedir indicaciones en proveedores externos. La cobertura real de Marroka y Safari/iPad físico necesitan comprobación en campo.
+
+Consulta [revisión, privacidad y pasos para preparar visitas](docs/REVIEW_AND_VISITS.md).
+
+## Capturar ubicación en el iPad
+
+El formulario permite buscar una referencia pública, usar GPS con permiso y ajustar el marcador con un toque o arrastrándolo. **Calles detalladas · OpenFreeMap** añade calles y edificios vectoriales con nuestro estilo oscuro; el mapa local se conserva como respaldo. La búsqueda usa Photon/Komoot bajo sesión privada, sin autocomplete.
+
+Se guarda el punto privado por separado de la precisión pública: **Zona aproximada** es el valor inicial; **Punto exacto** requiere elección y revisión explícitas. Revisa y guarda antes de publicar. No se garantiza la cobertura completa de Marroka ni precisión catastral. Véase [uso, proveedores, privacidad y comprobaciones pendientes](docs/LOCATION_CAPTURE.md).
+
+## Piloto móvil PWA
+
+La aplicación tiene manifest, iconos originales y base instalable en HTTPS (o localhost). Usa **Instalar Home View** cuando el navegador lo ofrezca, o su menú de instalación; en iPhone, Compartir → Añadir a pantalla de inicio. La PWA abre `/privado`, que requiere la cuenta creada por terminal. Los borradores locales siguen vinculados al navegador, perfil y origen; los privados se consultan en el servidor desde ambos dispositivos.
+
+El piloto necesita conexión para abrir sus pantallas. El service worker solo conserva un aviso sin conexión e iconos públicos, sin cachear páginas, medios del usuario ni rangos del mapa. La edición offline completa y la comprobación en teléfonos físicos siguen pendientes. Véase [PWA y alcance offline](docs/PWA.md).
+
+## Idiomas y lectura en iPad
+
+Usa **Idioma / Language** en el encabezado para alternar Español y English. La preferencia se conserva en este navegador y la captura en curso no se reinicia. Se traducen navegación, filtros, formularios, avisos, condiciones, fichas de demostración, mapa, galería y recorrido 360. Los importes siguen en MXN.
+
+Los textos que escribas en los borradores se conservan en su idioma original. Cambiar la interfaz no los traduce ni publica. La PWA y su aviso offline también ofrecen ambos idiomas. La letra secundaria tiene un mínimo de 14 px y los campos/descripciones principales 16 px, con controles táctiles más amplios. Véase [idiomas, renderizado y legibilidad](docs/I18N.md).
 
 ## Servicios y costos
 
@@ -69,7 +136,10 @@ Las pruebas de navegador usan el archivo PMTiles real, comprueban HTTP206/Range 
 
 ## Documentación
 
+- [Área privada y captura compartida](docs/PRIVATE_PILOT.md)
 - [Arquitectura y decisiones](docs/ARCHITECTURE.md)
+- [Validación del piloto y comprobaciones pendientes](docs/VALIDATION.md)
+- [Piloto móvil PWA](docs/PWA.md)
 - [Servicios, costos y límites](docs/SERVICES.md)
 - [Datos del mapa y regeneración](docs/MAP_DATA.md)
 - [Pendientes de seguridad y producción](docs/SECURITY.md)
@@ -85,4 +155,12 @@ La cobertura es progresiva: México en niveles 3–7, Guanajuato en 8–10 y la 
 
 Para regenerar o ampliar el paquete consulta [datos y generación](docs/MAP_DATA.md). El archivo ya viene incluido: no necesitas Python para ejecutar Home View. El alojamiento debe respetar solicitudes HTTP Range y responder 206 para descargar fragmentos. Next.js lo hace en la configuración probada.
 
-Si el mapa no carga, usa **Actualizar cartografía**. Ante un fallo del archivo o de WebGL se muestra un aviso y la lista continúa disponible. En Codespaces reinicia el servidor después de cambiar la configuración y recarga la pestaña. Ya no se solicitan imágenes al servidor público de OpenStreetMap.
+Si el mapa no carga, usa **Actualizar cartografía**. Ante un fallo del archivo o de WebGL se muestra un aviso y la lista continúa disponible. En Codespaces reinicia el servidor después de cambiar la configuración y recarga la pestaña. La versión actual no solicita imágenes al servidor público de OpenStreetMap: las calles detalladas usan vectores de OpenFreeMap y el estilo de Home View. Si ese proveedor está bloqueado, el aviso permite volver al respaldo.
+
+## Historial, recuperación y ensayo de campo
+
+En **Área privada → Historial y actividad** puedes revisar hasta 10 versiones por propiedad y restaurarlas como una revisión privada nueva, incluso después de eliminar un borrador. La publicación y la captura abierta permanecen independientes. El historial tiene retención y cuotas explícitas; puedes eliminar versiones anteriores o purgar el historial de un borrador eliminado.
+
+`npm run backup:private` crea y verifica la instantánea completa con un manifiesto SHA-256. `npm run verify:private -- /ruta/respaldo.sqlite` la comprueba otra vez; `npm run restore:private -- /ruta/respaldo.sqlite .home-view/restore-check` restaura únicamente en una carpeta nueva/vacía, revoca sesiones y conserva el original. Los archivos son privados y no están cifrados. Sigue la [guía de historial y restauración aislada](docs/HISTORY_AND_RECOVERY.md) antes de arrancar esa copia: contiene las publicaciones vigentes en el respaldo.
+
+La preparación de medios comprueba dimensiones antes de decodificar y procesa un archivo a la vez; los panoramas permiten tamaños de 3072 o 4096 px. Marzipano descarga una vez cada panorama activo y reintenta sin recargar el formulario. Revisa el [checklist de iPad/cámara y límites de rendimiento](docs/PILOT_CHECKLIST.md). La validación física sigue pendiente.

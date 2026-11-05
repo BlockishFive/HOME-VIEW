@@ -1,7 +1,9 @@
 "use client";
+import { useI18n } from "./I18nProvider";
 import { ArrowIcon } from "@/components/ArrowIcon";
 import { useState } from "react";
 export function VisitRequest() {
+  const { locale, t } = useI18n();
   const [open, setOpen] = useState(false);
   return (
     <div className="visit-request">
@@ -11,24 +13,25 @@ export function VisitRequest() {
         aria-expanded={open}
         aria-controls="visit-info"
       >
-        Solicitar visita{" "}
+        {t("Solicitar visita")}{" "}
         <span aria-hidden="true">
           <ArrowIcon />
         </span>
       </button>
       {open && (
         <div id="visit-info" role="status" className="visit-message">
-          <strong>Estás explorando una demostración.</strong>
+          <strong>{t("Estás explorando una demostración.")}</strong>
           <p>
-            La solicitud de visita aún no envía mensajes ni reserva citas. En la
-            versión de producción podrás contactar al asesor desde aquí.
+            {t(
+              "La solicitud de visita aún no envía mensajes ni reserva citas. En la versión de producción podrás contactar al asesor desde aquí.",
+            )}
           </p>
           <button onClick={() => setOpen(false)} className="text-button">
-            Entendido
+            {t("Entendido")}
           </button>
         </div>
       )}
-      <small>Demo sin envío de datos personales.</small>
+      <small>{t("Demo sin envío de datos personales.")}</small>
     </div>
   );
 }
