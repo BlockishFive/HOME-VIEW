@@ -103,6 +103,7 @@ test("blank optional costs stay unknown and never create a monthly total", async
   await expect(preview.getByText("Renta y mantenimiento", { exact: true })).toHaveCount(0);
   await expect(preview).not.toContainText("$0");
   await page.getByRole("button", { name: "Guardar borrador en este navegador", exact: true }).click();
+  await expect(page.locator(".capture-save-state")).toHaveAttribute("data-save-state","confirmed");
   await page.reload();
   const card = page.locator(".draft-card");
   await expect(card).toHaveCount(1);

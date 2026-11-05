@@ -1,6 +1,15 @@
 import { searchPlaces } from "./geocoding";
 import { setPublication } from "./publications";
 import { assertPrivateOrigin } from "./private-origin";
+import {
+  listHistory,
+  listVersions,
+  historicalVersion,
+  historicalAsset,
+  listActivity,
+  HISTORY_LIMIT,
+  HISTORY_BYTES,
+} from "./history-store";
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import {
@@ -28,6 +37,9 @@ import {
   removeDraft,
   SESSION_SECONDS,
   PrivateError,
+  db,
+  restoreHistoricalDraft,
+  clearHistory,
   type PrivateMetadata,
 } from "./private-store";
 const UUID =
@@ -73,6 +85,17 @@ function secureCookie(request: NextRequest) {
 function checkId(value: unknown): asserts value is string {
   if (typeof value !== "string" || !UUID.test(value))
     throw new PrivateError("invalid");
+}
+function positiveRevision(value: unknown): number {
+  const revision =
+    typeof value === "string" && /^\d+$/.test(value) ? Number(value) : value;
+  if (
+    typeof revision !== "number" ||
+    !Number.isSafeInteger(revision) ||
+    revision < 1
+  )
+    throw new PrivateError("invalid");
+  return revision;
 }
 async function media(file: FormDataEntryValue | null, panorama: boolean) {
   if (
@@ -245,11 +268,14 @@ async function upload(request: NextRequest) {
         pitch: h.pitch,
       }),
     );
-    const initialView = scene.initialView === undefined ? undefined : {
-      yaw: scene.initialView?.yaw,
-      pitch: scene.initialView?.pitch,
-      fov: scene.initialView?.fov,
-    };
+    const initialView =
+      scene.initialView === undefined
+        ? undefined
+        : {
+            yaw: scene.initialView?.yaw,
+            pitch: scene.initialView?.pitch,
+            fov: scene.initialView?.fov,
+          };
     validated.push({
       id,
       name: scene.name,
@@ -319,6 +345,96 @@ export async function privateHandler(
       return response;
     }
     if (!authenticated(token)) throw new PrivateError("unauthorized", 401);
+    if (path === "activity" && method === "GET") {
+      const cursor = request.nextUrl.searchParams.get("before");
+      const events = listActivity(
+        db(),
+        cursor === null ? Number.MAX_SAFE_INTEGER : positiveRevision(cursor),
+      );
+      return json({
+        events,
+        nextCursor: events.length === 30 ? events.at(-1)?.id : null,
+      });
+    }
+    if (path === "history" && method === "GET")
+      return json({
+        drafts: listHistory(db()),
+        limit: HISTORY_LIMIT,
+        bytes: HISTORY_BYTES,
+      });
+    if (segments[0] === "history" && segments.length >= 2) {
+      const id = segments[1];
+      checkId(id);
+      if (segments.length === 2 && method === "GET") {
+        const head = listHistory(db()).find((row) => row.id === id);
+        if (!head) throw new PrivateError("history_missing", 404);
+        return json({ head, versions: listVersions(db(), id) });
+      }
+      if (
+        (segments.length === 2 && method === "DELETE") ||
+        (segments.length === 3 &&
+          segments[2] === "restore" &&
+          method === "POST")
+      ) {
+        let data;
+        try {
+          data = JSON.parse((await bounded(request, 4096)).toString("utf8"));
+        } catch (error) {
+          if (error instanceof PrivateError) throw error;
+          throw new PrivateError("invalid");
+        }
+        if (!data || typeof data.deleted !== "boolean")
+          throw new PrivateError("invalid");
+        const revision = positiveRevision(data.expectedRevision);
+        if (method === "DELETE") {
+          clearHistory(id, revision, data.deleted);
+          return json({ ok: true });
+        }
+        return json({
+          draft: restoreHistoricalDraft(
+            id,
+            positiveRevision(data.sourceRevision),
+            revision,
+            data.deleted,
+          ),
+        });
+      }
+      if (segments.length === 3 && method === "GET") {
+        const revision = positiveRevision(segments[2]);
+        const draft = historicalVersion(db(), id, revision);
+        return json({
+          draft: {
+            ...draft,
+            photos: (draft.photos as { id: string }[]).map((photo) => ({
+              ...photo,
+              url: `/api/private/history/${id}/${revision}/media/${photo.id}`,
+            })),
+            scenes: (draft.scenes as { id: string }[]).map((scene) => ({
+              ...scene,
+              url: `/api/private/history/${id}/${revision}/media/${scene.id}`,
+            })),
+          },
+        });
+      }
+      if (
+        segments.length === 5 &&
+        segments[3] === "media" &&
+        method === "GET"
+      ) {
+        const revision = positiveRevision(segments[2]);
+        checkId(segments[4]);
+        const asset = historicalAsset(db(), id, revision, segments[4]);
+        if (!asset) throw new PrivateError("history_missing", 404);
+        return new Response(new Uint8Array(asset), {
+          headers: {
+            ...PRIVATE_HEADERS,
+            "Content-Type": "image/jpeg",
+            "Content-Disposition": "inline",
+          },
+        });
+      }
+      throw new PrivateError("not_found", 404);
+    }
     if (path === "logout" && method === "POST") {
       logout(token);
       const response = json({ ok: true });
@@ -331,18 +447,37 @@ export async function privateHandler(
       });
       return response;
     }
-    if (segments[0] === "publication" && segments.length === 2 && method === "POST") {
+    if (
+      segments[0] === "publication" &&
+      segments.length === 2 &&
+      method === "POST"
+    ) {
       checkId(segments[1]);
       const data = JSON.parse((await bounded(request, 4096)).toString("utf8"));
-      if (!data || !Number.isInteger(data.revision) || data.revision < 1 || typeof data.publish !== "boolean") throw new PrivateError("invalid");
+      if (
+        !data ||
+        !Number.isInteger(data.revision) ||
+        data.revision < 1 ||
+        typeof data.publish !== "boolean"
+      )
+        throw new PrivateError("invalid");
       setPublication(segments[1], data.revision, data.publish);
       return json({ ok: true });
     }
     if (path === "geocode" && method === "POST") {
       let data;
-      try { data = JSON.parse((await bounded(request, 2048)).toString("utf8")); } catch { throw new PrivateError("invalid"); }
+      try {
+        data = JSON.parse((await bounded(request, 2048)).toString("utf8"));
+      } catch {
+        throw new PrivateError("invalid");
+      }
       if (typeof data?.query !== "string") throw new PrivateError("invalid");
-      return json({results: await searchPlaces(data.query, data.locale === "en" ? "en" : "es")});
+      return json({
+        results: await searchPlaces(
+          data.query,
+          data.locale === "en" ? "en" : "es",
+        ),
+      });
     }
     if (path === "drafts" && method === "GET")
       return json({ drafts: listDrafts() });

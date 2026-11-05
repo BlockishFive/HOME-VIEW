@@ -6,6 +6,12 @@ export class SharedAccessError extends Error {
   }
 }
 const messages: Record<string, string> = {
+  history_missing:
+    "Esta versión ya no está disponible. Actualiza el historial.",
+  history_quota:
+    "El historial alcanzó su límite. Conserva un respaldo y elimina versiones antiguas desde Historial y actividad.",
+  schema_unsupported:
+    "Esta base de datos requiere una versión más reciente de HOME VIEW.",
   geocoder:
     "La búsqueda no está disponible. Ajusta el punto en el mapa o escribe las coordenadas; tu captura se conserva.",
   search_limited: "Espera unos segundos antes de buscar otra dirección.",

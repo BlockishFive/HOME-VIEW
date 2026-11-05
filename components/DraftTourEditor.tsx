@@ -8,50 +8,13 @@ import {
   MAX_SCENES,
   analyzeTour,
   removeDraftScene,
-  validatePanoramaDimensions,
-  validatePanoramaFile,
   type DraftScene,
 } from "@/lib/draft-tour";
 import "./draft-tour.css";
-
-async function preparePanorama(file: File): Promise<Blob> {
-  const invalid = validatePanoramaFile(file);
-  if (invalid) throw new Error(invalid);
-  const url = URL.createObjectURL(file);
-  try {
-    const image = new Image();
-    image.src = url;
-    await image.decode();
-    const dimensionsError = validatePanoramaDimensions(
-      image.naturalWidth,
-      image.naturalHeight,
-    );
-    if (dimensionsError) throw new Error(dimensionsError);
-    // Re-encode the complete sphere without cropping; remove source metadata.
-    const width = Math.min(4096, image.naturalWidth);
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = width / 2;
-    const context = canvas.getContext("2d");
-    if (!context)
-      throw new Error("No se pudo preparar el panorama en este navegador.");
-    context.fillStyle = "#ffffff";
-    context.fillRect(0, 0, width, width / 2);
-    context.drawImage(image, 0, 0, width, width / 2);
-    return await new Promise<Blob>((resolve, reject) =>
-      canvas.toBlob(
-        (blob) =>
-          blob
-            ? resolve(blob)
-            : reject(new Error("No se pudo procesar el panorama.")),
-        "image/jpeg",
-        0.88,
-      ),
-    );
-  } finally {
-    URL.revokeObjectURL(url);
-  }
-}
+import {
+  prepareBrowserMedia,
+  type MediaPreparation,
+} from "@/lib/browser-media";
 
 export function DraftTourPreview({
   scenes,
@@ -154,6 +117,11 @@ export function DraftTourEditor({
   const { t } = useI18n();
   const inputId = useId();
   const [busy, setBusy] = useState(false);
+  const [widthLimit, setWidthLimit] = useState(3072);
+  const [progress, setProgress] = useState("");
+  const [preparation, setPreparation] = useState<
+    Omit<MediaPreparation, "blob">[]
+  >([]);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
@@ -183,22 +151,34 @@ export function DraftTourEditor({
     onBusyChange?.(true);
     try {
       const added: DraftScene[] = [];
+      const results: Omit<MediaPreparation, "blob">[] = [];
       for (const file of Array.from(files)) {
+        setProgress(
+          t("Preparando panorama {number} de {total}…", {
+            number: added.length + 1,
+            total: files.length,
+          }),
+        );
+        const result = await prepareBrowserMedia(file, true, widthLimit);
+        const { blob: preparedBlob, ...summary } = result;
+        results.push(summary);
         added.push({
           id: crypto.randomUUID(),
           name: t("Escena {number}", {
             number: scenes.length + added.length + 1,
           }),
-          blob: await preparePanorama(file),
+          blob: preparedBlob,
           hotspots: [],
         });
       }
       onChange([...scenes, ...added]);
+      setPreparation(results);
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "No se pudo leer el panorama.",
       );
     } finally {
+      setProgress("");
       setBusy(false);
       onBusyChange?.(false);
     }
@@ -208,7 +188,7 @@ export function DraftTourEditor({
       <h2 id={`${inputId}-title`}>{t("Panoramas 360 y escenas")}</h2>
       <p className="listing-help">
         {t(
-          "Opcional. Separados de las fotografías normales. Añade hasta {count} capturas equirectangulares 360 de proporción exacta 2:1 (mínimo 1024 × 512 px), de hasta 12 MB cada una. Se reducen a 4096 px y se retiran metadatos. La proporción por sí sola no acredita que la captura cubra toda la esfera.",
+          "Opcional. Separados de las fotografías normales. Añade hasta {count} capturas equirectangulares 360 de proporción exacta 2:1 (mínimo 1024 × 512 px), de hasta 12 MB cada una. Se reducen hasta 4096 px y se retiran metadatos. La proporción por sí sola no acredita que la captura cubra toda la esfera.",
           { count: MAX_SCENES },
         )}
       </p>
@@ -228,6 +208,24 @@ export function DraftTourEditor({
             )}
           </span>
         </label>
+        <label className="listing-field">
+          <span id={`${inputId}-size-label`}>
+            {t("Tamaño para nuevos panoramas")}
+          </span>
+          <select
+            aria-labelledby={`${inputId}-size-label`}
+            value={widthLimit}
+            onChange={(event) => setWidthLimit(Number(event.target.value))}
+          >
+            <option value={3072}>{t("Equilibrado · hasta 3072 px")}</option>
+            <option value={4096}>{t("Mayor detalle · hasta 4096 px")}</option>
+          </select>
+        </label>
+        <p className="listing-help">
+          {t(
+            "Equilibrado reduce memoria y tamaño de transferencia. Mayor detalle conserva más resolución. Se procesa un archivo a la vez y no se modifica el original.",
+          )}
+        </p>
         <label className="listing-field" htmlFor={inputId}>
           <span>{t("Añadir panoramas 360")}</span>
           <input
@@ -242,7 +240,37 @@ export function DraftTourEditor({
             }}
           />
         </label>
-        {busy && <p role="status">{t("Preparando panoramas…")}</p>}
+        {busy && <p role="status">{progress || t("Preparando panoramas…")}</p>}
+        {preparation.length > 0 && (
+          <p className="listing-help media-preparation" role="status">
+            {t(
+              "Última selección: {count} panoramas preparados · {before} MB originales → {after} MB para guardar.",
+              {
+                count: preparation.length,
+                before: (
+                  preparation.reduce((sum, r) => sum + r.source.bytes, 0) /
+                  1024 /
+                  1024
+                ).toFixed(1),
+                after: (
+                  preparation.reduce((sum, r) => sum + r.prepared.bytes, 0) /
+                  1024 /
+                  1024
+                ).toFixed(1),
+              },
+            )}
+          </p>
+        )}
+        <p className="listing-help">
+          {t("Medios del recorrido: {count} escenas · {size} MB.", {
+            count: scenes.length,
+            size: (
+              scenes.reduce((sum, scene) => sum + scene.blob.size, 0) /
+              1024 /
+              1024
+            ).toFixed(1),
+          })}
+        </p>
         {error && (
           <p className="listing-error" role="alert">
             {t(error)}

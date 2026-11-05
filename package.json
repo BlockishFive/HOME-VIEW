@@ -12,7 +12,9 @@
     "prebuild": "node scripts/prepare-map-worker.mjs",
     "prestart": "node scripts/prepare-map-worker.mjs",
     "setup:private": "node --env-file-if-exists=.env.local --import tsx scripts/setup-private.ts",
-    "backup:private": "node --env-file-if-exists=.env.local --import tsx scripts/backup-private.ts"
+    "backup:private": "node --env-file-if-exists=.env.local --import tsx scripts/backup-private.ts",
+    "verify:private": "node --env-file-if-exists=.env.local --import tsx scripts/verify-private.ts",
+    "restore:private": "node --env-file-if-exists=.env.local --import tsx scripts/restore-private.ts"
   },
   "dependencies": {
     "maplibre-gl": "^6.16.0",

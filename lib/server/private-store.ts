@@ -10,14 +10,16 @@ import {
 } from "node:crypto";
 export const SESSION_SECONDS = 7 * 24 * 60 * 60;
 export const COOKIE_NAME = "hv_private_session";
-export class PrivateError extends Error {
-  constructor(
-    public code: string,
-    public status = 400,
-  ) {
-    super(code);
-  }
-}
+import { PrivateError } from "./private-error";
+export { PrivateError } from "./private-error";
+import {
+  initializeHistory,
+  archiveVersion,
+  auditEvent,
+  historicalVersion,
+  historyGarbageCollect,
+} from "./history-store";
+import { validateDraftInput, type DraftInput } from "../listing-drafts";
 let database: DatabaseSync | undefined;
 export function db() {
   if (database) return database;
@@ -48,6 +50,13 @@ export function db() {
     CREATE TABLE IF NOT EXISTS publications (id TEXT PRIMARY KEY REFERENCES drafts(id) ON DELETE CASCADE, revision INTEGER NOT NULL, metadata TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS publication_assets (id TEXT NOT NULL, draft_id TEXT NOT NULL REFERENCES publications(id) ON DELETE CASCADE, content BLOB NOT NULL, PRIMARY KEY(draft_id,id));
     CREATE TABLE IF NOT EXISTS assets (id TEXT NOT NULL, draft_id TEXT NOT NULL REFERENCES drafts(id) ON DELETE CASCADE, content BLOB NOT NULL, PRIMARY KEY(draft_id,id));`);
+  try {
+    initializeHistory(database);
+  } catch (error) {
+    database.close();
+    database = undefined;
+    throw error;
+  }
   return database;
 }
 export function configured() {
@@ -73,7 +82,9 @@ export function configureOwner(
     db()
       .prepare("INSERT OR REPLACE INTO owner VALUES (1,?,?,?)")
       .run(username, salt, hash);
-    db().exec("DELETE FROM sessions; DELETE FROM login_attempts; COMMIT");
+    db().exec("DELETE FROM sessions; DELETE FROM login_attempts;");
+    auditEvent(db(), reset ? "owner.reset" : "owner.configured");
+    db().exec("COMMIT");
   } catch (error) {
     db().exec("ROLLBACK");
     throw error;
@@ -154,8 +165,115 @@ export function listDrafts(): PrivateMetadata[] {
   ).map((row) => ({
     ...JSON.parse(row.metadata),
     sharedRevision: row.revision,
-    publishedRevision: (db().prepare("SELECT revision FROM publications WHERE id=?").get(JSON.parse(row.metadata).id) as { revision: number } | undefined)?.revision ?? null,
+    publishedRevision:
+      (
+        db()
+          .prepare("SELECT revision FROM publications WHERE id=?")
+          .get(JSON.parse(row.metadata).id) as { revision: number } | undefined
+      )?.revision ?? null,
   }));
+}
+type WriteOptions = {
+  restored?: boolean;
+  restoreDeleted?: boolean;
+  sourceRevision?: number;
+};
+function writeDraft(
+  store: DatabaseSync,
+  metadata: PrivateMetadata,
+  assets: { id: string; content: Buffer }[],
+  expectedRevision: number,
+  options: WriteOptions = {},
+) {
+  const existing = store
+    .prepare("SELECT revision FROM drafts WHERE id=?")
+    .get(metadata.id) as { revision: number } | undefined;
+  const head = store
+    .prepare("SELECT last_revision,deleted_at FROM history_heads WHERE id=?")
+    .get(metadata.id) as
+    | { last_revision: number; deleted_at: string | null }
+    | undefined;
+  if (
+    existing
+      ? existing.revision !== expectedRevision
+      : options.restoreDeleted
+        ? !head ||
+          head.last_revision !== expectedRevision ||
+          head.deleted_at === null
+        : expectedRevision !== 0 || !!head
+  )
+    throw new PrivateError("conflict", 409);
+  if (
+    !existing &&
+    Number(
+      (
+        store.prepare("SELECT count(*) AS count FROM drafts").get() as {
+          count: number;
+        }
+      ).count,
+    ) >= 50
+  )
+    throw new PrivateError("quota", 413);
+  const used = Number(
+    (
+      store
+        .prepare(
+          "SELECT coalesce(sum(length(content)),0) AS size FROM assets WHERE draft_id!=?",
+        )
+        .get(metadata.id) as { size: number }
+    ).size,
+  );
+  if (
+    used + assets.reduce((sum, asset) => sum + asset.content.length, 0) >
+    300 * 1024 * 1024
+  )
+    throw new PrivateError("quota", 413);
+  const publicBytes = Number(
+    (
+      store
+        .prepare(
+          "SELECT coalesce(sum(length(content)),0) AS size FROM publication_assets",
+        )
+        .get() as { size: number }
+    ).size,
+  );
+  if (
+    used +
+      publicBytes +
+      assets.reduce((sum, asset) => sum + asset.content.length, 0) >
+    600 * 1024 * 1024
+  )
+    throw new PrivateError("quota", 413);
+  const revision =
+    Math.max(existing?.revision ?? 0, head?.last_revision ?? 0) + 1;
+  metadata = { ...metadata, sharedRevision: revision };
+  store
+    .prepare(
+      "INSERT INTO drafts VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision, metadata=excluded.metadata",
+    )
+    .run(metadata.id, revision, JSON.stringify(metadata));
+  store.prepare("DELETE FROM assets WHERE draft_id=?").run(metadata.id);
+  const insert = store.prepare("INSERT INTO assets VALUES (?,?,?)");
+  for (const asset of assets) insert.run(asset.id, metadata.id, asset.content);
+  archiveVersion(
+    store,
+    metadata,
+    assets,
+    options.restored ? "restored" : "saved",
+    options.sourceRevision ?? null,
+  );
+  auditEvent(
+    store,
+    options.restored
+      ? "draft.restored"
+      : existing
+        ? "draft.saved"
+        : "draft.created",
+    metadata.id,
+    revision,
+    options.sourceRevision ?? null,
+  );
+  return metadata;
 }
 export function putDraft(
   metadata: PrivateMetadata,
@@ -165,50 +283,102 @@ export function putDraft(
   const store = db();
   store.exec("BEGIN IMMEDIATE");
   try {
-    const existing = store
-      .prepare("SELECT revision FROM drafts WHERE id=?")
-      .get(metadata.id) as { revision: number } | undefined;
-    if ((existing?.revision ?? 0) !== expectedRevision)
-      throw new PrivateError("conflict", 409);
-    if (
-      !existing &&
-      Number(
-        (
-          store.prepare("SELECT count(*) AS count FROM drafts").get() as {
-            count: number;
-          }
-        ).count,
-      ) >= 50
-    )
-      throw new PrivateError("quota", 413);
-    const used = Number(
-      (
-        store
-          .prepare(
-            "SELECT coalesce(sum(length(content)),0) AS size FROM assets WHERE draft_id!=?",
-          )
-          .get(metadata.id) as { size: number }
-      ).size,
-    );
-    if (
-      used + assets.reduce((sum, asset) => sum + asset.content.length, 0) >
-      300 * 1024 * 1024
-    )
-      throw new PrivateError("quota", 413);
-    const publicBytes = Number((store.prepare("SELECT coalesce(sum(length(content)),0) AS size FROM publication_assets").get() as {size:number}).size);
-    if (used + publicBytes + assets.reduce((sum, asset) => sum + asset.content.length, 0) > 600 * 1024 * 1024)
-      throw new PrivateError("quota", 413);
-    const revision = (existing?.revision ?? 0) + 1;
-    metadata = { ...metadata, sharedRevision: revision };
-    store
-      .prepare("INSERT INTO drafts VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision, metadata=excluded.metadata")
-      .run(metadata.id, revision, JSON.stringify(metadata));
-    store.prepare("DELETE FROM assets WHERE draft_id=?").run(metadata.id);
-    const insert = store.prepare("INSERT INTO assets VALUES (?,?,?)");
-    for (const asset of assets)
-      insert.run(asset.id, metadata.id, asset.content);
+    const result = writeDraft(store, metadata, assets, expectedRevision);
     store.exec("COMMIT");
-    return metadata;
+    return result;
+  } catch (error) {
+    store.exec("ROLLBACK");
+    throw error;
+  }
+}
+export function restoreHistoricalDraft(
+  id: string,
+  sourceRevision: number,
+  expectedRevision: number,
+  deleted: boolean,
+) {
+  const store = db();
+  store.exec("BEGIN IMMEDIATE");
+  try {
+    const head = store
+      .prepare("SELECT last_revision,deleted_at FROM history_heads WHERE id=?")
+      .get(id) as
+      | { last_revision: number; deleted_at: string | null }
+      | undefined;
+    if (
+      !head ||
+      head.last_revision !== expectedRevision ||
+      (head.deleted_at !== null) !== deleted
+    )
+      throw new PrivateError("conflict", 409);
+    const metadata = historicalVersion(store, id, sourceRevision);
+    try {
+      if (
+        Object.keys(
+          validateDraftInput({
+            ...metadata,
+            imageRights: true,
+          } as unknown as DraftInput),
+        ).length
+      )
+        throw new Error();
+    } catch {
+      throw new PrivateError("invalid");
+    }
+    const assets = (
+      store
+        .prepare(
+          "SELECT a.id,b.content FROM version_assets a JOIN version_blobs b ON b.hash=a.hash WHERE a.draft_id=? AND a.revision=?",
+        )
+        .all(id, sourceRevision) as { id: string; content: Uint8Array }[]
+    ).map((asset) => ({ id: asset.id, content: Buffer.from(asset.content) }));
+    const result = writeDraft(
+      store,
+      {
+        ...metadata,
+        id,
+        updatedAt: new Date().toISOString(),
+        imageRights: false,
+        locationReviewed: false,
+      },
+      assets,
+      expectedRevision,
+      { restored: true, restoreDeleted: deleted, sourceRevision },
+    );
+    store.exec("COMMIT");
+    return result;
+  } catch (error) {
+    store.exec("ROLLBACK");
+    throw error;
+  }
+}
+export function clearHistory(
+  id: string,
+  expectedRevision: number,
+  deleted: boolean,
+) {
+  const store = db();
+  store.exec("BEGIN IMMEDIATE");
+  try {
+    const head = store
+      .prepare("SELECT last_revision,deleted_at FROM history_heads WHERE id=?")
+      .get(id) as
+      | { last_revision: number; deleted_at: string | null }
+      | undefined;
+    if (
+      !head ||
+      head.last_revision !== expectedRevision ||
+      (head.deleted_at !== null) !== deleted
+    )
+      throw new PrivateError("conflict", 409);
+    store
+      .prepare(
+        "DELETE FROM draft_versions WHERE draft_id=? AND (? OR revision!=?)",
+      )
+      .run(id, deleted ? 1 : 0, expectedRevision);
+    historyGarbageCollect(store);
+    auditEvent(store, "history.cleared", id, expectedRevision);
+    store.exec("COMMIT");
   } catch (error) {
     store.exec("ROLLBACK");
     throw error;
@@ -222,8 +392,38 @@ export function getAsset(draftId: string, id: string) {
   )?.content;
 }
 export function removeDraft(id: string, revision: number) {
-  const result = db()
-    .prepare("DELETE FROM drafts WHERE id=? AND revision=?")
-    .run(id, revision);
-  if (!result.changes) throw new PrivateError("conflict", 409);
+  const store = db();
+  store.exec("BEGIN IMMEDIATE");
+  try {
+    const row = store
+      .prepare("SELECT metadata,revision FROM drafts WHERE id=?")
+      .get(id) as { metadata: string; revision: number } | undefined;
+    if (!row || row.revision !== revision)
+      throw new PrivateError("conflict", 409);
+    const assets = (
+      store
+        .prepare("SELECT id,content FROM assets WHERE draft_id=?")
+        .all(id) as { id: string; content: Uint8Array }[]
+    ).map((asset) => ({ id: asset.id, content: Buffer.from(asset.content) }));
+    archiveVersion(
+      store,
+      { ...JSON.parse(row.metadata), id, sharedRevision: revision },
+      assets,
+      "saved",
+    );
+    const published = store
+      .prepare("SELECT 1 FROM publications WHERE id=?")
+      .get(id);
+    store.prepare("DELETE FROM drafts WHERE id=?").run(id);
+    store
+      .prepare("UPDATE history_heads SET deleted_at=? WHERE id=?")
+      .run(new Date().toISOString(), id);
+    if (published)
+      auditEvent(store, "publication.removed_on_delete", id, revision);
+    auditEvent(store, "draft.deleted", id, revision);
+    store.exec("COMMIT");
+  } catch (error) {
+    store.exec("ROLLBACK");
+    throw error;
+  }
 }

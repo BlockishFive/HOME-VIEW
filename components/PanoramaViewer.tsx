@@ -1,6 +1,7 @@
 "use client";
 import { useI18n } from "./I18nProvider";
 import { useEffect, useRef, useState } from "react";
+import { panoramaResource } from "@/lib/panorama-resource";
 import { defaultSceneView, type SceneView } from "@/lib/draft-tour";
 type PanoramaRoom<Id extends string> = {
   id: Id;
@@ -53,27 +54,32 @@ export function PanoramaViewer<Id extends string>({
     "loading",
   );
   const [fullscreen, setFullscreen] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   select.current = onSelect;
   const roomName = (name: string) => (translateRoomNames ? t(name) : name);
   const room = rooms.find((r) => r.id === current) ?? rooms[0];
   useEffect(() => {
     let cancelled = false;
     let destroy: (() => void) | undefined;
-    let image: HTMLImageElement | undefined;
+    let resource: Awaited<ReturnType<typeof panoramaResource>> | undefined;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
     setStatus("loading");
-    if (!room) return;
+    if (!room) {
+      clearTimeout(timeout);
+      return;
+    }
     async function initialize() {
       try {
         const { default: M } = await import("marzipano");
         if (cancelled || !host.current) return;
-        // Verify the asset first so a failed image request never leaves an empty viewer.
-        image = new Image();
-        await new Promise<void>((resolve, reject) => {
-          image!.onload = () => resolve();
-          image!.onerror = () => reject(new Error("Panorama unavailable"));
-          image!.src = room.panorama;
-        });
-        if (cancelled || !host.current) return;
+        resource = await panoramaResource(room.panorama, controller.signal);
+        clearTimeout(timeout);
+        if (cancelled || !host.current) {
+          resource.release();
+          resource = undefined;
+          return;
+        }
         const viewer = new M.Viewer(host.current, {
           controls: { mouseViewMode: "drag" },
         });
@@ -104,8 +110,8 @@ export function PanoramaViewer<Id extends string>({
           viewer.destroy();
         };
         const scene = viewer.createScene({
-          source: M.ImageUrlSource.fromString(room.panorama),
-          geometry: new M.EquirectGeometry([{ width: image.naturalWidth }]),
+          source: M.ImageUrlSource.fromString(resource.url),
+          geometry: new M.EquirectGeometry([{ width: resource.width }]),
           view,
           pinFirstLevel: true,
         });
@@ -148,7 +154,10 @@ export function PanoramaViewer<Id extends string>({
         report();
         setStatus("ready");
       } catch (error) {
-        if (process.env.NODE_ENV === "development")
+        clearTimeout(timeout);
+        resource?.release();
+        resource = undefined;
+        if (!cancelled && process.env.NODE_ENV === "development")
           console.error("Home View panorama initialization failed", error);
         if (!cancelled) {
           destroy?.();
@@ -160,16 +169,16 @@ export function PanoramaViewer<Id extends string>({
     void initialize();
     return () => {
       cancelled = true;
-      if (image) {
-        image.onload = null;
-        image.onerror = null;
-      }
+      clearTimeout(timeout);
+      controller.abort();
       controls.current = null;
       tap.current = null;
       pointers.current.clear();
       destroy?.();
+      resource?.release();
+      resource = undefined;
     };
-  }, [room, rooms, locale, translateRoomNames]);
+  }, [room, rooms, locale, translateRoomNames, attempt]);
   useEffect(() => {
     const update = () =>
       setFullscreen(document.fullscreenElement === shell.current);
@@ -279,7 +288,7 @@ export function PanoramaViewer<Id extends string>({
           <button
             type="button"
             className="button"
-            onClick={() => window.location.reload()}
+            onClick={() => setAttempt((value) => value + 1)}
           >
             {t("Volver a intentar")}
           </button>

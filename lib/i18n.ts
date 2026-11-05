@@ -1,3 +1,5 @@
+import { mediaMessages } from "./i18n/media-messages";
+import { historyMessages } from "./i18n/history-messages";
 import { captureMessages } from "./i18n/capture-messages";
 import { reviewVisitsMessages } from "./i18n/review-visits-messages";
 import { backupTourMessages } from "./i18n/backup-tour-messages";
@@ -13,6 +15,8 @@ export function validLocale(value: unknown): Locale {
 }
 export const englishMessages: Record<string, string> = {
   ...siteMessages,
+  ...mediaMessages,
+  ...historyMessages,
   ...captureMessages,
   ...reviewVisitsMessages,
   ...backupTourMessages,

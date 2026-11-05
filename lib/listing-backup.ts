@@ -1,3 +1,4 @@
+import { prepareBrowserMedia } from "./browser-media";
 import { initialCaptureValues, type CaptureContent } from "./capture-store";
 import { readVisitAccess, hasVisitAccess } from "./visit-access";
 import {
@@ -352,69 +353,12 @@ function decodeBackup(text: string): ParsedBackup {
   return { content: { ...scalars, photos, scenes }, kind, legacy };
 }
 async function normalizeImage(blob: Blob, panorama: boolean): Promise<Blob> {
-  const url = URL.createObjectURL(blob),
-    image = new Image();
-  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    await new Promise<void>((resolve, reject) => {
-      timer = setTimeout(
-        () =>
-          reject(
-            new BackupError("No se pudo decodificar una imagen del respaldo."),
-          ),
-        15000,
-      );
-      image.onload = () => resolve();
-      image.onerror = () =>
-        reject(
-          new BackupError("No se pudo decodificar una imagen del respaldo."),
-        );
-      image.src = url;
-    });
-    if (
-      !image.naturalWidth ||
-      !image.naturalHeight ||
-      image.naturalWidth * image.naturalHeight > 60000000 ||
-      (panorama &&
-        validatePanoramaDimensions(image.naturalWidth, image.naturalHeight))
-    )
-      throw new BackupError(
-        "Una imagen del respaldo no tiene dimensiones válidas.",
-      );
-    const scale = Math.min(
-      1,
-      (panorama ? 4096 : 1920) /
-        Math.max(image.naturalWidth, image.naturalHeight),
+    return (await prepareBrowserMedia(blob, panorama)).blob;
+  } catch {
+    throw new BackupError(
+      "Una imagen del respaldo no tiene dimensiones válidas o no se pudo decodificar.",
     );
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(image.naturalWidth * scale);
-    canvas.height = Math.round(image.naturalHeight * scale);
-    const context = canvas.getContext("2d");
-    if (!context)
-      throw new BackupError("No se pudo decodificar una imagen del respaldo.");
-    context.fillStyle = "#fff";
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    return await new Promise<Blob>((resolve, reject) =>
-      canvas.toBlob(
-        (result) =>
-          result
-            ? resolve(result)
-            : reject(
-                new BackupError(
-                  "No se pudo decodificar una imagen del respaldo.",
-                ),
-              ),
-        "image/jpeg",
-        0.88,
-      ),
-    );
-  } finally {
-    clearTimeout(timer);
-    image.onload = null;
-    image.onerror = null;
-    image.src = "";
-    URL.revokeObjectURL(url);
   }
 }
 /** Decode/re-encode sequentially, before offering restoration. Never fetch URLs from a file. */

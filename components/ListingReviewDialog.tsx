@@ -21,6 +21,8 @@ export function ListingReviewDialog({
   onPublish,
   onReload,
   onEdit,
+  mediaBase,
+  historical = false,
 }: {
   draft: ListingDraft | RemoteDraft;
   saved: boolean;
@@ -31,7 +33,9 @@ export function ListingReviewDialog({
   onClose: () => void;
   onPublish?: () => Promise<void>;
   onReload?: () => Promise<void>;
-  onEdit: () => void;
+  onEdit?: () => void;
+  mediaBase?: string;
+  historical?: boolean;
 }) {
   const { t } = useI18n(),
     id = useId(),
@@ -54,11 +58,13 @@ export function ListingReviewDialog({
         const url = URL.createObjectURL(media.blob);
         owned.push(url);
         next[media.id] = url;
-      } else next[media.id] = `/api/private/media/${draft.id}/${media.id}`;
+      } else
+        next[media.id] =
+          `${mediaBase ?? `/api/private/media/${draft.id}/`}${media.id}`;
     }
     setUrls(next);
     return () => owned.forEach((url) => URL.revokeObjectURL(url));
-  }, [draft]);
+  }, [draft, mediaBase]);
   const metadata: ListingMetadata = {
     ...draft,
     scenes: draft.scenes.map((scene) => ({
@@ -93,9 +99,11 @@ export function ListingReviewDialog({
         <div>
           <p className="eyebrow">
             {t(
-              saved
-                ? "VERSIÓN GUARDADA · REVISIÓN PRIVADA"
-                : "CAPTURA ACTUAL · SIN CONFIRMAR",
+              historical
+                ? "VERSIÓN HISTÓRICA · SOLO PRIVADA"
+                : saved
+                  ? "VERSIÓN GUARDADA · REVISIÓN PRIVADA"
+                  : "CAPTURA ACTUAL · SIN CONFIRMAR",
             )}
           </p>
           <h2 id={`${id}-title`}>{t("Revisar antes de publicar")}</h2>
@@ -112,11 +120,13 @@ export function ListingReviewDialog({
       </div>
       <p className="listing-local-notice">
         {t(
-          saved
-            ? server
-              ? "Revisas la versión confirmada en el servidor. Los cambios que tengas en el formulario todavía no forman parte de ella."
-              : "Revisas el borrador guardado en este navegador. Los cambios del formulario todavía no forman parte de él."
-            : "Esta revisión usa la captura del formulario. Guarda el borrador privado para poder publicarla; abrir la revisión no guarda ni envía datos.",
+          historical
+            ? "Restaurar esta versión crea una nueva revisión privada. La publicación actual permanece independiente y requiere una revisión antes de actualizarla."
+            : saved
+              ? server
+                ? "Revisas la versión confirmada en el servidor. Los cambios que tengas en el formulario todavía no forman parte de ella."
+                : "Revisas el borrador guardado en este navegador. Los cambios del formulario todavía no forman parte de él."
+              : "Esta revisión usa la captura del formulario. Guarda el borrador privado para poder publicarla; abrir la revisión no guarda ni envía datos.",
         )}
       </p>
       <section
@@ -185,9 +195,11 @@ export function ListingReviewDialog({
         >
           {t(preview ? "Ocultar ficha previa" : "Ver ficha previa")}
         </button>
-        <button type="button" disabled={busy} onClick={onEdit}>
-          {t("Volver a editar")}
-        </button>
+        {onEdit && (
+          <button type="button" disabled={busy} onClick={onEdit}>
+            {t("Volver a editar")}
+          </button>
+        )}
         {saved && onReload && (
           <button type="button" disabled={busy} onClick={() => void onReload()}>
             {t("Actualizar versión para revisar")}

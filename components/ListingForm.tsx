@@ -30,6 +30,7 @@ import {
   publishSharedDraft,
 } from "@/lib/shared-drafts";
 import { useI18n } from "@/components/I18nProvider";
+import { PrivateHistoryPanel } from "./PrivateHistoryPanel";
 import { useEffect, useId, useRef, useState } from "react";
 import {
   deleteListingDraft,
@@ -57,6 +58,10 @@ import { TermsDetails } from "./PropertyCosts";
 import { ListingTermsFields } from "./ListingTermsFields";
 import { DraftTourEditor, DraftTourSavedPreview } from "./DraftTourEditor";
 import { validateDraftScenes, type DraftScene } from "@/lib/draft-tour";
+import {
+  prepareBrowserMedia,
+  type MediaPreparation,
+} from "@/lib/browser-media";
 const initial = initialCaptureValues;
 function numberOrNull(value: string) {
   return value.trim() === "" ? null : Number(value);
@@ -67,57 +72,6 @@ function storageMessage(error: unknown) {
     : error instanceof Error
       ? error.message
       : "No se pudo completar la operación local. Tus datos no se han publicado.";
-}
-async function preparePhoto(file: File): Promise<DraftPhoto> {
-  const url = URL.createObjectURL(file);
-  try {
-    const image = new Image();
-    image.src = url;
-    await image.decode();
-    if (
-      !image.naturalWidth ||
-      !image.naturalHeight ||
-      image.naturalWidth * image.naturalHeight > 60000000
-    )
-      throw new Error(
-        "Una foto tiene dimensiones demasiado grandes o no es una imagen válida.",
-      );
-    const scale = Math.min(
-      1,
-      1920 / Math.max(image.naturalWidth, image.naturalHeight),
-    );
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("Tu navegador no pudo preparar las fotos.");
-    context.fillStyle = "#ffffff";
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob>((resolve, reject) =>
-      canvas.toBlob(
-        (result) =>
-          result
-            ? resolve(result)
-            : reject(new Error("No se pudo preparar una de las fotos.")),
-        "image/jpeg",
-        0.85,
-      ),
-    );
-    return {
-      id: crypto.randomUUID(),
-      name: `foto-${crypto.randomUUID().slice(0, 8)}.jpg`,
-      blob,
-    };
-  } catch (error) {
-    throw new Error(
-      error instanceof Error
-        ? `No se pudo leer ${file.name}: ${error.message}`
-        : "No se pudo leer una fotografía.",
-    );
-  } finally {
-    URL.revokeObjectURL(url);
-  }
 }
 function PhotoPreview({ photo, label }: { photo: DraftPhoto; label: string }) {
   const [url, setUrl] = useState("");
@@ -187,6 +141,10 @@ export function ListingForm({
   const [storageError, setStorageError] = useState("");
   const [backupError, setBackupError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [photoProgress, setPhotoProgress] = useState("");
+  const [photoPreparation, setPhotoPreparation] = useState<
+    Omit<MediaPreparation, "blob">[]
+  >([]);
   const [loaded, setLoaded] = useState(false);
   const [review, setReview] = useState<{
     draft: ListingDraft | RemoteDraft;
@@ -437,12 +395,36 @@ export function ListingForm({
     setMessage("");
     try {
       const prepared: DraftPhoto[] = [];
-      for (const file of selected) prepared.push(await preparePhoto(file));
+      const results: Omit<MediaPreparation, "blob">[] = [];
+      for (const file of selected) {
+        setPhotoProgress(
+          t("Preparando foto {number} de {total}…", {
+            number: prepared.length + 1,
+            total: selected.length,
+          }),
+        );
+        try {
+          const result = await prepareBrowserMedia(file, false);
+          const { blob: preparedBlob, ...summary } = result;
+          results.push(summary);
+          prepared.push({
+            id: crypto.randomUUID(),
+            name: `foto-${crypto.randomUUID().slice(0, 8)}.jpg`,
+            blob: preparedBlob,
+          });
+        } catch (error) {
+          throw new Error(
+            `No se pudo leer ${file.name}: ${storageMessage(error)}`,
+          );
+        }
+      }
+      setPhotoPreparation(results);
       setPhotos(prepared);
       setErrors((previous) => ({ ...previous, photos: "" }));
     } catch (error) {
       setErrors((previous) => ({ ...previous, photos: storageMessage(error) }));
     } finally {
+      setPhotoProgress("");
       setBusy(false);
     }
   }
@@ -666,7 +648,7 @@ export function ListingForm({
       }
       setMessage(
         shared
-          ? "Borrador eliminado del servidor privado."
+          ? "Borrador eliminado del servidor privado. Sus versiones permanecen en Historial y actividad hasta que las elimines."
           : "Borrador eliminado de este navegador.",
       );
     } catch (error) {
@@ -1177,6 +1159,16 @@ export function ListingForm({
         />
       )}
       {shared && savedSection}
+      {shared && (
+        <PrivateHistoryPanel
+          disabled={busy}
+          preserve={() =>
+            editorOpen ? autosave.flush() : Promise.resolve(true)
+          }
+          onBusyChange={setBusy}
+          onChanged={refreshShared}
+        />
+      )}
       <ListingBackupTools
         scope={storage}
         current={editorOpen ? content : undefined}
@@ -1562,6 +1554,33 @@ export function ListingForm({
                 aria-describedby={errors.photos ? "error-photos" : undefined}
               />
             </label>
+            {photoProgress && <p role="status">{photoProgress}</p>}
+            {photoPreparation.length > 0 && (
+              <p className="listing-help media-preparation" role="status">
+                {t(
+                  "Última selección: {count} fotos preparadas · {before} MB originales → {after} MB para guardar.",
+                  {
+                    count: photoPreparation.length,
+                    before: (
+                      photoPreparation.reduce(
+                        (sum, r) => sum + r.source.bytes,
+                        0,
+                      ) /
+                      1024 /
+                      1024
+                    ).toFixed(1),
+                    after: (
+                      photoPreparation.reduce(
+                        (sum, r) => sum + r.prepared.bytes,
+                        0,
+                      ) /
+                      1024 /
+                      1024
+                    ).toFixed(1),
+                  },
+                )}
+              </p>
+            )}
             {errors.photos && (
               <p className="listing-field-error" id="error-photos">
                 {localizeMessage(errors.photos)}

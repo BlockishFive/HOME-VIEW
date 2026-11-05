@@ -1,6 +1,7 @@
 /** English UI messages for local listing capture and media. Draft content is never translated. */
 export const listingMessages: Record<string, string> = {
-  "Un borrador creado aquí no aparecerá en tu otro dispositivo. La sincronización todavía no está disponible.": "A draft created here will not appear on your other device. Synchronization is not available yet.",
+  "Un borrador creado aquí no aparecerá en tu otro dispositivo. La sincronización todavía no está disponible.":
+    "A draft created here will not appear on your other device. Synchronization is not available yet.",
   "La captura permanece en el formulario. Intenta guardar otra vez sin borrar los datos del sitio.":
     "Your information remains in the form. Try saving again without clearing site data.",
   "Ver el borrador guardado": "View saved draft",
@@ -144,7 +145,7 @@ export const listingMessages: Record<string, string> = {
   "Cerrar recorrido 360 del borrador": "Close draft 360 tour",
   "Ver recorrido 360 del borrador": "View draft 360 tour",
   "Panoramas 360 y escenas": "360 panoramas and scenes",
-  "Opcional. Separados de las fotografías normales. Añade hasta {count} capturas equirectangulares 360 de proporción exacta 2:1 (mínimo 1024 × 512 px), de hasta 12 MB cada una. Se reducen a 4096 px y se retiran metadatos. La proporción por sí sola no acredita que la captura cubra toda la esfera.":
+  "Opcional. Separados de las fotografías normales. Añade hasta {count} capturas equirectangulares 360 de proporción exacta 2:1 (mínimo 1024 × 512 px), de hasta 12 MB cada una. Se reducen hasta 4096 px y se retiran metadatos. La proporción por sí sola no acredita que la captura cubra toda la esfera.":
     "Optional. Separate from regular photos. Add up to {count} equirectangular 360 captures with an exact 2:1 ratio (at least 1024 × 512 px), up to 12 MB each. They are resized to 4096 px and metadata is removed. The aspect ratio alone does not prove that a capture covers the full sphere.",
   "Preparación local del recorrido": "Local tour preparation",
   "Confirmo que son capturas 360 equirectangulares completas y que tengo autorización para usarlas.":

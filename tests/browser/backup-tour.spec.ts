@@ -339,7 +339,7 @@ test("invalid or external backup media is rejected before restoration and leaves
     .getByLabel("Seleccionar respaldo de Home View", { exact: true })
     .setInputFiles(file(bad));
   await expect(page.locator(".backup-tools [role=alert]")).toContainText(
-    "No se pudo decodificar",
+    /no se pudo decodificar/i,
   );
   expect(external).toBe(0);
   expect(await rows(page)).toEqual(before);

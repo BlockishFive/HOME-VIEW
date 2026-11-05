@@ -7,7 +7,7 @@ import { useEffect, useId, useRef, useState } from "react";
 export type GalleryImage = { src: string; alt: string; label: string };
 const ownerMedia = (src: string) =>
   src.startsWith("/api/public/media/") ||
-  src.startsWith("/api/private/media/") ||
+  src.startsWith("/api/private/") ||
   src.startsWith("blob:");
 
 export function PropertyGallery({
