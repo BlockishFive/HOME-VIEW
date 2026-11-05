@@ -1,3 +1,4 @@
+import { confirmReviewedPublication } from "./publication-review-helper";
 import { test, expect } from "./fixtures";
 import { randomUUID } from "node:crypto";
 import { streetFixture, streetTileJSON } from "./street-fixture";
@@ -257,13 +258,20 @@ test("private coordinates survive save/edit while public HTML only receives the 
   const card = page
     .locator(".draft-card")
     .filter({ has: page.getByRole("heading", { name: title, exact: true }) });
-  page.once("dialog", (d) => d.accept());
   await card
     .getByRole("button", { name: "Publicar propiedad", exact: true })
     .click();
-  await expect(page.locator(".draft-save-feedback [role=alert]")).toContainText(
-    "Revisa y guarda la ubicación",
-  );
+  const review = page.getByRole("dialog", {
+    name: "Revisar antes de publicar",
+    exact: true,
+  });
+  await expect(review).toContainText("Revisa y guarda la ubicación");
+  await expect(
+    review.getByRole("button", { name: "Confirmar publicación", exact: true }),
+  ).toBeDisabled();
+  await review
+    .getByRole("button", { name: "Cerrar revisión", exact: true })
+    .click();
   await page.getByRole("checkbox", { name: reviewed, exact: true }).check();
   await page
     .getByRole("button", { name: "Guardar cambios del borrador", exact: true })
@@ -275,6 +283,7 @@ test("private coordinates survive save/edit while public HTML only receives the 
   await card
     .getByRole("button", { name: "Publicar propiedad", exact: true })
     .click();
+  await confirmReviewedPublication(page);
   const link = card.getByRole("link", { name: "Ver publicación", exact: true });
   await expect(link).toBeVisible();
   const outsider = await browser.newContext();

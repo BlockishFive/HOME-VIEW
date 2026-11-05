@@ -1,3 +1,4 @@
+import { confirmReviewedPublication } from "./publication-review-helper";
 import { test, expect } from "./fixtures";
 import type { Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
@@ -113,6 +114,7 @@ test("private dashboard comes first, searches and filters states; panoramas load
   await card
     .getByRole("button", { name: "Publicar propiedad", exact: true })
     .click();
+  await confirmReviewedPublication(page);
   await page.getByLabel("Estado de publicación").selectOption("published");
   await expect(card.locator(".draft-status")).toHaveText("Publicado");
   await card.getByText("Ver detalles y medios", { exact: true }).click();
@@ -423,6 +425,7 @@ test("sign-out preserves a capture, and lets the owner cancel if a device write 
     "data-save-state",
     "error",
   );
+  const warning=page.waitForEvent("dialog");
   page.once("dialog", (dialog) => {
     expect(dialog.message()).toContain("perder los últimos cambios");
     return dialog.dismiss();
@@ -430,6 +433,8 @@ test("sign-out preserves a capture, and lets the owner cancel if a device write 
   await page
     .getByRole("button", { name: "Cerrar sesión", exact: true })
     .click();
+  await warning;
+  await expect(page.getByRole("button",{name:"Cerrar sesión",exact:true})).toBeEnabled();
   await expect(
     page.getByLabel("Título del anuncio", { exact: true }),
   ).toHaveValue(title);

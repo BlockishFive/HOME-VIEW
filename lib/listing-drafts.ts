@@ -11,7 +11,14 @@ import {
   type SaleTerms,
 } from "./property-terms";
 import { validateDraftScenes, type DraftScene } from "./draft-tour";
+import {
+  readVisitAccess,
+  hasVisitAccess,
+  visitAccessError,
+  type VisitAccess,
+} from "./visit-access";
 export type DraftInput = {
+  visitAccess?: VisitAccess;
   publicLocation?: "approximate" | "exact";
   locationReviewed?: boolean;
   title: string;
@@ -101,6 +108,8 @@ export function validatePhotoFiles(
 }
 export function validateDraftInput(input: DraftInput): Record<string, string> {
   const errors: Record<string, string> = {};
+  const accessError = visitAccessError(input.visitAccess);
+  if (accessError) errors.visitAccess = accessError;
   if (input.title.trim().length < 5 || input.title.length > 120)
     errors.title = "Escribe un título de entre 5 y 120 caracteres.";
   if (!["Venta", "Renta"].includes(input.operation))
@@ -141,8 +150,16 @@ export function validateDraftInput(input: DraftInput): Record<string, string> {
         errors[field] =
           "Usa un número entero de 0 a 100, o deja el campo vacío.";
     }
-  if (input.publicLocation !== undefined && !["approximate", "exact"].includes(input.publicLocation)) errors.publicLocation = "Selecciona una precisión pública válida.";
-  if (input.locationReviewed !== undefined && typeof input.locationReviewed !== "boolean") errors.locationReviewed = "Revisa la ubicación antes de publicar.";
+  if (
+    input.publicLocation !== undefined &&
+    !["approximate", "exact"].includes(input.publicLocation)
+  )
+    errors.publicLocation = "Selecciona una precisión pública válida.";
+  if (
+    input.locationReviewed !== undefined &&
+    typeof input.locationReviewed !== "boolean"
+  )
+    errors.locationReviewed = "Revisa la ubicación antes de publicar.";
   Object.assign(errors, validateTerms(input));
   if (
     !Number.isFinite(input.latitude) ||
@@ -166,6 +183,9 @@ export function validateDraftInput(input: DraftInput): Record<string, string> {
 export function normalizeDraftInput(input: DraftInput): DraftInput {
   // Pick only schema fields so a switched operation cannot leak hidden form values.
   const common = {
+    ...(hasVisitAccess(input.visitAccess)
+      ? { visitAccess: readVisitAccess(input.visitAccess) }
+      : {}),
     title: input.title.trim(),
     description: input.description.trim(),
     state: input.state.trim(),

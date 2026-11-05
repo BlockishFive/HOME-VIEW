@@ -1,3 +1,4 @@
+import { confirmReviewedPublication } from "./publication-review-helper";
 import { test, expect } from "./fixtures";
 import type { Page, APIRequestContext } from "@playwright/test";
 import { readFile } from "node:fs/promises";
@@ -14,7 +15,9 @@ async function signIn(page: Page) {
   await expect(
     page.getByRole("heading", { name: "Mis borradores privados", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button",{name:"Nueva propiedad",exact:true}).click();
+  await page
+    .getByRole("button", { name: "Nueva propiedad", exact: true })
+    .click();
 }
 async function fill(page: Page, title: string) {
   await page.getByLabel("Título del anuncio", { exact: true }).fill(title);
@@ -34,7 +37,12 @@ async function fill(page: Page, title: string) {
     .getByLabel("Seleccionar fotografías", { exact: true })
     .setInputFiles("public/panoramas/sala-cover.jpg");
   await expect(page.locator(".listing-photo-preview img")).toHaveCount(1);
-  await page.getByRole("checkbox", {name:"Revisé la ubicación y autorizo la precisión pública seleccionada.",exact:true}).check();
+  await page
+    .getByRole("checkbox", {
+      name: "Revisé la ubicación y autorizo la precisión pública seleccionada.",
+      exact: true,
+    })
+    .check();
   await page
     .getByRole("checkbox", {
       name: "Tomé estas fotos y panoramas o tengo autorización para utilizarlos.",
@@ -106,16 +114,24 @@ test("an iPad capture with 360 media opens on a second device and remains outsid
   await expect(
     page.locator(".draft-save-feedback .listing-success"),
   ).toContainText("servidor privado");
-  const second = await browser.newContext({viewport:{width:1440,height:1000}});
+  const second = await browser.newContext({
+    viewport: { width: 1440, height: 1000 },
+  });
   const pc = await second.newPage();
   await signIn(pc);
-  expect(await pc.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  expect(
+    await pc.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
   const card = pc
     .locator(".draft-card")
     .filter({ has: pc.getByRole("heading", { name: title, exact: true }) });
   await expect(card).toBeVisible();
-  await card.getByText("Ver detalles y medios",{exact:true}).click();
+  await card.getByText("Ver detalles y medios", { exact: true }).click();
   await expect(card.locator(".draft-photo-grid img")).toBeVisible();
   await card
     .getByRole("button", {
@@ -137,15 +153,35 @@ test("an iPad capture with 360 media opens on a second device and remains outsid
     (await outsider.request.get(ORIGIN + dto.photos[0].url)).status(),
   ).toBe(401);
   await outsider.close();
-  await card.getByRole("button",{name:"Editar borrador",exact:true}).click();
-  await pc.getByLabel("Título del anuncio",{exact:true}).fill(title+" actualizada en PC");
-  await pc.getByRole("button",{name:"Guardar cambios del borrador",exact:true}).click();
-  await expect(pc.locator(".draft-save-feedback .listing-success")).toContainText("servidor privado");
-  await page.getByRole("button",{name:"Actualizar lista privada",exact:true}).click();
-  await expect(page.locator(".draft-card-heading h3").filter({hasText:title+" actualizada en PC"})).toBeVisible();
-  await page.getByRole("button",{name:"Guardar cambios del borrador",exact:true}).click();
-  await expect(page.locator(".draft-save-feedback [role=alert]")).toContainText("versión más reciente");
-  await expect(page.getByLabel("Título del anuncio",{exact:true})).toHaveValue(title);
+  await card
+    .getByRole("button", { name: "Editar borrador", exact: true })
+    .click();
+  await pc
+    .getByLabel("Título del anuncio", { exact: true })
+    .fill(title + " actualizada en PC");
+  await pc
+    .getByRole("button", { name: "Guardar cambios del borrador", exact: true })
+    .click();
+  await expect(
+    pc.locator(".draft-save-feedback .listing-success"),
+  ).toContainText("servidor privado");
+  await page
+    .getByRole("button", { name: "Actualizar lista privada", exact: true })
+    .click();
+  await expect(
+    page
+      .locator(".draft-card-heading h3")
+      .filter({ hasText: title + " actualizada en PC" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Guardar cambios del borrador", exact: true })
+    .click();
+  await expect(page.locator(".draft-save-feedback [role=alert]")).toContainText(
+    "versión más reciente",
+  );
+  await expect(
+    page.getByLabel("Título del anuncio", { exact: true }),
+  ).toHaveValue(title);
   await pc.goto("/");
   await expect(pc.locator("main")).not.toContainText(title);
   await pc.goto("/privado");
@@ -182,11 +218,9 @@ test("a local iPad draft can be copied explicitly without deleting its local ori
   const other = await context.newPage();
   await signIn(other);
   await expect(
-    other
-      .locator(".draft-card")
-      .filter({
-        has: other.getByRole("heading", { name: title, exact: true }),
-      }),
+    other.locator(".draft-card").filter({
+      has: other.getByRole("heading", { name: title, exact: true }),
+    }),
   ).toBeVisible();
   await page.reload();
   await expect(page.locator(".draft-card-heading h3")).toHaveText(title);
@@ -270,70 +304,164 @@ test("server rejects malformed media and stale updates without replacing the cur
   ).toBe(404);
 });
 
-test("admin publishes a reviewed snapshot, edits privately, republishes and withdraws without losing the draft", async ({page, browser}) => {
+test("admin publishes a reviewed snapshot, edits privately, republishes and withdraws without losing the draft", async ({
+  page,
+  browser,
+}) => {
   test.setTimeout(90000);
-  const title = `Publicación ficticia ${randomUUID().slice(0,8)}`;
+  const title = `Publicación ficticia ${randomUUID().slice(0, 8)}`;
   await signIn(page);
   await fill(page, title);
   const tour = page.locator(".draft-tour-editor");
   await tour.getByRole("checkbox").check();
-  await tour.getByLabel("Añadir panoramas 360").setInputFiles("public/panoramas/sala.jpg");
+  await tour
+    .getByLabel("Añadir panoramas 360")
+    .setInputFiles("public/panoramas/sala.jpg");
   await expect(tour.locator(".draft-scene-card")).toHaveCount(1);
-  await page.getByRole("button", {name:"Guardar borrador privado",exact:true}).click();
-  await expect(page.locator(".draft-save-feedback .listing-success")).toContainText("servidor privado");
-  const card = page.locator(".draft-card").filter({has:page.getByRole("heading",{name:title,exact:true})});
+  await page
+    .getByRole("button", { name: "Guardar borrador privado", exact: true })
+    .click();
+  await expect(
+    page.locator(".draft-save-feedback .listing-success"),
+  ).toContainText("servidor privado");
+  const card = page
+    .locator(".draft-card")
+    .filter({ has: page.getByRole("heading", { name: title, exact: true }) });
   const outsider = await browser.newContext();
   const publicPage = await outsider.newPage();
-  const dto = (await (await page.request.get("/api/private/drafts")).json()).drafts.find((d:{title:string})=>d.title===title);
+  const dto = (
+    await (await page.request.get("/api/private/drafts")).json()
+  ).drafts.find((d: { title: string }) => d.title === title);
   const url = `/propiedades/anuncio-${dto.id}`;
   const asset = `/api/public/media/${dto.id}/${dto.photos[0].id}`;
   expect((await publicPage.request.get(asset)).status()).toBe(404);
-  expect((await publicPage.request.post(`/api/private/publication/${dto.id}`, {headers:{Origin:ORIGIN},data:{revision:1,publish:true}})).status()).toBe(401);
-  page.once("dialog", d => d.dismiss());
-  await card.getByRole("button",{name:"Publicar propiedad",exact:true}).click();
+  expect(
+    (
+      await publicPage.request.post(`/api/private/publication/${dto.id}`, {
+        headers: { Origin: ORIGIN },
+        data: { revision: 1, publish: true },
+      })
+    ).status(),
+  ).toBe(401);
+  page.once("dialog", (d) => d.dismiss());
+  await card
+    .getByRole("button", { name: "Publicar propiedad", exact: true })
+    .click();
+  await confirmReviewedPublication(page);
   expect((await publicPage.request.get(asset)).status()).toBe(404);
-  page.once("dialog", d => d.accept());
-  await card.getByRole("button",{name:"Publicar propiedad",exact:true}).click();
-  await expect(card.getByRole("link",{name:"Ver publicación",exact:true})).toBeVisible();
+  await page
+    .getByRole("button", { name: "Cerrar revisión", exact: true })
+    .click();
+  page.once("dialog", (d) => d.accept());
+  await card
+    .getByRole("button", { name: "Publicar propiedad", exact: true })
+    .click();
+  await confirmReviewedPublication(page);
+  await expect(
+    card.getByRole("link", { name: "Ver publicación", exact: true }),
+  ).toBeVisible();
   const image = await publicPage.request.get(asset);
   expect(image.status()).toBe(200);
   expect(image.headers()["cache-control"]).toBe("no-store");
-  expect((await publicPage.request.get(`/_next/image?url=${encodeURIComponent(asset)}&w=640&q=75`)).status()).toBe(400);
+  expect(
+    (
+      await publicPage.request.get(
+        `/_next/image?url=${encodeURIComponent(asset)}&w=640&q=75`,
+      )
+    ).status(),
+  ).toBe(400);
   await publicPage.goto("/renta");
-  await expect(publicPage.locator(".property-card").filter({hasText:title})).toBeVisible();
+  await expect(
+    publicPage.locator(".property-card").filter({ hasText: title }),
+  ).toBeVisible();
   await publicPage.goto(url);
-  await expect(publicPage.getByRole("heading",{name:title,exact:true})).toBeVisible();
-  await expect(publicPage.locator(".property-page")).not.toContainText("Datos ficticios");
+  await expect(
+    publicPage.getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
+  await expect(publicPage.locator(".property-page")).not.toContainText(
+    "Datos ficticios",
+  );
   await expect(publicPage.locator("#costos")).not.toContainText("Predial");
-  await expect(publicPage.locator(".property-gallery img").first()).toBeVisible();
-  await expect(publicPage.locator("#recorrido").getByRole("button",{name:"Acercar",exact:true})).toBeEnabled({timeout:30000});
+  await expect(
+    publicPage.locator(".property-gallery img").first(),
+  ).toBeVisible();
+  await expect(
+    publicPage
+      .locator("#recorrido")
+      .getByRole("button", { name: "Acercar", exact: true }),
+  ).toBeEnabled({ timeout: 30000 });
   await expect(publicPage.locator(".floorplan")).toHaveCount(0);
-  await expect(publicPage.locator("#recorrido")).not.toContainText("INTERIOR SINTÉTICO");
-  await publicPage.getByRole("combobox", {name:"Idioma / Language"}).selectOption("en");
-  await expect(publicPage.getByRole("heading", {name:title, exact:true})).toBeVisible();
-  await expect(publicPage.locator(".property-heading .eyebrow")).toContainText("PUBLISHED PROPERTY");
-  await publicPage.getByRole("combobox", {name:"Idioma / Language"}).selectOption("es");
-  expect((await page.request.post(`/api/private/publication/${dto.id}`, {headers:{Origin:"https://other.example"},data:{revision:1,publish:false}})).status()).toBe(403);
-  expect((await page.request.post(`/api/private/publication/${dto.id}`, {headers:{Origin:ORIGIN},data:{revision:99,publish:false}})).status()).toBe(409);
-  await page.getByLabel("Título del anuncio",{exact:true}).fill(title+" editada");
-  await page.getByRole("button",{name:"Guardar cambios del borrador",exact:true}).click();
-  await expect(page.locator(".draft-save-feedback .listing-success")).toContainText("servidor privado");
+  await expect(publicPage.locator("#recorrido")).not.toContainText(
+    "INTERIOR SINTÉTICO",
+  );
+  await publicPage
+    .getByRole("combobox", { name: "Idioma / Language" })
+    .selectOption("en");
+  await expect(
+    publicPage.getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
+  await expect(publicPage.locator(".property-heading .eyebrow")).toContainText(
+    "PUBLISHED PROPERTY",
+  );
+  await publicPage
+    .getByRole("combobox", { name: "Idioma / Language" })
+    .selectOption("es");
+  expect(
+    (
+      await page.request.post(`/api/private/publication/${dto.id}`, {
+        headers: { Origin: "https://other.example" },
+        data: { revision: 1, publish: false },
+      })
+    ).status(),
+  ).toBe(403);
+  expect(
+    (
+      await page.request.post(`/api/private/publication/${dto.id}`, {
+        headers: { Origin: ORIGIN },
+        data: { revision: 99, publish: false },
+      })
+    ).status(),
+  ).toBe(409);
+  await page
+    .getByLabel("Título del anuncio", { exact: true })
+    .fill(title + " editada");
+  await page
+    .getByRole("button", { name: "Guardar cambios del borrador", exact: true })
+    .click();
+  await expect(
+    page.locator(".draft-save-feedback .listing-success"),
+  ).toContainText("servidor privado");
   await publicPage.reload();
-  await expect(publicPage.getByRole("heading",{name:title,exact:true})).toBeVisible();
-  const updated = page.locator(".draft-card").filter({hasText:title+" editada"});
+  await expect(
+    publicPage.getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
+  const updated = page
+    .locator(".draft-card")
+    .filter({ hasText: title + " editada" });
   await expect(updated).toContainText("Cambios pendientes de publicar");
-  page.once("dialog", d=>d.accept());
-  await updated.getByRole("button",{name:"Actualizar publicación",exact:true}).click();
+  page.once("dialog", (d) => d.accept());
+  await updated
+    .getByRole("button", { name: "Actualizar publicación", exact: true })
+    .click();
+  await confirmReviewedPublication(page);
   await expect(updated.locator(".draft-status")).toHaveText("Publicado");
   await publicPage.reload();
-  await expect(publicPage.getByRole("heading",{name:title+" editada",exact:true})).toBeVisible();
-  page.once("dialog", d=>d.accept());
-  await updated.getByRole("button",{name:"Retirar publicación",exact:true}).click();
-  await expect(updated.locator(".draft-status")).toHaveText("Borrador privado · No publicado");
+  await expect(
+    publicPage.getByRole("heading", { name: title + " editada", exact: true }),
+  ).toBeVisible();
+  page.once("dialog", (d) => d.accept());
+  await updated
+    .getByRole("button", { name: "Retirar publicación", exact: true })
+    .click();
+  await expect(updated.locator(".draft-status")).toHaveText(
+    "Borrador privado · No publicado",
+  );
   expect((await publicPage.request.get(asset)).status()).toBe(404);
   expect((await publicPage.request.get(url)).status()).toBe(404);
   await publicPage.goto("/renta");
-  await expect(publicPage.locator(".property-card").filter({hasText:title})).toHaveCount(0);
+  await expect(
+    publicPage.locator(".property-card").filter({ hasText: title }),
+  ).toHaveCount(0);
   await expect(updated).toBeVisible();
   await outsider.close();
 });

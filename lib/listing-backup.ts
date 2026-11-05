@@ -1,4 +1,5 @@
 import { initialCaptureValues, type CaptureContent } from "./capture-store";
+import { readVisitAccess, hasVisitAccess } from "./visit-access";
 import {
   defaultRentalTerms,
   type RentalTerms,
@@ -94,6 +95,9 @@ function maintenanceTerms(value: unknown): Maintenance {
 /** One explicit allowlist is shared by import and the portable export. No credentials or server identity. */
 export function contentFromDraft(draft: ListingDraft): CaptureContent {
   return {
+    ...(hasVisitAccess(draft.visitAccess)
+      ? { visitAccess: readVisitAccess(draft.visitAccess) }
+      : {}),
     values: {
       ...initialCaptureValues,
       title: draft.title,
@@ -169,6 +173,9 @@ function scalarContent(
   values.imageRights = v.imageRights;
   return {
     values,
+    ...(c.visitAccess === undefined
+      ? {}
+      : { visitAccess: readVisitAccess(c.visitAccess) }),
     rental: rentalTerms(c.rental),
     sale: saleTerms(c.sale),
     maintenance: maintenanceTerms(c.maintenance),
@@ -523,6 +530,9 @@ export async function downloadDraftBackup(draft: ListingDraft) {
       imageRights: v.imageRights,
       publicLocation: draft.publicLocation ?? "approximate",
       locationReviewed: draft.locationReviewed === true,
+      ...(hasVisitAccess(draft.visitAccess)
+        ? { visitAccess: readVisitAccess(draft.visitAccess) }
+        : {}),
       ...(draft.operation === "Renta"
         ? { rental: draft.rental }
         : { sale: draft.sale }),

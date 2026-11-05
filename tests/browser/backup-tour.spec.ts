@@ -1,3 +1,4 @@
+import { confirmReviewedPublication } from "./publication-review-helper";
 import { test, expect } from "./fixtures";
 import type { Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
@@ -673,6 +674,7 @@ test("restoring in private stays local until save; entry direction survives serv
   await card
     .getByRole("button", { name: "Publicar propiedad", exact: true })
     .click();
+  await confirmReviewedPublication(page);
   const link = card.getByRole("link", { name: "Ver publicación", exact: true });
   await expect(link).toBeVisible();
   const outsider = await browser.newContext({ serviceWorkers: "block" });

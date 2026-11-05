@@ -212,13 +212,21 @@ export function PropertyMap({
   properties: Property[];
   selected: string;
   onSelect: (slug: string) => void;
-  capture?: { point: Point; onChange: (point: Point) => void };
+  capture?: {
+    point: Point;
+    onChange: (point: Point) => void;
+    label?: string;
+    reference?: { point: Point; label: string };
+  };
 }) {
   const { locale, t } = useI18n();
   const [streets, setStreets] = useState(false);
   const captureRef = useRef(capture);
   captureRef.current = capture;
   const captureMarker = useRef<Marker | null>(null);
+  const referenceMarker = useRef<Marker | null>(null);
+  const lastCapturePoint = useRef("");
+  const [expanded, setExpanded] = useState(false);
   const maxZoom = streets ? 19 : 14;
   const cityLabels = useRef<{ element: HTMLSpanElement; name: string }[]>([]);
   const host = useRef<HTMLDivElement>(null);
@@ -278,9 +286,16 @@ export function PropertyMap({
             ? streetMapStyle(localeRef.current)
             : mapStyle(window.location.origin),
           center:
-            captureRef.current && validPoint(captureRef.current.point)
+            view.current?.center ??
+            (captureRef.current && validPoint(captureRef.current.point)
               ? [captureRef.current.point.lng, captureRef.current.point.lat]
-              : (view.current?.center ?? regions.León.center),
+              : captureRef.current?.reference &&
+                  validPoint(captureRef.current.reference.point)
+                ? [
+                    captureRef.current.reference.point.lng,
+                    captureRef.current.reference.point.lat,
+                  ]
+                : regions.León.center),
           zoom: Math.min(view.current?.zoom ?? regions.León.zoom, maxZoom),
           minZoom: 3,
           maxZoom,
@@ -416,6 +431,8 @@ export function PropertyMap({
       cityLabels.current = [];
       captureMarker.current?.remove();
       captureMarker.current = null;
+      referenceMarker.current?.remove();
+      referenceMarker.current = null;
       instance?.remove();
       map.current = null;
       library.current = null;
@@ -423,15 +440,64 @@ export function PropertyMap({
   }, [generation, streets]);
 
   useEffect(() => {
-    if (!capture || !validPoint(capture.point) || !initialized) return;
-    captureMarker.current?.setLngLat(capture.point).addTo(map.current!);
-    map.current?.jumpTo({ center: [capture.point.lng, capture.point.lat] });
+    if (!capture || !initialized) return;
+    if (validPoint(capture.point)) {
+      captureMarker.current?.setLngLat(capture.point).addTo(map.current!);
+      const element = captureMarker.current?.getElement();
+      element?.setAttribute(
+        "aria-label",
+        t(capture.label ?? "Punto privado del inmueble"),
+      );
+      element?.setAttribute(
+        "title",
+        t(capture.label ?? "Punto privado del inmueble"),
+      );
+      const key = `${capture.point.lat}:${capture.point.lng}`;
+      if (lastCapturePoint.current !== key)
+        map.current?.jumpTo({ center: [capture.point.lng, capture.point.lat] });
+      lastCapturePoint.current = key;
+    } else {
+      captureMarker.current?.remove();
+      lastCapturePoint.current = "";
+    }
   }, [
     capture?.point.lat,
     capture?.point.lng,
     initialized,
     streets,
     mapVersion,
+    capture?.label,
+    locale,
+  ]);
+  useEffect(() => {
+    referenceMarker.current?.remove();
+    referenceMarker.current = null;
+    const reference = capture?.reference;
+    if (
+      !reference ||
+      !validPoint(reference.point) ||
+      !initialized ||
+      !library.current ||
+      !map.current
+    )
+      return;
+    const marker = new library.current.Marker({ color: "#edda62" })
+      .setLngLat(reference.point)
+      .addTo(map.current);
+    marker.getElement().setAttribute("aria-label", t(reference.label));
+    marker.getElement().setAttribute("title", t(reference.label));
+    referenceMarker.current = marker;
+    return () => {
+      marker.remove();
+      if (referenceMarker.current === marker) referenceMarker.current = null;
+    };
+  }, [
+    capture?.reference?.point.lat,
+    capture?.reference?.point.lng,
+    capture?.reference?.label,
+    initialized,
+    mapVersion,
+    locale,
   ]);
 
   useEffect(() => {
@@ -539,13 +605,76 @@ export function PropertyMap({
   }
 
   return (
-    <div className="map-view">
+    <div className={`map-view${expanded ? " map-view-expanded" : ""}`}>
       <p className="geo-provider-notice">
         {t(
           "Al activar calles detalladas, OpenFreeMap recibe tu IP y el área consultada. Requiere internet; no garantiza cobertura completa ni precisión catastral.",
         )}
       </p>
       <div className="geo-layer-buttons">
+        {capture && (
+          <>
+            {capture.reference && (
+              <button
+                type="button"
+                disabled={
+                  !initialized ||
+                  !validPoint(capture.point) ||
+                  !validPoint(capture.reference.point)
+                }
+                onClick={() => {
+                  const other = capture.reference?.point;
+                  if (other && validPoint(other) && validPoint(capture.point))
+                    map.current?.fitBounds(
+                      [
+                        [
+                          Math.min(other.lng, capture.point.lng),
+                          Math.min(other.lat, capture.point.lat),
+                        ],
+                        [
+                          Math.max(other.lng, capture.point.lng),
+                          Math.max(other.lat, capture.point.lat),
+                        ],
+                      ],
+                      { padding: 64, maxZoom: streets ? 17 : 14, duration: 0 },
+                    );
+                }}
+              >
+                {t("Ver inmueble y acceso")}
+              </button>
+            )}
+            <button
+              type="button"
+              aria-pressed={expanded}
+              onClick={() => setExpanded(!expanded)}
+            >
+              {t(
+                expanded
+                  ? "Reducir mapa de captura"
+                  : "Ampliar mapa de captura",
+              )}
+            </button>
+            <button
+              type="button"
+              disabled={
+                !initialized ||
+                (!validPoint(capture.point) && !capture.reference)
+              }
+              onClick={() => {
+                const point = validPoint(capture.point)
+                  ? capture.point
+                  : capture.reference?.point;
+                if (point && validPoint(point))
+                  map.current?.jumpTo({
+                    center: [point.lng, point.lat],
+                    zoom: streets ? 17 : 14,
+                  });
+              }}
+            >
+              {t("Centrar referencia de captura")}
+            </button>
+          </>
+        )}
         <button
           type="button"
           aria-pressed={streets}

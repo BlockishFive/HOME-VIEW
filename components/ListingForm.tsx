@@ -1,5 +1,9 @@
 "use client";
 import Link from "next/link";
+import { emptyVisitAccess } from "@/lib/visit-access";
+import { ListingReviewDialog } from "./ListingReviewDialog";
+import { VisitAccessDetails } from "./VisitAccessDetails";
+import { draftFromCapture } from "@/lib/listing-review";
 import { ListingBackupTools } from "./ListingBackupTools";
 import {
   downloadDraftBackup,
@@ -18,6 +22,7 @@ import { LocationPicker } from "./LocationPicker";
 import type { PublicLocation } from "@/lib/location";
 import {
   getSharedDraftSummaries,
+  privateRequest,
   loadSharedDraft,
   type RemoteDraft,
   saveSharedDraft,
@@ -157,6 +162,7 @@ export function ListingForm({
   const [publicLocation, setPublicLocation] =
     useState<PublicLocation>("approximate");
   const [locationReviewed, setLocationReviewed] = useState(false);
+  const [visitAccess, setVisitAccess] = useState(emptyVisitAccess);
   const [rental, setRental] = useState<RentalTerms>(defaultRentalTerms);
   const [sale, setSale] = useState<SaleTerms>({
     purchasePrice: null,
@@ -182,6 +188,15 @@ export function ListingForm({
   const [backupError, setBackupError] = useState("");
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [review, setReview] = useState<{
+    draft: ListingDraft | RemoteDraft;
+    saved: boolean;
+    revision: number;
+    nonce: number;
+  } | null>(null);
+  const [reviewError, setReviewError] = useState("");
+  const reviewNonce = useRef(0);
+
   const [loadingMediaId, setLoadingMediaId] = useState<string | null>(null);
   const savedListRef = useRef<HTMLElement>(null);
   const [online, setOnline] = useState(true);
@@ -202,6 +217,7 @@ export function ListingForm({
   );
   const [statusFilter, setStatusFilter] = useState("all");
   const content: CaptureContent = {
+    visitAccess,
     values,
     rental,
     sale,
@@ -256,6 +272,7 @@ export function ListingForm({
     setCommunity(next.community);
     setPublicLocation(next.publicLocation);
     setLocationReviewed(next.locationReviewed);
+    setVisitAccess(next.visitAccess ?? emptyVisitAccess());
     setPhotos(next.photos);
     setScenes(next.scenes);
     setErrors({});
@@ -435,6 +452,7 @@ export function ListingForm({
     const form = event.currentTarget;
     setMessage("");
     const input: DraftInput = {
+      visitAccess,
       title: values.title,
       propertyType: values.propertyType,
       description: values.description,
@@ -535,6 +553,7 @@ export function ListingForm({
     setSavedId(null);
     setMessage("");
     setValues(initial);
+    setVisitAccess(emptyVisitAccess());
     setPublicLocation("approximate");
     setLocationReviewed(false);
     setRental(defaultRentalTerms());
@@ -558,6 +577,7 @@ export function ListingForm({
       community: "unknown" as const,
       publicLocation: "approximate" as const,
       locationReviewed: false,
+      visitAccess: emptyVisitAccess(),
       photos: [],
       scenes: [],
     };
@@ -578,6 +598,7 @@ export function ListingForm({
     setEditorOpen(true);
     setPublicLocation(draft.publicLocation ?? "approximate");
     setLocationReviewed(draft.locationReviewed === true);
+    setVisitAccess(draft.visitAccess ?? emptyVisitAccess());
     sharedRevision.current = revisionOf(draft);
     identity.current = { id: draft.id, createdAt: draft.createdAt };
     setSavedId(null);
@@ -676,6 +697,41 @@ export function ListingForm({
       setBusy(false);
     }
   }
+  async function openSavedReview(draft: ListingDraft | RemoteDraft) {
+    setBusy(true);
+    setStorageError("");
+    setReviewError("");
+    try {
+      const fresh = shared
+        ? ((await (await privateRequest(`drafts/${draft.id}`)).json())
+            .draft as RemoteDraft)
+        : draft;
+      if (shared)
+        setDrafts((rows) =>
+          rows.map((row) => (row.id === fresh.id ? fresh : row)),
+        );
+      setReview({
+        draft: fresh,
+        saved: true,
+        revision: revisionOf(fresh),
+        nonce: ++reviewNonce.current,
+      });
+    } catch (error) {
+      setStorageError(storageMessage(error));
+      if (review) setReviewError(storageMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+  function openCaptureReview() {
+    setReviewError("");
+    setReview({
+      draft: draftFromCapture(contentRef.current),
+      saved: false,
+      revision: 0,
+      nonce: ++reviewNonce.current,
+    });
+  }
   async function publish(draft: ListingDraft | RemoteDraft, enabled: boolean) {
     if (
       !window.confirm(
@@ -689,8 +745,10 @@ export function ListingForm({
       return;
     setBusy(true);
     setStorageError("");
+    setReviewError("");
     try {
       await publishSharedDraft(draft.id, revisionOf(draft), enabled);
+      if (enabled) setReview(null);
       replaceShared(await getSharedDraftSummaries());
       setMessage(
         enabled
@@ -699,6 +757,7 @@ export function ListingForm({
       );
     } catch (error) {
       setStorageError(storageMessage(error));
+      if (enabled) setReviewError(storageMessage(error));
     } finally {
       setBusy(false);
     }
@@ -856,7 +915,7 @@ export function ListingForm({
                     <button
                       type="button"
                       disabled={busy}
-                      onClick={() => void publish(draft, true)}
+                      onClick={() => void openSavedReview(draft)}
                     >
                       {t(
                         "publishedRevision" in draft && draft.publishedRevision
@@ -894,6 +953,13 @@ export function ListingForm({
                     {t("Copiar al área privada")}
                   </button>
                 )}
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void openSavedReview(draft)}
+                >
+                  {t("Revisar anuncio guardado")}
+                </button>
                 <button
                   type="button"
                   disabled={busy}
@@ -992,6 +1058,7 @@ export function ListingForm({
                   )}
                   <p className="draft-description">{draft.description}</p>
                   <TermsDetails terms={draft} />
+                  <VisitAccessDetails access={draft.visitAccess} />
 
                   <div className="draft-photo-grid">
                     {draft.photos
@@ -1081,6 +1148,34 @@ export function ListingForm({
           </button>
         )}
       </div>
+      {review && (
+        <ListingReviewDialog
+          key={review.nonce}
+          draft={review.draft}
+          saved={review.saved}
+          server={shared}
+          revision={review.revision}
+          busy={busy}
+          error={reviewError}
+          onClose={() => setReview(null)}
+          onEdit={() => {
+            const source = review;
+            setReview(null);
+            if (source.saved || source.draft.id !== "captura")
+              void beginEdit(source.draft);
+          }}
+          onPublish={
+            shared && review.saved
+              ? () => publish(review.draft, true)
+              : undefined
+          }
+          onReload={
+            shared && review.saved
+              ? () => openSavedReview(review.draft)
+              : undefined
+          }
+        />
+      )}
       {shared && savedSection}
       <ListingBackupTools
         scope={storage}
@@ -1406,6 +1501,15 @@ export function ListingForm({
               {field("longitude", "Longitud del punto privado", "number")}
             </div>
             <LocationPicker
+              visitAccess={visitAccess}
+              onVisitAccess={(value) => {
+                if (busy) return;
+                setVisitAccess(value);
+                setMessage("");
+                setSavedId(null);
+              }}
+              accessError={errors.visitAccess}
+              accessFieldId={fieldId("visitAccess")}
               point={{
                 lat: Number(values.latitude),
                 lng: Number(values.longitude),
@@ -1555,6 +1659,14 @@ export function ListingForm({
                 </div>
               )}
             </div>
+            <button
+              type="button"
+              className="button button-dark"
+              disabled={busy}
+              onClick={openCaptureReview}
+            >
+              {t("Revisar captura actual")}
+            </button>
             <button type="submit" className="button button-dark">
               {busy
                 ? t("Preparando…")

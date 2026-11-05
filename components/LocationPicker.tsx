@@ -2,6 +2,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "./I18nProvider";
 import { PropertyMap } from "./PropertyMap";
+import { MapReferenceLinks } from "./VisitAccessDetails";
+import {
+  emptyVisitAccess,
+  visitAccessPoint,
+  type VisitAccess,
+} from "@/lib/visit-access";
 import { privateRequest } from "@/lib/shared-drafts";
 import {
   publicPoint,
@@ -17,7 +23,15 @@ export function LocationPicker({
   onPrecision,
   reviewed,
   onReviewed,
+  visitAccess,
+  onVisitAccess,
+  accessError,
+  accessFieldId,
 }: {
+  visitAccess: VisitAccess;
+  onVisitAccess: (value: VisitAccess) => void;
+  accessError?: string;
+  accessFieldId: string;
   point: Point;
   onChange: (point: Point) => void;
   precision: PublicLocation;
@@ -26,6 +40,23 @@ export function LocationPicker({
   onReviewed: (value: boolean) => void;
 }) {
   const { t, locale } = useI18n();
+  const [target, setTarget] = useState<"property" | "access">("property");
+  const targetRef = useRef(target);
+  targetRef.current = target;
+  const accessRef = useRef(visitAccess);
+  accessRef.current = visitAccess;
+  const accessPoint = visitAccessPoint(visitAccess);
+  const activePoint =
+    target === "property" ? point : (accessPoint ?? { lat: NaN, lng: NaN });
+  const changeActive = (value: Point) =>
+    targetRef.current === "property"
+      ? onChange(value)
+      : onVisitAccess({
+          ...accessRef.current,
+          latitude: String(value.lat),
+          longitude: String(value.lng),
+        });
+
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [error, setError] = useState("");
@@ -33,12 +64,12 @@ export function LocationPicker({
   const [locating, setLocating] = useState(false);
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const alive = useRef(true);
-  const latestPoint = useRef(point);
-  latestPoint.current = point;
+  const latestPoint = useRef(activePoint);
+  latestPoint.current = activePoint;
   const gpsPoint = useRef<Point | null>(null);
   const pending = useRef<AbortController | null>(null);
-  const change = useRef(onChange);
-  change.current = onChange;
+  const change = useRef(changeActive);
+  change.current = changeActive;
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -82,6 +113,16 @@ export function LocationPicker({
       }
     }
   }
+  function switchTarget(next: "property" | "access") {
+    targetRef.current = next;
+    pending.current?.abort();
+    pending.current = null;
+    setSearching(false);
+    setResults([]);
+    setError("");
+    setAccuracy(null);
+    setTarget(next);
+  }
   function gps() {
     if (locating) return;
     if (!window.isSecureContext || !navigator.geolocation) {
@@ -93,13 +134,15 @@ export function LocationPicker({
     setError("");
     setLocating(true);
     const startedAtPoint = { ...latestPoint.current };
+    const startedTarget = targetRef.current;
     navigator.geolocation.getCurrentPosition(
       (position) => {
         if (!alive.current) return;
         setLocating(false);
         if (
-          latestPoint.current.lat !== startedAtPoint.lat ||
-          latestPoint.current.lng !== startedAtPoint.lng
+          targetRef.current !== startedTarget ||
+          !Object.is(latestPoint.current.lat, startedAtPoint.lat) ||
+          !Object.is(latestPoint.current.lng, startedAtPoint.lng)
         ) {
           setError(
             "El punto cambió mientras se obtenía el GPS. Se conservó tu ajuste manual.",
@@ -136,6 +179,33 @@ export function LocationPicker({
   }
   return (
     <div className="location-picker">
+      <div
+        className="location-target"
+        role="group"
+        aria-label={t("Punto que estás ubicando")}
+      >
+        <button
+          type="button"
+          aria-pressed={target === "property"}
+          onClick={() => switchTarget("property")}
+        >
+          {t("Ubicar inmueble")}
+        </button>
+        <button
+          type="button"
+          aria-pressed={target === "access"}
+          onClick={() => switchTarget("access")}
+        >
+          {t("Ubicar acceso para visitas")}
+        </button>
+      </div>
+      <p className="location-target-notice">
+        {t(
+          target === "property"
+            ? "Editas el punto privado del inmueble. La referencia amarilla indica el acceso, si lo guardaste."
+            : "Editas el acceso privado para visitas. La referencia amarilla indica el inmueble; este cambio no mueve su punto ni la ubicación pública.",
+        )}
+      </p>
       <div className="location-search">
         <label className="listing-field">
           <span>{t("Buscar calle, colonia o lugar")}</span>
@@ -197,7 +267,7 @@ export function LocationPicker({
               <button
                 type="button"
                 onClick={() => {
-                  onChange({ lat: result.lat, lng: result.lng });
+                  change.current({ lat: result.lat, lng: result.lng });
                   setAccuracy(null);
                   setResults([]);
                   setQuery(result.label);
@@ -210,8 +280,8 @@ export function LocationPicker({
         </ul>
       )}
       {accuracy !== null &&
-        point.lat === gpsPoint.current?.lat &&
-        point.lng === gpsPoint.current?.lng && (
+        activePoint.lat === gpsPoint.current?.lat &&
+        activePoint.lng === gpsPoint.current?.lng && (
           <p role="status">
             {t(
               "Precisión estimada del GPS: ±{meters} m. Comprueba el inmueble antes de guardar.",
@@ -229,13 +299,99 @@ export function LocationPicker({
         selected=""
         onSelect={() => {}}
         capture={{
-          point,
+          point: activePoint,
+          label:
+            target === "property"
+              ? "Punto privado del inmueble"
+              : "Punto privado del acceso",
+          reference:
+            target === "property"
+              ? accessPoint
+                ? { point: accessPoint, label: "Referencia privada del acceso" }
+                : undefined
+              : { point, label: "Referencia privada del inmueble" },
           onChange: (p) => {
-            onChange(p);
+            change.current(p);
             setAccuracy(null);
           },
         }}
       />
+      {validPoint(activePoint) && <MapReferenceLinks point={activePoint} />}
+      <div
+        className="visit-access-fields"
+        id={accessFieldId}
+        tabIndex={-1}
+        aria-invalid={!!accessError}
+        aria-describedby={accessError ? "error-visitAccess" : undefined}
+      >
+        <h3>{t("Acceso para visitas · Solo privado")}</h3>
+        <p>
+          {t(
+            "Opcional. Marca la entrada del fraccionamiento o una referencia para llegar. Se conserva aparte del inmueble y no se publica. No incluyas códigos de acceso, contraseñas ni datos personales.",
+          )}
+        </p>
+        <div className="listing-field-grid">
+          <label className="listing-field">
+            <span id={`${accessFieldId}-lat-label`}>
+              {t("Latitud del acceso privado")}
+            </span>
+            <input
+              aria-labelledby={`${accessFieldId}-lat-label`}
+              type="number"
+              step="any"
+              min={14}
+              max={33}
+              value={visitAccess.latitude}
+              onChange={(e) =>
+                onVisitAccess({ ...visitAccess, latitude: e.target.value })
+              }
+            />
+          </label>
+          <label className="listing-field">
+            <span id={`${accessFieldId}-lng-label`}>
+              {t("Longitud del acceso privado")}
+            </span>
+            <input
+              aria-labelledby={`${accessFieldId}-lng-label`}
+              type="number"
+              step="any"
+              min={-119}
+              max={-86}
+              value={visitAccess.longitude}
+              onChange={(e) =>
+                onVisitAccess({ ...visitAccess, longitude: e.target.value })
+              }
+            />
+          </label>
+        </div>
+        <label className="listing-field">
+          <span id={`${accessFieldId}-notes-label`}>
+            {t("Referencia de llegada privada")}
+          </span>
+          <textarea
+            aria-labelledby={`${accessFieldId}-notes-label`}
+            maxLength={600}
+            value={visitAccess.notes}
+            onChange={(e) =>
+              onVisitAccess({ ...visitAccess, notes: e.target.value })
+            }
+          />
+        </label>
+        {accessError && (
+          <p className="listing-field-error" id="error-visitAccess">
+            {t(accessError)}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            onVisitAccess(emptyVisitAccess());
+            switchTarget("property");
+          }}
+        >
+          {t("Quitar referencia de acceso")}
+        </button>
+      </div>
       <label className="listing-field">
         <span>{t("Ubicación que se mostrará al publicar")}</span>
         <select

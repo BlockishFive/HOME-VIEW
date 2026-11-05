@@ -3,7 +3,7 @@ import { publicPoint } from "../location";
 import { db, PrivateError } from "./private-store";
 import type { ListingDraft } from "../listing-drafts";
 import type { Property } from "../properties";
-import { formatMXN } from "../property-terms";
+import { listingPresentation } from "../listing-presentation";
 export function publicProperty(draft: ListingDraft): Property {
   if (!draft.locationReviewed) throw new PrivateError("location_review");
   const slug = `anuncio-${draft.id}`;
@@ -11,22 +11,7 @@ export function publicProperty(draft: ListingDraft): Property {
   const price = draft.operation === "Renta" ? draft.rental.monthlyRent : draft.sale.purchasePrice;
   if (price === null || !Number.isFinite(price) || price <= 0 || !draft.imageRights || !draft.photos.length)
     throw new PrivateError("invalid");
-  return {
-    published: true, slug, title: draft.title, description: draft.description,
-    operation: draft.operation,
-    ...(draft.operation === "Renta" ? { rental: draft.rental } : { sale: draft.sale }),
-    price: formatMXN(price), priceValue: price,
-    location: `${draft.city}, ${draft.state}`, address: draft.neighborhood,
-    neighborhood: draft.neighborhood, coordinates: publicPoint({ lat: draft.latitude, lng: draft.longitude }, draft.publicLocation),
-    locationPrecision: draft.publicLocation ?? "approximate",
-    area: draft.area, beds: draft.beds, baths: draft.baths, propertyType: draft.propertyType,
-    maintenance: draft.maintenance, community: draft.community,
-    tag: draft.operation, cover: media(draft.photos[0].id),
-    gallery: draft.photos.map((photo, i) => ({ src: media(photo.id), alt: draft.title, label: `Foto ${i + 1}` })),
-    rooms: draft.scenes.map(scene => ({ id: scene.id, name: scene.name, panorama: media(scene.id), x: 0, y: 0, hotspots: scene.hotspots, ...(scene.initialView ? {initialView:scene.initialView} : {}) })),
-    plotArea: draft.propertyType === "Terreno" ? draft.area : null,
-    builtYear: null, parking: null, levels: null, buildingType: "Por confirmar", ownership: "Por confirmar", features: [], reference: slug,
-  } as Property;
+  return listingPresentation(draft, media);
 }
 export function setPublication(id: string, revision: number, publish: boolean) {
   const store = db();

@@ -77,7 +77,7 @@ test("changing language preserves an unsaved form and saves canonical draft data
   await expect(page.getByLabel("Monthly maintenance (MXN)", { exact: true })).toBeVisible();
   await expect(page.locator('.listing-form input[name="title"]')).toHaveValue(title);
   await expect(page.locator('.listing-form input[name="rentPrice"]')).toHaveValue("18000");
-  await expect(page.locator(".listing-form textarea")).toHaveValue(description);
+  await expect(page.getByLabel("Description",{exact:true})).toHaveValue(description);
   await expect(page.locator(".listing-photo-preview img")).toHaveCount(1);
   await expect(page.locator('.listing-form select').first()).toHaveValue("Renta");
   await expect(page.locator('.listing-form select').first().locator('option[value="Renta"]')).toHaveText("Rent");

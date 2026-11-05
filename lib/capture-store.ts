@@ -11,6 +11,7 @@ import type {
 } from "./property-terms";
 import type { DraftScene } from "./draft-tour";
 import type { PublicLocation } from "./location";
+import { hasVisitAccess, type VisitAccess } from "./visit-access";
 export const initialCaptureValues = {
   title: "",
   operation: "Renta" as ListingOperation,
@@ -29,6 +30,7 @@ export const initialCaptureValues = {
   imageRights: false,
 };
 export type CaptureContent = {
+  visitAccess?: VisitAccess;
   values: typeof initialCaptureValues;
   rental: RentalTerms;
   sale: SaleTerms;
@@ -66,7 +68,16 @@ export class CaptureConflict extends Error {
 }
 export function captureFingerprint(content: CaptureContent) {
   return JSON.stringify({
-    ...content,
+    values: content.values,
+    rental: content.rental,
+    sale: content.sale,
+    maintenance: content.maintenance,
+    community: content.community,
+    publicLocation: content.publicLocation,
+    locationReviewed: content.locationReviewed,
+    visitAccess: hasVisitAccess(content.visitAccess)
+      ? content.visitAccess
+      : undefined,
     photos: content.photos.map(({ id, name, blob }) => ({
       id,
       name,

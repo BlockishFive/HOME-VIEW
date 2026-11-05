@@ -14,19 +14,45 @@ import { localizeProperty } from "@/lib/localized-properties";
 export function PropertyPageView({ property: source }: { property: Property }) {
   const { locale, t } = useI18n();
   const property = localizeProperty(source, locale);
-  usePageTitle(`${property.title} · Home View`, property.description, !!property.published);
+  usePageTitle(
+    `${property.title} · Home View`,
+    property.description,
+    !!property.published,
+  );
+  return <PropertyPageContent property={source} />;
+}
+export function PropertyPageContent({
+  property: source,
+  preview = false,
+}: {
+  property: Property;
+  preview?: boolean;
+}) {
+  const { locale, t } = useI18n();
+  const property = localizeProperty(source, locale);
+  const Container = preview ? "div" : "main";
   return (
     <>
-      <Header />
-      <main className="section-wrap property-page">
-        <Link href="/#propiedades" className="back-link">
-          {t("← Volver al catálogo")}
-        </Link>
+      {!preview && <Header />}
+      <Container
+        className={`section-wrap property-page${preview ? " property-page-preview" : ""}`}
+      >
+        {!preview && (
+          <Link href="/#propiedades" className="back-link">
+            {t("← Volver al catálogo")}
+          </Link>
+        )}
         <div className="property-heading">
           <div>
             <p className="eyebrow">
               {t(property.operation).toUpperCase()}{" "}
-              {t(property.published ? "· PROPIEDAD PUBLICADA" : "· PROPIEDAD DE DEMOSTRACIÓN")}
+              {t(
+                preview
+                  ? "· VISTA PREVIA · SIN PUBLICAR"
+                  : property.published
+                    ? "· PROPIEDAD PUBLICADA"
+                    : "· PROPIEDAD DE DEMOSTRACIÓN",
+              )}
             </p>
             <h1>{property.title}</h1>
             <p className="muted">
@@ -42,10 +68,12 @@ export function PropertyPageView({ property: source }: { property: Property }) {
             {property.propertyType !== "Terreno" && (
               <>
                 <span>
-                  <strong>{property.beds ?? t("Por confirmar")}</strong> {t("recámaras")}
+                  <strong>{property.beds ?? t("Por confirmar")}</strong>{" "}
+                  {t("recámaras")}
                 </span>
                 <span>
-                  <strong>{property.baths ?? t("Por confirmar")}</strong> {t("baños")}
+                  <strong>{property.baths ?? t("Por confirmar")}</strong>{" "}
+                  {t("baños")}
                 </span>
               </>
             )}
@@ -66,10 +94,10 @@ export function PropertyPageView({ property: source }: { property: Property }) {
               <small> {t(priceUnit(property))}</small>
             </strong>
           </div>
-          <PropertyActions title={property.title} />
+          {!preview && <PropertyActions title={property.title} />}
         </div>
         <PropertyGallery title={property.title} images={property.gallery} />
-        <PropertySectionNav withTour={hasTour(property)} />
+        {!preview && <PropertySectionNav withTour={hasTour(property)} />}
         <PropertyDetails property={property} />
         {hasTour(property) ? (
           <PropertyTour property={property} />
@@ -93,14 +121,22 @@ export function PropertyPageView({ property: source }: { property: Property }) {
         )}
         <PropertyLocation property={property} />
         <PropertyCosts property={property} />
-      </main>
-      <footer className="site-footer">
-        <Link href="/" className="brand">
-          {t("homeview.")}
-        </Link>
-        <span>{t("Explora sin prisa. Imagina sin límites.")}</span>
-        <span>{t(property.published ? "Propiedad publicada por la administración" : "Datos e imágenes ficticias · Demo")}</span>
-      </footer>
+      </Container>
+      {!preview && (
+        <footer className="site-footer">
+          <Link href="/" className="brand">
+            {t("homeview.")}
+          </Link>
+          <span>{t("Explora sin prisa. Imagina sin límites.")}</span>
+          <span>
+            {t(
+              property.published
+                ? "Propiedad publicada por la administración"
+                : "Datos e imágenes ficticias · Demo",
+            )}
+          </span>
+        </footer>
+      )}
     </>
   );
 }

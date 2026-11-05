@@ -5,6 +5,10 @@ import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 
 export type GalleryImage = { src: string; alt: string; label: string };
+const ownerMedia = (src: string) =>
+  src.startsWith("/api/public/media/") ||
+  src.startsWith("/api/private/media/") ||
+  src.startsWith("blob:");
 
 export function PropertyGallery({
   title,
@@ -88,9 +92,10 @@ export function PropertyGallery({
                 {t("Imagen no disponible")}
               </span>
             ) : (
-              <Image unoptimized={images.some(image => image.src.startsWith("/api/public/"))}
+              <Image
+                unoptimized={ownerMedia(image.src)}
                 src={image.src}
-                alt={image.src.startsWith("/api/public/") ? image.alt : t(image.alt)}
+                alt={ownerMedia(image.src) ? image.alt : t(image.alt)}
                 fill
                 preload={imageIndex === 0}
                 sizes={
@@ -168,10 +173,11 @@ export function PropertyGallery({
                 )}
               </p>
             ) : (
-              <Image unoptimized={images.some(image => image.src.startsWith("/api/public/"))}
+              <Image
+                unoptimized={ownerMedia(current.src)}
                 key={current.src}
                 src={current.src}
-                alt={current.src.startsWith("/api/public/") ? current.alt : t(current.alt)}
+                alt={ownerMedia(current.src) ? current.alt : t(current.alt)}
                 fill
                 sizes="(max-width: 1000px) 90vw, 1000px"
                 onError={() => recordFailure(current.src)}
