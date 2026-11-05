@@ -16,7 +16,7 @@ Next.js App Router renderiza el catálogo y las rutas conocidas. Los slugs desco
 
 ## Activos y rendimiento
 
-`public/panoramas` contiene tres panoramas 2048×1024 y tres cubiertas 1200×850. Se usa un panorama por escena, apropiado para el prototipo. Next Image optimiza las cubiertas; Marzipano carga directamente el JPEG. Para fotos de mayor resolución conviene generar mosaicos multirresolución, presupuesto de memoria, carga progresiva y CDN controlado. El script opcional de medios usa NumPy y Pillow y no es necesario para instalar o ejecutar la aplicación.
+`public/panoramas` contiene tres panoramas 2048×1024 y tres cubiertas 1200×850. Se usa un panorama por escena, apropiado para el prototipo. Next Image optimiza las cubiertas; Marzipano usa una ObjectURL temporal del JPEG validado; solo el panorama activo se descarga. Para fotos de mayor resolución conviene generar mosaicos multirresolución, presupuesto de memoria, carga progresiva y CDN controlado. El script opcional de medios usa NumPy y Pillow y no es necesario para instalar o ejecutar la aplicación.
 
 ## Pruebas
 
@@ -149,3 +149,13 @@ Véase [BACKUPS_AND_VISUAL_TOURS.md](BACKUPS_AND_VISUAL_TOURS.md) para uso, lím
 `visit-access.ts` define el campo opcional privado y sus límites, validación de pares y enlaces externos de hosts fijos. El formulario conserva strings parciales en autosave/JSON; normalizar borradores confirmados valida el par y selecciona solo esas claves. No requiere cambios estructurales de IndexedDB/SQLite; registros anteriores carecen de acceso. La huella usa orden explícito de campos y omite una referencia completamente vacía, evitando marcar como cambios la lectura de datos antiguos o el orden de claves de un respaldo.
 
 `LocationPicker` distingue inmueble/acceso en memoria, cancela búsquedas al cambiar de modo y comprueba modo y punto al recibir GPS. `PropertyMap` mantiene un marcador activo arrastrable y otra referencia pasiva; ampliación, centrado y fitBounds no alteran los datos. Cambiar de fuente conserva vista/marcadores. El acceso no se pasa a PropertyMap público ni al DTO; las notas no se incluyen en enlaces externos. [Guía de uso](REVIEW_AND_VISITS.md).
+
+## Historial transaccional y recuperación completa
+
+`history-store.ts` añade `history_heads`, `draft_versions`, `version_blobs`, `version_assets` y `activity_log` en SQLite `user_version=1`. La primera migración archiva solo el estado existente. Guardar/restaurar, sus medios y su evento comparten `BEGIN IMMEDIATE` con la escritura privada; cualquier cuota/conflicto revierte todo. Las versiones son inmutables, los blobs se deduplican por SHA-256 y se recogen cuando pierden referencias. La retención conserva las últimas 10, hasta 200 propiedades/300 MiB de medios; el log conserva 5,000 eventos acotados. Los identificadores/revisiones mínimos de borradores eliminados evitan resurrección por clientes antiguos.
+
+`private-http.ts` sirve historial, previews y medios bajo sesión/no-store y exige origen exacto/revisión/estado para restaurar o purgar. `PrivateHistoryPanel` carga metadata a petición, reutiliza `ListingReviewDialog` sin publicar y solicita checkpoint local antes de mutar. Restaurar copia medios y grafo, crea una revisión monotónica y revoca derechos/revisión de ubicación. No toca el snapshot público ni adopta la revisión del editor abierto.
+
+`private-backup.ts` implementa `VACUUM INTO`, verificación de integridad/FK/esquema/cuotas/datos/JPEG/hashes y manifiesto SHA-256. La restauración valida, copia a staging privado, migra si corresponde, revoca sesiones y bloqueos, comprueba otra vez y renombra hacia un destino nuevo/vacío. Son herramientas de terminal, sin endpoint HTTP de subida/restauración. No alteran el origen, la configuración activa ni publicaciones posteriores al respaldo. [Flujo y límites](HISTORY_AND_RECOVERY.md).
+
+`image-metadata.ts`, `browser-media.ts` y `panorama-resource.ts` separan lectura previa de cabeceras, reducción/reencodificación secuencial y carga acotada del panorama activo. La preparación soporta orientación EXIF, bitmap reducido o fallback Image; libera recursos en finally. La vista usa un único fetch y ObjectURL temporal por escena, con AbortController, timeout y reintento local. No se crea caché privada ni telemetría. Los mosaicos multirresolución, Web Workers y la evaluación física de Safari continúan pendientes. [Ensayo de campo](PILOT_CHECKLIST.md).

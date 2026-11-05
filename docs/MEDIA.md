@@ -25,3 +25,7 @@ Los iconos PNG de `public/icons/` son un dibujo geométrico original generado po
 Las fotos y los panoramas aportados en `/alta` se guardan en el navegador y no se añaden al repositorio ni al catálogo. Se requiere confirmar autorización. El editor distingue fotos convencionales de capturas equirectangulares 360 completas; no genera una esfera desde fotografías normales. Las pruebas de carga y conexión reutilizan exclusivamente las ilustraciones procedurales incluidas.
 
 `public/illustrations/terreno-en.svg` es la variante del esquema original con sus dos etiquetas en inglés. No cambia geometría, superficie ficticia ni procedencia. El selector solo elige esa variante para la presentación inglesa del terreno demo.
+
+## Medios grandes del ensayo automatizado
+
+`history-performance.spec.ts` genera patrones SVG originales en memoria y los rasteriza con Sharp: fotos de 6000×4000 (orientación EXIF 6) y panoramas de 8192×4096. No corresponden a viviendas/personas reales ni se incorporan a `public`. La prueba prepara ocho escenas en tamaños de 3072/4096 y genera resultados temporales de tamaños, tiempos y metadatos retirados. No implica transferencia probada desde hardware real. [Procedimiento, rendimiento y pendientes](PILOT_CHECKLIST.md).

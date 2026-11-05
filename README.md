@@ -156,3 +156,11 @@ La cobertura es progresiva: México en niveles 3–7, Guanajuato en 8–10 y la 
 Para regenerar o ampliar el paquete consulta [datos y generación](docs/MAP_DATA.md). El archivo ya viene incluido: no necesitas Python para ejecutar Home View. El alojamiento debe respetar solicitudes HTTP Range y responder 206 para descargar fragmentos. Next.js lo hace en la configuración probada.
 
 Si el mapa no carga, usa **Actualizar cartografía**. Ante un fallo del archivo o de WebGL se muestra un aviso y la lista continúa disponible. En Codespaces reinicia el servidor después de cambiar la configuración y recarga la pestaña. La versión actual no solicita imágenes al servidor público de OpenStreetMap: las calles detalladas usan vectores de OpenFreeMap y el estilo de Home View. Si ese proveedor está bloqueado, el aviso permite volver al respaldo.
+
+## Historial, recuperación y ensayo de campo
+
+En **Área privada → Historial y actividad** puedes revisar hasta 10 versiones por propiedad y restaurarlas como una revisión privada nueva, incluso después de eliminar un borrador. La publicación y la captura abierta permanecen independientes. El historial tiene retención y cuotas explícitas; puedes eliminar versiones anteriores o purgar el historial de un borrador eliminado.
+
+`npm run backup:private` crea y verifica la instantánea completa con un manifiesto SHA-256. `npm run verify:private -- /ruta/respaldo.sqlite` la comprueba otra vez; `npm run restore:private -- /ruta/respaldo.sqlite .home-view/restore-check` restaura únicamente en una carpeta nueva/vacía, revoca sesiones y conserva el original. Los archivos son privados y no están cifrados. Sigue la [guía de historial y restauración aislada](docs/HISTORY_AND_RECOVERY.md) antes de arrancar esa copia: contiene las publicaciones vigentes en el respaldo.
+
+La preparación de medios comprueba dimensiones antes de decodificar y procesa un archivo a la vez; los panoramas permiten tamaños de 3072 o 4096 px. Marzipano descarga una vez cada panorama activo y reintenta sin recargar el formulario. Revisa el [checklist de iPad/cámara y límites de rendimiento](docs/PILOT_CHECKLIST.md). La validación física sigue pendiente.

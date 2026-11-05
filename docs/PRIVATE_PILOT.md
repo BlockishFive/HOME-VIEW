@@ -78,3 +78,9 @@ Las importaciones de JSON en `/privado` solo crean capturas locales nuevas: no a
 ## Revisión antes de publicar y referencias de visita
 
 Publicar/Actualizar publicación abre la revisión de la versión guardada: se distinguen campos obligatorios y condiciones por confirmar, con ficha previa y consentimiento. Cambios del formulario quedan separados. Un conflicto requiere refrescar y revisar de nuevo. El acceso de visitas es opcional y privado; se comparte entre dispositivos al guardar en el servidor y queda incluido en respaldos, pero nunca en el snapshot público. [Instrucciones de revisión y mapas de visita](REVIEW_AND_VISITS.md).
+
+## Historial y restauración verificada
+
+El área privada incluye versiones de borradores y eventos de guardar/restaurar/publicar/retirar/eliminar. Eliminar retira la publicación, pero retiene historial privado hasta su purga o retención automática. Restaurar una versión crea otra revisión y no actualiza la publicación ni la captura abierta. Las cuotas históricas (300 MiB, 200 propiedades, 10 versiones por propiedad) se suman a las del contenido vigente/publicado.
+
+El respaldo completo ahora se verifica y genera manifiesto SHA-256. `verify:private` comprueba la copia y `restore:private` recupera únicamente en carpeta nueva/vacía, conserva el original y revoca sesiones. Se ensaya una copia con HTTP y datos ficticios en pruebas automáticas; la recuperación operativa de infraestructura y la rotación externa siguen pendientes. [Procedimiento y límites](HISTORY_AND_RECOVERY.md) · [Checklist de campo con iPad](PILOT_CHECKLIST.md).
