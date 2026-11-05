@@ -45,3 +45,5 @@ El panel **Revisar conexiones del recorrido** avisa de escenas sin camino desde 
 ## Alcance de las pruebas
 
 Pruebas automatizadas con datos y medios ficticios, Chromium, tamaño iPad y dos contextos de navegador. Se incluyen restauración sin sobrescritura, fallos de almacenamiento, contenido externo/malformado, toque/arrastre/multitouch, orientación, persistencia, validación de servidor y publicación. No equivalen a Safari/iPad físico, transferencia con cámara real, auditoría de seguridad o garantía de memoria. Abrir la app y verificar el acceso privado siguen requiriendo conexión; no se añade arranque offline completo ni envío en segundo plano.
+
+La referencia privada de acceso y sus notas también se incluyen en los JSON. Se conservan coordenadas incompletas como captura parcial, pero antes de confirmar el borrador deben estar ambas vacías o formar un par válido. Restaurar no autoriza publicar la ubicación; vuelve a revisarla. Véase [revisión y visitas](REVIEW_AND_VISITS.md).

@@ -33,7 +33,7 @@ La búsqueda usa el servicio de demostración [Photon/Komoot](https://photon.kom
 
 `HOME_VIEW_GEOCODER_URL` permite cambiar el endpoint Photon-compatible por otro HTTPS sin modificar código. Es configuración del administrador, nunca un URL tomado del formulario; no admite credenciales en el URL, query ni redirecciones. Reiniciar Next.js después de cambiar `.env.local`. Ninguna clave privada debe enviarse al navegador. Para ampliar el uso, elegir proveedor contratado o instancia propia y revisar sus condiciones/atribución antes de reemplazar estos servicios comunitarios.
 
-No se promete que Marroka, sus calles nuevas o sus accesos estén completos o actualizados en una fecha concreta. Comparar en el iPad con observación en campo. No hay navegación/rutas, límites catastrales, garantía de numeración, edificios 3D ni localización en segundo plano.
+No se promete que Marroka, sus calles nuevas o sus accesos estén completos o actualizados en una fecha concreta. Comparar en el iPad con observación en campo. Las indicaciones se abren en un proveedor externo a petición; no hay cálculo de rutas dentro de la app, límites catastrales, garantía de numeración, edificios 3D ni localización en segundo plano.
 
 ## Comprobación y límites de esta entrega
 
@@ -42,3 +42,9 @@ Pruebas automatizadas usan consultas y puntos ficticios, GPS simulado y teselas 
 La política de red del entorno de desarrollo del asistente rechaza con HTTP 403 las conexiones a tiles.openfreemap.org y photon.komoot.io; no se pudo verificar una respuesta real para Marroka. La documentación oficial de ambos proveedores y el esquema de estilos de OpenFreeMap sí se consultaron. Probar cobertura y permisos GPS en Safari/iPad físico desde el Codespace habitual antes de la visita. Si su red también bloquea estos dominios, la app conserva el formulario y ofrece el mapa local/manual.
 
 La cola de envíos offline, sincronización automática, alojamiento estable y conexión directa con cámara 360 siguen siendo trabajo posterior. Nada de esto requiere publicar ahora la página al internet abierto.
+
+## Acceso independiente y contraste en campo
+
+El selector Ubicar inmueble / Ubicar acceso para visitas aplica búsquedas, GPS y ajustes al punto activo. El acceso empieza vacío; el marcador amarillo sirve de referencia y no copia coordenadas. Ampliar/Centrar/Ver inmueble y acceso cambian solo la vista. Una lectura GPS de otro modo o anterior a un cambio manual no sustituye el punto actual. Las notas y coordenadas de acceso se guardan únicamente en el borrador privado/local, recuperación y respaldo; quedan fuera de la ficha y mapas públicos incluso si la vivienda usa precisión exacta.
+
+Los enlaces fijos a OpenStreetMap/Google Maps abren coordenadas numéricas del punto elegido y no incluyen notas. Se muestra aviso antes del clic; no se incrustan ni copian datos de Google ni se solicita otro proveedor automáticamente. La cobertura real de Marroka sigue pendiente de comprobación en campo. [Guía de revisión y visitas](REVIEW_AND_VISITS.md).

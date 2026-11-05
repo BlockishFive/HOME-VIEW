@@ -74,3 +74,7 @@ Al entrar se muestra el panel de propiedades con filtros; el formulario se abre 
 ## Respaldo portátil y orientación 360
 
 Las importaciones de JSON en `/privado` solo crean capturas locales nuevas: no adoptan ID/revisión ni publicación del archivo. Tras revisarlas, Guardar borrador privado crea otra propiedad. La orientación opcional `initialView` se valida en servidor y se incorpora al snapshot al publicar; los recorridos antiguos conservan su orientación predeterminada. [Guía de respaldos y editor visual](BACKUPS_AND_VISUAL_TOURS.md).
+
+## Revisión antes de publicar y referencias de visita
+
+Publicar/Actualizar publicación abre la revisión de la versión guardada: se distinguen campos obligatorios y condiciones por confirmar, con ficha previa y consentimiento. Cambios del formulario quedan separados. Un conflicto requiere refrescar y revisar de nuevo. El acceso de visitas es opcional y privado; se comparte entre dispositivos al guardar en el servidor y queda incluido en respaldos, pero nunca en el snapshot público. [Instrucciones de revisión y mapas de visita](REVIEW_AND_VISITS.md).

@@ -50,7 +50,7 @@ Para la casa ya capturada en el iPad: conserva un respaldo, inicia sesión en el
 
 El servidor guarda datos y medios en `.home-view/private.sqlite`, excluido de Git. Funciona entre dispositivos mientras ese servidor esté activo; Codespaces todavía puede suspenderse y no es alojamiento permanente. Antes de eliminar el Codespace, crea un respaldo con `npm run backup:private` y conserva una copia privada fuera de él. Para cambiar la contraseña conservando datos: `npm run setup:private -- --reset`.
 
-Para publicar la casa: en su tarjeta privada pulsa **Publicar propiedad**, revisa la confirmación y abre **Ver publicación**. Después de editar y guardar usa **Actualizar publicación**; para ocultarla usa **Retirar publicación**. Consulta [publicación y flujo cámara 360 → iPad](docs/PUBLISHING.md).
+Para publicar la casa: en su tarjeta privada pulsa **Publicar propiedad**, revisa la lista y **Ver ficha previa**, marca la autorización y pulsa **Confirmar publicación**. Después abre **Ver publicación**. Después de editar y guardar usa **Actualizar publicación**; para ocultarla usa **Retirar publicación**. Consulta [publicación y flujo cámara 360 → iPad](docs/PUBLISHING.md).
 
 Consulta [configuración, copias, límites y restauración](docs/PRIVATE_PILOT.md). No desplegar esta base en funciones efímeras o instancias sin disco persistente.
 
@@ -101,6 +101,14 @@ Consulta [recuperación, privacidad y límites de conexión](docs/AUTOSAVE_DASHB
 En **Editar visualmente escena…** puedes colocar una flecha tocando el panorama o usando el centro de la vista. Arrastrar/pellizcar solo cambia la mirada o el zoom. **Usar esta vista al entrar** conserva orientación por escena; **Empezar recorrido en escena…** elige el inicio. Se avisa de escenas sin camino de ida/regreso, conservando los ajustes numéricos manuales.
 
 Consulta [formatos, límites, restauración y pasos del editor](docs/BACKUPS_AND_VISUAL_TOURS.md). No hay conexión directa con la cámara ni publicación automática.
+
+## Revisar el anuncio y preparar visitas
+
+**Revisar captura actual** muestra faltantes y condiciones por confirmar sin guardar el formulario. **Publicar propiedad** y **Actualizar publicación** abren la revisión de la versión guardada en el servidor. **Ver ficha previa** usa la plantilla y los datos públicos del anuncio, con la precisión elegida. La publicación requiere revisar, marcar la autorización y confirmar; si otro dispositivo cambió la versión, debes actualizarla y revisar otra vez. Las condiciones desconocidas pueden seguir como Por confirmar.
+
+En el mapa puedes **Ubicar inmueble** o **Ubicar acceso para visitas**. El acceso y sus notas son privados, separados de la ubicación pública, y se conservan en borradores, recuperación y respaldos. **Ver inmueble y acceso** encuadra ambos; puedes ampliar el mapa y abrir enlaces para contrastar coordenadas o pedir indicaciones en proveedores externos. La cobertura real de Marroka y Safari/iPad físico necesitan comprobación en campo.
+
+Consulta [revisión, privacidad y pasos para preparar visitas](docs/REVIEW_AND_VISITS.md).
 
 ## Capturar ubicación en el iPad
 
